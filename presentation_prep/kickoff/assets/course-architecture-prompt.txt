@@ -1,0 +1,3 @@
+Built-in image generation edit, transparent background.
+Source: user-supplied course architecture diagram.
+Requested edits: replace Agent: Mosaic serving endpoint with Agent: Databricks app / Databricks model serving endpoint; add Alternative: Lakebase pgvector at the Vector Search index; remove the white page background while preserving component fills, original labels, arrows, and structure.

@@ -1,0 +1,5 @@
+Method: built-in image-generation tool, edit mode, transparent_background=true.
+Outputs: clean-principles.png, clean-lifecycle.png, clean-complexity.png.
+
+Prompt:
+Edit this presentation diagram for seamless placement on a uniform light grey slide. Remove the entire off-white/white/grey page background and any background texture, make it truly transparent. Remove ALL Cauchy brand logos (especially lower-left corner) if present. Preserve EXACTLY all other visual content, wording, labels, lines, curves, diagram geometry and colors, title and subtitle. Keep the same aspect ratio and entire uncropped diagram. Do not add any logo, watermark, new wording or content. Keep intentional colored annotation fills and outlined boxes, but remove white/grey canvas fills inside diagram areas as well so the grey slide shows through. Sharp professional slide quality.

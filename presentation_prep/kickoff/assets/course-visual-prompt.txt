@@ -1,0 +1,4 @@
+Generated with the built-in image generation tool. Asset: course-visual.png
+
+Prompt:
+Use case: stylized-concept. Asset type: cover illustration for Cauchy LLMOps with Databricks technical course presentation. Create a refined editorial isometric illustration of an AI application's operational system: connected stacks of data, document pages, a small central processing module, and a monitoring screen with a simple trace line. Tangible sculptural paper and matte ceramic forms, warm off-white background #f6f5f3, charcoal outlines, restrained coral orange #f24b37 accents and very pale blue. Elegant, precise, friendly, generous whitespace, square composition suitable for right half of a slide. No words, letters, numbers, logos, robots, brains, or gradients. This is a conceptual illustration, not a literal architecture diagram.
