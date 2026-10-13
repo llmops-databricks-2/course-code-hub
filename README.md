@@ -32,7 +32,8 @@ service. The bundle's state lives in that teacher's workspace folder, so another
 deploy of this repository would try to create the two again and fail. Students do not deploy this
 bundle.
 
-Call the model service from a notebook or a laptop with `databricks-openai`:
+Call the model service with `databricks-openai` 0.14.0 or later, in an environment outside the
+course's pins (see the notebook below for the course's own environment):
 
 ```python
 from databricks_openai import DatabricksOpenAI
@@ -51,7 +52,8 @@ Each call is recorded in `system.ai_gateway.usage`, with
 `notebooks/1.5_external_models_ai_gateway.py` does all of this in a notebook: it calls the model
 service named by its `model_service` parameter (default `course_ops.gateway.openai_demo`) with
 MLflow tracing on, prints the answer and the trace id, reports a provider's refusal (OpenAI's `401`
-for a wrong key) as a message, and reads your calls back from `system.ai_gateway.usage`. It uses the
-course's pinned `openai` client with the workspace's credentials; `databricks-openai`, which
-offers `DatabricksOpenAI(use_ai_gateway=True)`, cannot be installed beside the course's
-`pydantic==2.10.6`.
+for a wrong key) as a message, and reads your calls back from `system.ai_gateway.usage`. Run it as a
+teacher. It uses the course's pinned `openai` client with the workspace's credentials:
+`databricks-openai` 0.14.0 and later, which offer `DatabricksOpenAI(use_ai_gateway=True)`, cannot be
+installed beside the course's pins (they need `pydantic>=2.12.2`, and `typing-extensions>=4.15`
+against serverless environment 5's `~=4.12.2`).

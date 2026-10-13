@@ -44,6 +44,11 @@ from arxiv_curator.config import get_env, load_config
 # MAGIC To call a model service you need `EXECUTE` on it, plus `USE CATALOG` on `course_ops` and
 # MAGIC `USE SCHEMA` on `course_ops.gateway`. A model service runs with its owner's privileges, so you
 # MAGIC need nothing on the provider service and nothing on the secret.
+# MAGIC
+# MAGIC **Run it as a teacher, in the workspace.** The demonstration service grants `EXECUTE` to the
+# MAGIC teachers only, and reading `system.ai_gateway.usage` needs `SELECT` on it, which the course
+# MAGIC does not grant to students: a student sees the permission errors, not the answer. Off the
+# MAGIC workspace (Databricks Connect), the trace would go to a local `mlruns` folder instead.
 
 # COMMAND ----------
 
@@ -84,8 +89,9 @@ mlflow.openai.autolog()
 # MAGIC is the model service's name. The workspace client authenticates you to Databricks: its token is
 # MAGIC sent to the gateway, never to OpenAI, and no new token is created.
 # MAGIC
-# MAGIC The provider service of the demonstration routes the OpenAI Chat Completions API
-# MAGIC (`openai/v1/chat/completions`), so this call uses `chat.completions`.
+# MAGIC Lectures 1.1 and 1.2 use the Unified Responses API. The provider service of the
+# MAGIC demonstration lists only the OpenAI Chat Completions API (`openai/v1/chat/completions`) for its
+# MAGIC model, so this call uses `chat.completions`, which `course_ops.gateway.chat` answers too.
 # MAGIC
 # MAGIC A reasoning model (such as GPT OSS behind `course_ops.gateway.chat`) answers with a list of
 # MAGIC parts, its reasoning summary and its text; `answer_text` keeps the text.
@@ -109,10 +115,21 @@ def describe_gateway_error(error: APIStatusError, service: str) -> str:
         message = f"{service} reached {provider}, which refused the call with status {upstream}."
         if upstream in ("401", "403"):
             message += (
-                " The provider service's key (a Unity Catalog secret) is wrong, expired or"
-                " missing; a teacher fixes the secret, nothing in this notebook holds it."
+                " The provider service's key (a Unity Catalog secret) or its access at the"
+                " provider is wrong, expired or missing; a teacher fixes the secret, nothing in"
+                " this notebook holds it."
             )
         return message
+    if error.status_code == 404:
+        return (
+            f"{service} was not found (404): check the name; a service created or re-created"
+            " a minute ago may not answer yet."
+        )
+    if error.status_code == 403:
+        return (
+            f"{service} refused the call (403): you need EXECUTE on it, plus USE CATALOG and"
+            " USE SCHEMA on its catalog and schema."
+        )
     return f"{service} answered status {error.status_code}: {body.get('error_code', error.message)}"
 
 
@@ -129,12 +146,11 @@ client = OpenAI(
     api_key=workspace.config.authenticate()["Authorization"].removeprefix("Bearer "),
 )
 
-answer = None
 try:
     response = client.chat.completions.create(
         model=MODEL_SERVICE,
         messages=[{"role": "user", "content": "In one sentence, what is an AI gateway?"}],
-        max_tokens=100,
+        max_tokens=256,
     )
     answer = answer_text(response.choices[0].message.content)
     logger.info(f"Answer from {response.model}: {answer}")
@@ -154,8 +170,8 @@ logger.info(f"Trace id: {trace_id} (experiment {EXPERIMENT_NAME})")
 # MAGIC
 # MAGIC Every call through the AI Gateway lands in the system table `system.ai_gateway.usage`, with
 # MAGIC the model service name, the model it routed to, the status and the tokens. The table lags:
-# MAGIC **about 90 minutes** on our workspace (October 2026), so the call above shows up in a later
-# MAGIC run. The query shows only your own calls of the last day.
+# MAGIC **40 to 90 minutes** on our workspace (October 2026), so the call above shows up in a later
+# MAGIC run. The query shows only your own calls of the last day; a refused call has no tokens.
 
 # COMMAND ----------
 
@@ -177,5 +193,6 @@ logger.info(f"Your calls of {MODEL_SERVICE} in the last day: {len(rows)}")
 for row in rows:
     logger.info(
         f"{row.event_time} {row.destination_type} {row.destination_model} "
-        f"status {row.status_code}, tokens in {row.input_tokens}, out {row.output_tokens}"
+        f"status {row.status_code}, tokens in {row.input_tokens or '-'}, "
+        f"out {row.output_tokens or '-'}"
     )
