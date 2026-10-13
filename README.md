@@ -55,5 +55,5 @@ MLflow tracing on, prints the answer and the trace id, reports a provider's refu
 for a wrong key) as a message, and reads your calls back from `system.ai_gateway.usage`. Run it as a
 teacher. It uses the course's pinned `openai` client with the workspace's credentials:
 `databricks-openai` 0.14.0 and later, which offer `DatabricksOpenAI(use_ai_gateway=True)`, cannot be
-installed beside the course's pins (they need `pydantic>=2.12.2`, and `typing-extensions>=4.15`
-against serverless environment 5's `~=4.12.2`).
+installed beside the course's pins (they need `pydantic>=2.12.2`, and 0.17.1 also needs
+`typing-extensions>=4.15` against serverless environment 5's `~=4.12.2`).
