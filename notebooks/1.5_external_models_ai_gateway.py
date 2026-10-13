@@ -1,4 +1,11 @@
 # Databricks notebook source
+# /// script
+# dependencies = [
+#   "..",
+# ]
+# [tool.databricks.environment]
+# environment_version = "5"
+# ///
 # MAGIC %md
 # MAGIC # Lecture 1.5: External Models Through the AI Gateway
 # MAGIC
@@ -15,6 +22,12 @@
 # MAGIC You never see the key. You authenticate to Databricks, and the gateway calls OpenAI with the
 # MAGIC key of the provider service. The call is traced in MLflow and recorded in
 # MAGIC `system.ai_gateway.usage`. Running this notebook creates no gateway object and no token.
+# MAGIC
+# MAGIC The notebook's serverless environment is declared at the top of this file, in the inline
+# MAGIC [PEP 723](https://peps.python.org/pep-0723/) block the notebook format reads: environment
+# MAGIC version 5 and one dependency, `..`, the course project itself (`pyproject.toml`, one folder
+# MAGIC up from `notebooks/`), so `arxiv_curator`, `loguru` and the pinned `openai` are installed when
+# MAGIC the notebook opens, on the laptop's deploy as on a teacher's. No install cell, no job.
 # MAGIC
 # MAGIC **Checked: October 13, 2026 (AWS).** See
 # MAGIC [model provider services](https://docs.databricks.com/aws/en/ai-gateway/model-provider-services)

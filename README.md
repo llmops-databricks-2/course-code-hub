@@ -53,19 +53,12 @@ Each call is recorded in `system.ai_gateway.usage`, with
 service named by its `model_service` parameter (default `course_ops.gateway.openai_demo`) with
 MLflow tracing on, prints the answer and the trace id, reports a provider's refusal (OpenAI's `401`
 for a wrong key) as a message, and reads your calls back from `system.ai_gateway.usage`. Run it as a
-teacher, the way the course runs its notebooks, as the job the same file declares: a serverless job
-on environment 5 whose environment installs the wheel the bundle builds, so the notebook imports
-`arxiv_curator`, `loguru` and the pinned `openai` without an install cell:
-
-```bash
-databricks bundle run gateway_demo -t dev --profile <your profile>
-```
-
-To run it interactively instead, give the notebook the same environment: in the Environment side
-pane add the wheel the deploy uploaded,
-`/Workspace/Users/<you>/.bundle/dev/course-code-hub/artifacts/.internal/arxiv_curator-0.0.0-py3-none-any.whl`,
-or open the repository as a Git folder and attach the notebook to Git Folder Serverless, which
-builds its environment from this `pyproject.toml` (`[tool.databricks.environment]`, environment 5).
+teacher: the deploy syncs it with the bundle's files, and the notebook carries its own serverless
+environment in its first lines, an inline [PEP 723](https://peps.python.org/pep-0723/) block the
+notebook format reads (environment version 5; one dependency, `..`, the course project one folder
+up, so `arxiv_curator`, `loguru` and the pinned `openai` are installed when the notebook opens). No
+install cell and no job. Open it from your bundle folder,
+`/Workspace/Users/<you>/.bundle/dev/course-code-hub/files/notebooks/`, and run it on serverless.
 
 It uses the course's pinned `openai` client with the workspace's credentials:
 `databricks-openai` 0.14.0 and later, which offer `DatabricksOpenAI(use_ai_gateway=True)`, cannot be
