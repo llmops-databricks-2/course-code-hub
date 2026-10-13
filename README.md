@@ -47,3 +47,11 @@ print(response.choices[0].message.content)
 
 Each call is recorded in `system.ai_gateway.usage`, with
 `service_name = 'course_ops.gateway.openai_demo'`.
+
+`notebooks/1.5_external_models_ai_gateway.py` does all of this in a notebook: it calls the model
+service named by its `model_service` parameter (default `course_ops.gateway.openai_demo`) with
+MLflow tracing on, prints the answer and the trace id, reports a provider's refusal (OpenAI's `401`
+for a wrong key) as a message, and reads your calls back from `system.ai_gateway.usage`. It uses the
+course's pinned `openai` client with the workspace's credentials; `databricks-openai`, which
+offers `DatabricksOpenAI(use_ai_gateway=True)`, cannot be installed beside the course's
+`pydantic==2.10.6`.
