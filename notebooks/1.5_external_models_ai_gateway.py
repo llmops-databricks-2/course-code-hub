@@ -35,6 +35,8 @@
 
 # COMMAND ----------
 
+import os
+
 import mlflow
 from databricks.sdk import WorkspaceClient
 from loguru import logger
@@ -52,7 +54,13 @@ from arxiv_curator.config import get_env, load_config
 # MAGIC `model_service` is the fully qualified name of the model service to call. The default is the
 # MAGIC demonstration service; `course_ops.gateway.chat`, the course's own chat service, works the same
 # MAGIC way. `experiment_name` is the MLflow experiment that receives the trace; by default the
-# MAGIC course's experiment from `project_config.yml`.
+# MAGIC course's experiment from `project_config.yml`, which keeps its traces in the workspace tracking
+# MAGIC server (MLflow prints a hint to migrate them). Your own onboarding experiment,
+# MAGIC `/llmops/<your uc_name>`, keeps them in Unity Catalog trace tables in your schema instead,
+# MAGIC the way the course monitors every student's traces. `tracing_warehouse_id` is the SQL warehouse
+# MAGIC MLflow reads Unity Catalog traces through: with a trace table as the destination, the inline
+# MAGIC trace viewer under the cell and `mlflow.get_trace` need one (your own `wh-llmops-<you>`); left
+# MAGIC empty, the trace is still written and shown on the experiment's Traces page.
 # MAGIC
 # MAGIC To call a model service you need `EXECUTE` on it, plus `USE CATALOG` on `course_ops` and
 # MAGIC `USE SCHEMA` on `course_ops.gateway`. A model service runs with its owner's privileges, so you
@@ -73,12 +81,15 @@ cfg = load_config("../project_config.yml", env)
 
 dbutils.widgets.text("model_service", "course_ops.gateway.openai_demo")
 dbutils.widgets.text("experiment_name", cfg.experiment_name)
+dbutils.widgets.text("tracing_warehouse_id", "")
 MODEL_SERVICE = dbutils.widgets.get("model_service")
 EXPERIMENT_NAME = dbutils.widgets.get("experiment_name")
+TRACING_WAREHOUSE_ID = dbutils.widgets.get("tracing_warehouse_id").strip()
 
 logger.info(f"Environment: {env}")
 logger.info(f"Model service: {MODEL_SERVICE}")
 logger.info(f"MLflow experiment: {EXPERIMENT_NAME}")
+logger.info(f"Tracing warehouse: {TRACING_WAREHOUSE_ID or 'none (traces read on the experiment page)'}")
 
 # COMMAND ----------
 
@@ -87,8 +98,14 @@ logger.info(f"MLflow experiment: {EXPERIMENT_NAME}")
 # MAGIC
 # MAGIC `mlflow.openai.autolog()` records each call of the OpenAI client as a trace in the experiment:
 # MAGIC the request, the response or the error, and the model service name as the span's `model`.
+# MAGIC When the experiment's traces live in Unity Catalog tables, MLflow reads them back through a
+# MAGIC SQL warehouse, named by `MLFLOW_TRACING_SQL_WAREHOUSE_ID`; the write needs none. The variable
+# MAGIC is set here only when you gave `tracing_warehouse_id`, before the first trace.
 
 # COMMAND ----------
+
+if TRACING_WAREHOUSE_ID:
+    os.environ["MLFLOW_TRACING_SQL_WAREHOUSE_ID"] = TRACING_WAREHOUSE_ID
 
 mlflow.set_experiment(EXPERIMENT_NAME)
 mlflow.openai.autolog()
