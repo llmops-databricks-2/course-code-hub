@@ -3,6 +3,9 @@
 
 bundle:
   name: course-code-hub
+  # 1.20.0 is the first CLI that knows a model provider service's secret reference
+  # (resources/gateway_demo.yml); an older one skips the gateway resources with a warning.
+  databricks_cli_version: ">= 1.20.0"
 
 artifacts:
   default:
