@@ -26,7 +26,8 @@ databricks bundle deploy -t dev --profile <your profile>
 
 The two objects belong to the `dev` target only: a deploy of `acc` or `prd` never touches them.
 One teacher deploys them and owns them. The model service runs with its owner's privileges, so that
-teacher must be able to read the secret, and a caller needs nothing but `EXECUTE` on the model
+teacher must be able to read the secret, and a caller needs `EXECUTE` on the model service and
+`USE CATALOG`/`USE SCHEMA` on `course_ops` and its `gateway` schema, nothing on the provider
 service. The bundle's state lives in that teacher's workspace folder, so another person's `dev`
 deploy of this repository would try to create the two again and fail. Students do not deploy this
 bundle.
