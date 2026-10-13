@@ -9,8 +9,9 @@
 #   - openai_demo: a model service, what a caller names as the model (course_ops.gateway.openai_demo),
 #     routed to gpt-4o-mini at OpenAI through the provider service.
 #
-# Deployed by hand by a teacher, with Databricks CLI 1.20.0 or later (the first to know a secret
-# reference): databricks bundle deploy -t dev --profile <your profile>. See the README.
+# Deployed by hand by one teacher, with Databricks CLI 1.20.0 or later (the first to know a secret
+# reference): databricks bundle deploy -t dev --profile <your profile>. See the README. The two
+# objects belong to the dev target only, so a deploy of acc or prd never touches them.
 variables:
   gateway_catalog:
     description: >-
@@ -18,49 +19,52 @@ variables:
       OpenAI key: course_ops; a scratch catalog only for a verification deploy
     default: course_ops
 
-resources:
-  model_provider_services:
-    openai:
-      parent: schemas/${var.gateway_catalog}.gateway
-      model_provider_service_id: openai
-      comment: "Demonstration: the gateway form of lecture 1.4"
-      config:
-        provider_type: EXTERNAL_MODEL_PROVIDER_TYPE_OPENAI
+targets:
+  dev:
+    resources:
+      model_provider_services:
         openai:
-          direct:
-            api_key:
-              secret_reference:
-                name: secrets/${var.gateway_catalog}.secrets.openai_api_key
-        # The one model the provider service routes to, and the API it speaks.
-        targets:
-          - model: gpt-4o-mini
-            native_api_types: [openai/v1/chat/completions]
+          parent: schemas/${var.gateway_catalog}.gateway
+          model_provider_service_id: openai
+          comment: "Demonstration: the gateway form of lecture 1.4"
+          config:
+            provider_type: EXTERNAL_MODEL_PROVIDER_TYPE_OPENAI
+            openai:
+              direct:
+                api_key:
+                  secret_reference:
+                    name: secrets/${var.gateway_catalog}.secrets.openai_api_key
+            # The one model the provider service routes to, and the API it speaks.
+            targets:
+              - model: gpt-4o-mini
+                native_api_types: [openai/v1/chat/completions]
 
-  model_services:
-    openai_demo:
-      parent: schemas/${var.gateway_catalog}.gateway
-      model_service_id: openai_demo
-      comment: Demonstration only
-      config:
-        routing:
-          destinations:
-            - name: primary
-              destination_type: DESTINATION_TYPE_EXTERNAL_FOUNDATION_MODEL
-              external_model_config:
-                # model-provider-services/<catalog>.gateway.openai; the reference to the provider
-                # service's id makes the bundle create it first.
-                model_provider_service: model-provider-services/${var.gateway_catalog}.gateway.${resources.model_provider_services.openai.model_provider_service_id}
-                target:
-                  model: gpt-4o-mini
-                  native_api_types: [openai/v1/chat/completions]
-              traffic_percentage: 100
-        # The service-level limit of the course's assessment service; no per-user limit.
-        rate_limits:
-          - key: RATE_LIMIT_KEY_SERVICE
-            renewal_period: RATE_LIMIT_RENEWAL_PERIOD_MINUTE
-            requests: 400
-      # The teachers may call it; the owner (the teacher who deploys) can by default; students get
-      # nothing.
-      grants:
-        - principal: grp-teachers-llmops
-          privileges: [EXECUTE]
+      model_services:
+        openai_demo:
+          parent: schemas/${var.gateway_catalog}.gateway
+          model_service_id: openai_demo
+          comment: Demonstration only
+          config:
+            routing:
+              destinations:
+                - name: primary
+                  destination_type: DESTINATION_TYPE_EXTERNAL_FOUNDATION_MODEL
+                  external_model_config:
+                    # model-provider-services/<catalog>.gateway.openai; the reference to the
+                    # provider service's id makes the bundle create it first.
+                    model_provider_service: model-provider-services/${var.gateway_catalog}.gateway.${resources.model_provider_services.openai.model_provider_service_id}
+                    target:
+                      model: gpt-4o-mini
+                      native_api_types: [openai/v1/chat/completions]
+                  traffic_percentage: 100
+            # The service-level limit of the course's assessment service; no per-user limit.
+            rate_limits:
+              - key: RATE_LIMIT_KEY_SERVICE
+                renewal_period: RATE_LIMIT_RENEWAL_PERIOD_MINUTE
+                requests: 400
+          # A model service runs with its owner's privileges (the teacher who deploys it), so a
+          # caller needs EXECUTE here and nothing on the provider service. The teachers may call
+          # it; students get nothing.
+          grants:
+            - principal: grp-teachers-llmops
+              privileges: [EXECUTE]

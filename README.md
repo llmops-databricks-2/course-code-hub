@@ -24,9 +24,12 @@ databricks --version
 databricks bundle deploy -t dev --profile <your profile>
 ```
 
-The teacher who deploys owns the two services, and the bundle's state lives in that teacher's
-workspace folder; another teacher's `dev` deploy would try to create them again and fail, so one
-teacher deploys them.
+The two objects belong to the `dev` target only: a deploy of `acc` or `prd` never touches them.
+One teacher deploys them and owns them. The model service runs with its owner's privileges, so that
+teacher must be able to read the secret, and a caller needs nothing but `EXECUTE` on the model
+service. The bundle's state lives in that teacher's workspace folder, so another person's `dev`
+deploy of this repository would try to create the two again and fail. Students do not deploy this
+bundle.
 
 Call the model service from a notebook or a laptop with `databricks-openai`:
 
