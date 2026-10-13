@@ -53,14 +53,18 @@ from arxiv_curator.config import get_env, load_config
 # MAGIC
 # MAGIC `model_service` is the fully qualified name of the model service to call. The default is the
 # MAGIC demonstration service; `course_ops.gateway.chat`, the course's own chat service, works the same
-# MAGIC way. `experiment_name` is the MLflow experiment that receives the trace; by default the
-# MAGIC course's experiment from `project_config.yml`, which keeps its traces in the workspace tracking
-# MAGIC server (MLflow prints a hint to migrate them). Your own onboarding experiment,
-# MAGIC `/llmops/<your uc_name>`, keeps them in Unity Catalog trace tables in your schema instead,
-# MAGIC the way the course monitors every student's traces. `tracing_warehouse_id` is the SQL warehouse
-# MAGIC MLflow reads Unity Catalog traces through: with a trace table as the destination, the inline
-# MAGIC trace viewer under the cell and `mlflow.get_trace` need one (your own `wh-llmops-<you>`); left
-# MAGIC empty, the trace is still written and shown on the experiment's Traces page.
+# MAGIC way. `experiment_name` is the MLflow experiment that receives the trace, and
+# MAGIC `tracing_warehouse_id` the SQL warehouse MLflow reads Unity Catalog traces through. Their
+# MAGIC defaults are yours: the onboarding registered your experiment, `/llmops/<your uc_name>`, whose
+# MAGIC traces live in Unity Catalog trace tables in your schema, the way the course monitors every
+# MAGIC student's traces, and your warehouse, `wh-llmops-<you>`; the notebook reads both from
+# MAGIC `course_ops.registry.students` through the row that is yours (`registry.identities`). A user
+# MAGIC the registry does not know, a teacher signed in under another address, gets the deploying
+# MAGIC teacher's two values written below; change them to yours. With a trace table as the
+# MAGIC destination, the inline trace viewer under the cell and `mlflow.get_trace` need the
+# MAGIC warehouse; without one the trace is still written and shown on the experiment's Traces page.
+# MAGIC The course's shared experiment from `project_config.yml` keeps its traces in the workspace
+# MAGIC tracking server instead, and MLflow prints a hint to migrate them when you use it.
 # MAGIC
 # MAGIC To call a model service you need `EXECUTE` on it, plus `USE CATALOG` on `course_ops` and
 # MAGIC `USE SCHEMA` on `course_ops.gateway`. A model service runs with its owner's privileges, so you
@@ -79,9 +83,34 @@ dbutils = DBUtils(spark)
 env = get_env(spark)
 cfg = load_config("../project_config.yml", env)
 
+# The deploying teacher's experiment and warehouse, the defaults for a user the registry does not
+# know; everyone the registry knows gets their own row's values.
+TEACHER_EXPERIMENT = "/llmops/victor_kuznetsov"
+TEACHER_WAREHOUSE_ID = "992f5f04071d814b"
+
+
+def my_registry_row() -> tuple[str, str]:
+    """The current user's experiment path and warehouse id from the registry, else the teacher's."""
+    try:
+        row = spark.sql(
+            "SELECT s.experiment_path, s.warehouse_id "
+            "FROM course_ops.registry.students AS s "
+            "JOIN course_ops.registry.identities AS i ON i.uc_name = s.uc_name "
+            "WHERE i.identity = current_user() LIMIT 1"
+        ).first()
+    except Exception as error:  # noqa: BLE001 - no read on the registry is not an error here
+        logger.warning(f"Registry not readable ({type(error).__name__}); the teacher's defaults apply")
+        row = None
+    if row is None or not row.experiment_path:
+        return TEACHER_EXPERIMENT, TEACHER_WAREHOUSE_ID
+    return row.experiment_path, row.warehouse_id or ""
+
+
+DEFAULT_EXPERIMENT, DEFAULT_WAREHOUSE_ID = my_registry_row()
+
 dbutils.widgets.text("model_service", "course_ops.gateway.openai_demo")
-dbutils.widgets.text("experiment_name", cfg.experiment_name)
-dbutils.widgets.text("tracing_warehouse_id", "")
+dbutils.widgets.text("experiment_name", DEFAULT_EXPERIMENT)
+dbutils.widgets.text("tracing_warehouse_id", DEFAULT_WAREHOUSE_ID)
 MODEL_SERVICE = dbutils.widgets.get("model_service")
 EXPERIMENT_NAME = dbutils.widgets.get("experiment_name")
 TRACING_WAREHOUSE_ID = dbutils.widgets.get("tracing_warehouse_id").strip()
