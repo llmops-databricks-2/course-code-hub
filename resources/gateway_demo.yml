@@ -10,8 +10,13 @@
 #     routed to gpt-4o-mini at OpenAI through the provider service.
 #
 # Deployed by hand by one teacher, with Databricks CLI 1.20.0 or later (the first to know a secret
-# reference): databricks bundle deploy -t dev --profile <your profile>. See the README. The two
-# objects belong to the dev target only, so a deploy of acc or prd never touches them.
+# reference): databricks bundle deploy -t dev --profile <your profile>. See the README. The objects
+# belong to the dev target only, so a deploy of acc or prd never touches them.
+#
+# The job gateway_demo runs notebooks/1.5_external_models_ai_gateway.py the way the course runs its
+# notebooks (the first cohort's resources/process_data.yml): a serverless job whose environment
+# installs the course wheel the bundle builds, so the notebook needs no install cell:
+#   databricks bundle run gateway_demo -t dev --profile <your profile>
 variables:
   gateway_catalog:
     description: >-
@@ -68,3 +73,22 @@ targets:
           grants:
             - principal: grp-teachers-llmops
               privileges: [EXECUTE]
+
+      jobs:
+        gateway_demo:
+          name: gateway-demo
+          tags:
+            project_name: "llmops_course"
+          environments:
+            - environment_key: default
+              spec:
+                environment_version: "5"
+                dependencies:
+                  - ../dist/*.whl
+          tasks:
+            - task_key: run_notebook
+              environment_key: default
+              notebook_task:
+                notebook_path: ../notebooks/1.5_external_models_ai_gateway.py
+                base_parameters:
+                  model_service: ${var.gateway_catalog}.gateway.openai_demo
