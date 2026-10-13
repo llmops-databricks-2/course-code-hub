@@ -22,18 +22,6 @@
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC The notebook imports the course package and its pins (`loguru`, `openai`, the SDK). When the
-# MAGIC notebook's environment does not have them yet, install the wheel the bundle uploaded beside
-# MAGIC this notebook and restart Python; skip this cell otherwise.
-
-# COMMAND ----------
-
-# MAGIC %pip install ../../artifacts/.internal/arxiv_curator-0.0.0-py3-none-any.whl
-# MAGIC dbutils.library.restartPython()
-
-# COMMAND ----------
-
 import mlflow
 from databricks.sdk import WorkspaceClient
 from loguru import logger
