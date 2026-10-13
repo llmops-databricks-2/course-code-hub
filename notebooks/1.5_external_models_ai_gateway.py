@@ -62,6 +62,15 @@ from arxiv_curator.config import get_env, load_config
 # MAGIC trace viewer under the cell and `mlflow.get_trace` need one (your own `wh-llmops-<you>`); left
 # MAGIC empty, the trace is still written and shown on the experiment's Traces page.
 # MAGIC
+# MAGIC **Proposed values for the demonstration** (the deploying teacher's; a student puts their own
+# MAGIC `uc_name` and warehouse, both in their repo's `README.md`):
+# MAGIC
+# MAGIC | Widget | Value |
+# MAGIC |---|---|
+# MAGIC | `model_service` | `course_ops.gateway.openai_demo` |
+# MAGIC | `experiment_name` | `/llmops/victor_kuznetsov` |
+# MAGIC | `tracing_warehouse_id` | `992f5f04071d814b` (`wh-llmops-victor-kuznetsov`) |
+# MAGIC
 # MAGIC To call a model service you need `EXECUTE` on it, plus `USE CATALOG` on `course_ops` and
 # MAGIC `USE SCHEMA` on `course_ops.gateway`. A model service runs with its owner's privileges, so you
 # MAGIC need nothing on the provider service and nothing on the secret.
@@ -79,6 +88,8 @@ dbutils = DBUtils(spark)
 env = get_env(spark)
 cfg = load_config("../project_config.yml", env)
 
+# For the demonstration: experiment_name = "/llmops/victor_kuznetsov" and
+# tracing_warehouse_id = "992f5f04071d814b" (wh-llmops-victor-kuznetsov); a student uses their own.
 dbutils.widgets.text("model_service", "course_ops.gateway.openai_demo")
 dbutils.widgets.text("experiment_name", cfg.experiment_name)
 dbutils.widgets.text("tracing_warehouse_id", "")
