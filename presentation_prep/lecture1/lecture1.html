@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLMOps with Databricks | Lecture 1 | October 2026</title>
+  <link rel="stylesheet" href="lecture1.css">
+  <script src="lecture1.js" defer></script>
+</head>
+<body>
+  <section class="slide cover-slide" id="slide-1" aria-label="Developing LLM applications on Databricks">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">01</span></header>
+    <div class="cover">
+      <p class="eyebrow">LECTURE 1</p>
+      <h1>Developing<br>LLM applications<br>on <span class="accent">Databricks</span></h1>
+      <p class="date">14 October 2026</p>
+      <p class="sub">16:00–18:00 Amsterdam</p>
+    </div>
+    <img class="hero-art" src="../kickoff/assets/course-visual.png" alt="An AI application and the operational system around it">
+    <aside class="notes"><p>Lecture 1 of the October course. The session date follows the course kickoff schedule. Start with the development environment, then deployment and model access.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-2" aria-label="Agenda">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">02</span></header>
+    <h2>Agenda</h2>
+    <p class="sub">What we will cover today</p>
+    <div class="agenda">
+      <article><span>01</span><div><h3>Development options</h3><p>Tools, authentication, and serverless environments</p></div></article>
+      <article><span>02</span><div><h3>Project overview</h3><p>Project configuration and <code>pyproject.toml</code></p></div></article>
+      <article><span>03</span><div><h3>Databricks bundles</h3><p>Package resources and run notebooks as jobs</p></div></article>
+      <article><span>04</span><div><h3>Foundation models</h3><p>Model services and the gateway interface</p></div></article>
+      <article><span>05</span><div><h3>Provisioned throughput</h3><p>Dedicated capacity and reservation options</p></div></article>
+      <article><span>06</span><div><h3>External models</h3><p>Provider access, governance, and routing</p></div></article>
+      <article class="wide"><span>07</span><div><h3>Example code</h3><p>Retrieve arXiv metadata, write a Delta table, and review an AI-assisted job configuration</p></div></article>
+    </div>
+    <aside class="notes"><p>Live walkthroughs: project_config.yml, pyproject.toml, and notebooks 1.1–1.4. Demonstrate the Claude-assisted bundle workflow when available. Review generated configuration before deploying anything.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-3" aria-label="The course development environment">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">03</span></header>
+    <h2>The course development environment</h2>
+    <p class="sub">Local code, with execution on Databricks</p>
+    <div class="rows">
+      <div class="row"><h3>Python 3.12</h3><p>The project pins Python to <code>3.12.*</code> and declares its dependencies in <code>pyproject.toml</code>.</p></div>
+      <div class="row"><h3>Environment 5</h3><p>The repository selects serverless environment version <strong>5</strong>, with Databricks Connect <strong>18.0</strong>.</p></div>
+      <div class="row"><h3>Application settings</h3><p><code>project_config.yml</code> keeps the application’s configuration alongside its code.</p></div>
+      <div class="row"><h3>Installed packages</h3><p>Check the active interpreter and <code>python -m pip list</code> when troubleshooting dependency differences.</p></div>
+    </div>
+    <aside class="notes"><p>Open the local pyproject.toml to show requires-python, dependency pins, the dev group, and tool.databricks.environment. Source: the course-code-hub repository. The original PowerPoint’s environment 4 screenshot remains available as <a href="assets/image6.png">historical reference</a>.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-4" aria-label="Serverless environment versions">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">04</span></header>
+    <h2>Serverless environment versions</h2>
+    <p class="sub">The course version and the latest release can differ</p>
+    <table aria-label="Selected serverless environment versions">
+      <thead><tr><th scope="col">Environment</th><th scope="col">Python</th><th scope="col">DB Connect</th><th scope="col">Support until</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">6 <span class="accent">/ latest</span></th><td>3.12.3</td><td>19</td><td>3 Sep 2029</td></tr>
+        <tr class="course-row"><th scope="row">5 <span class="accent">/ course</span></th><td>3.12.3</td><td>18</td><td>25 Feb 2029</td></tr>
+        <tr><th scope="row">4</th><td>3.12.3</td><td>17.3.2</td><td>13 Aug 2028</td></tr>
+      </tbody>
+    </table>
+    <p class="callout">An environment version fixes a client API and package baseline. Keep local dependencies aligned with the environment your workload uses.</p>
+    <p class="footnote"><a href="https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/">Environment version reference</a> · Checked 13 October 2026</p>
+    <aside class="notes"><p>The environment version is distinct from a classic Databricks Runtime version. The repository currently uses environment 5. Source: <a href="https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/">Databricks environment versions</a>. Original table: <a href="assets/image3.png">PowerPoint asset</a>.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-5" aria-label="Databricks development tools">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">05</span></header>
+    <h2>Databricks development tools</h2>
+    <p class="sub">Different tools for different parts of the workflow</p>
+    <table class="tool-table" aria-label="Development tool comparison">
+      <thead><tr><th scope="col">Tool</th><th scope="col">What it does</th><th scope="col">In this course</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Databricks CLI</th><td>Authenticates and automates workspace operations from a terminal.</td><td>Profiles, bundle validation, deployment, and job runs</td></tr>
+        <tr><th scope="row">Databricks Connect</th><td>Runs Spark workloads on Databricks from local Python code.</td><td>Local development and debugging with remote compute</td></tr>
+        <tr><th scope="row">VS Code extension</th><td>Connects the editor to a Databricks workspace and development workflow.</td><td>Project setup, code synchronization, and remote execution</td></tr>
+      </tbody>
+    </table>
+    <aside class="notes"><p>Recreated from the supplied development-tools table as editable HTML. Original: <a href="assets/image4.png">PowerPoint table</a>. Show the Databricks extension within the correct repository folder.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-6" aria-label="Authentication using the Databricks CLI">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">06</span></header>
+    <h2>Authentication using the Databricks CLI</h2>
+    <p class="sub">Browser-based OAuth login for local development</p>
+    <div class="code-layout">
+      <div>
+        <p class="code-label">INSTALL ON macOS</p>
+        <pre><code>brew tap databricks/tap
+brew install databricks</code></pre>
+        <p class="code-label" style="margin-top: 22px">LOGIN AND CHECK PROFILES</p>
+        <pre><code>databricks auth login \
+  --host &lt;workspace-url&gt; \
+  --profile course
+
+databricks auth profiles</code></pre>
+      </div>
+      <div class="panel">
+        <h3>A named profile</h3>
+        <p>Complete the browser sign-in, then use the same profile with your development tools.</p>
+        <p>The SDK can use configured Databricks authentication. An OpenAI client needs a compatible token or authentication adapter.</p>
+        <p><strong>No OpenAI API key is needed to call the course’s Databricks model service.</strong></p>
+      </div>
+    </div>
+    <p class="footnote">Never paste credentials into slides, source control, or shared notebook outputs.</p>
+    <aside class="notes"><p>Source: <a href="https://docs.databricks.com/aws/en/dev-tools/cli/authentication">Databricks CLI authentication</a>. The original slide’s login command used malformed single-hyphen options. Avoid displaying the output of databricks auth token while screen-sharing: it includes a credential. Provider credentials for external models are a separate administrator configuration.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-7" aria-label="Databricks bundles">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">07</span></header>
+    <h2>Databricks bundles</h2>
+    <p class="sub">Declarative Automation Bundles, formerly Databricks Asset Bundles</p>
+    <div class="bundle-layout">
+      <div>
+        <p>Version application code and resource configuration together, then deploy them to a target workspace.</p>
+        <p><strong>In this repository</strong><br><code>databricks.yml</code> defines the bundle and its deployment targets.</p>
+        <p>Other resource-management options include Terraform, the REST API, SDKs, the CLI, and MLflow APIs.</p>
+      </div>
+      <img src="assets/image7.png" alt="A bundle of red bricks tied with a ribbon, from the original Lecture 1 presentation">
+    </div>
+    <aside class="notes"><p>Reuse the source deck’s bundle illustration. Open databricks.yml and discuss dev, acc, and prd. Source for current naming and resource support: <a href="https://docs.databricks.com/aws/en/dev-tools/bundles/resources">Declarative Automation Bundles resources</a>. The term DABs remains useful when following the original course materials.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-8" aria-label="Resources managed with bundles">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">08</span></header>
+    <h2>Resources managed with bundles</h2>
+    <p class="sub">Support is broad. Ownership still matters.</p>
+    <div class="columns resource-columns">
+      <div class="panel"><h3>Application resources</h3><ul>
+        <li>Lakeflow Jobs and pipelines</li>
+        <li>Apps, dashboards, and alerts</li>
+        <li>Clusters and SQL warehouses</li>
+        <li>MLflow experiments and registered models</li>
+        <li>Serving endpoints and model services</li>
+      </ul></div>
+      <div class="panel"><h3>Data and platform resources</h3><ul>
+        <li>Catalogs, schemas, and volumes</li>
+        <li>Lakebase database resources</li>
+        <li>Quality monitors</li>
+        <li>Secret scopes and related resources</li>
+        <li>Provider and MCP services</li>
+      </ul></div>
+    </div>
+    <p class="footnote">Check resource support in your CLI version. Assign one deployment owner per resource to avoid conflicting updates.</p>
+    <aside class="notes"><p>Source: <a href="https://docs.databricks.com/aws/en/dev-tools/bundles/resources">Supported bundle resources</a>. Some resources reference existing assets rather than creating them. SDK or Terraform ownership may fit the team’s workflow, but “better via SDK” is not a product support limitation. Gateway model-service bundle support is marked Beta in the <a href="https://docs.databricks.com/aws/en/ai-gateway/model-services">model-service guide</a>.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-9" aria-label="Important bundle commands">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">09</span></header>
+    <h2>Important bundle commands</h2>
+    <p class="sub">Run from the bundle directory</p>
+    <div class="commands">
+      <div class="command"><pre><code>databricks bundle validate -t dev</code></pre><p>Validate the configuration</p></div>
+      <div class="command"><pre><code>databricks bundle deploy -t dev</code></pre><p>Deploy code and resources</p></div>
+      <div class="command"><pre><code>databricks bundle run -t dev &lt;job-key&gt;</code></pre><p>Run a configured job</p></div>
+      <div class="command"><pre><code>databricks bundle destroy -t dev</code></pre><p>Delete the target’s deployed resources</p></div>
+    </div>
+    <p class="callout"><strong>Deployment and deletion affect real resources.</strong>Review the target and planned changes before confirming either action.</p>
+    <aside class="notes"><p>Use the resource key from the bundle configuration for job-key. Keep destroy as an explanation unless you intend to delete the lab resources. Original source: Lecture 1 PowerPoint, slide 9.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-10" aria-label="Foundation models and Unity Gateway">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">10</span></header>
+    <h2>Foundation models and Unity Gateway</h2>
+    <p class="sub">A governed model service separates application code from its backend</p>
+    <div class="service-name"><p>THE SERVICE OUR APPLICATION CALLS</p><code>course_ops.gateway.chat</code></div>
+    <div class="three-columns">
+      <article><h3>Pay-per-token</h3><p>Databricks serves the model from shared capacity.</p></article>
+      <article><h3>Provisioned throughput</h3><p>A serving endpoint provides dedicated capacity.</p></article>
+      <article><h3>External provider</h3><p>A provider service connects to a model outside Databricks.</p></article>
+    </div>
+    <p class="callout">The model service handles routing. Its destination determines which model and capacity serve the request.</p>
+    <aside class="notes"><p>Source: <a href="https://docs.databricks.com/aws/en/ai-gateway/model-services">Custom model services</a>. The course service name comes from the supplied notebook example. Do not assume which underlying model the alias currently routes to. The old architecture illustration is retained as <a href="assets/image5.png">historical reference</a>, not as the current API contract.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-11" aria-label="Calling the course model service">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">11</span></header>
+    <h2>Calling the course model service</h2>
+    <p class="sub">OpenAI Python client, authenticated with Databricks</p>
+    <pre class="inference-code"><code><span class="code-key">import</span> os
+<span class="code-key">from</span> openai <span class="code-key">import</span> OpenAI
+
+client = OpenAI(
+    api_key=os.environ[<span class="code-string">"DATABRICKS_TOKEN"</span>],
+    base_url=f<span class="code-string">"{WORKSPACE_URL.rstrip('/')}/ai-gateway/mlflow/v1"</span>,
+)
+response = client.responses.create(
+    model=<span class="code-string">"course_ops.gateway.chat"</span>,
+    max_output_tokens=256,
+    input=<span class="code-string">"What is Databricks?"</span>,
+)
+print(response.output_text)</code></pre>
+    <p class="footnote">Set WORKSPACE_URL and supply DATABRICKS_TOKEN securely before running. Supported API features depend on the destination.</p>
+    <aside class="notes"><p>Code adapted from the user-provided working gateway example. The Databricks token is not an OpenAI API key. The OpenAI client does not automatically read a Databricks CLI profile. Use the notebook’s chosen authentication method, with access to this service. Model-service naming: <a href="https://docs.databricks.com/aws/en/ai-gateway/model-services">Databricks documentation</a>.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-12" aria-label="AI Gateway benefits">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">12</span></header>
+    <h2>AI Gateway benefits</h2>
+    <p class="sub">Governance around model requests and responses</p>
+    <div class="grid">
+      <article class="panel"><h3>Usage and cost</h3><p>Monitor token consumption and attribute activity to services, users, or projects.</p></article>
+      <article class="panel"><h3>Traffic management</h3><p>Configure rate limits, traffic splitting, and fallback destinations.</p></article>
+      <article class="panel"><h3>Payload logging</h3><p>Enable request and response logging for debugging and audit workflows.</p></article>
+      <article class="panel"><h3>Guardrails</h3><p>Apply service policies to evaluate request content and model responses.</p></article>
+    </div>
+    <p class="footnote">Configure and verify these features for your service. Logging and policies are not implied by using a gateway URL.</p>
+    <aside class="notes"><p>Source: <a href="https://docs.databricks.com/aws/en/ai-gateway/">AI governance with Unity Gateway</a>. Account, region, and preview availability can affect the features available in a workspace.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-13" aria-label="Databricks-hosted models">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">13</span></header>
+    <h2>Databricks-hosted models</h2>
+    <p class="sub">Pay-per-token access to shared model capacity</p>
+    <div class="columns">
+      <article class="panel"><h3>Useful for</h3><ul><li>Experimentation and exploration</li><li>Development and testing</li><li>Intermittent application traffic</li><li>Comparing model behavior</li></ul></article>
+      <article class="panel"><h3>Operating considerations</h3><ul><li>Token-based usage charges</li><li>Shared capacity and rate limits</li><li>Model and regional availability</li><li>Access through service permissions</li></ul></article>
+    </div>
+    <p class="callout">No dedicated capacity to provision. Your identity still needs access to the model service.</p>
+    <aside class="notes"><p>Sources: original Lecture 1 slide 13 and <a href="https://docs.databricks.com/aws/en/ai-gateway/">Unity Gateway overview</a>. Check the destination behind the course alias before discussing a specific model’s price or token limits. Show notebook 1.1.</p></aside>
+  </section>
+
+  <section class="slide capacity" id="slide-14" aria-label="Provisioned throughput options">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">14</span></header>
+    <h2>Provisioned throughput</h2>
+    <p class="sub">Dedicated capacity has more than one purchasing model</p>
+    <div class="columns">
+      <article class="panel"><h3>On-demand</h3><p>No reservation term. Change or remove capacity as needed.</p><p>Notebook 1.2 creates a GPT OSS 120B on-demand endpoint, then a model service that routes to it.</p><p><strong>SDK/API deployment is available.</strong></p></article>
+      <article class="panel"><h3>Reserved</h3><p>Commit for <strong>1 or 3 months</strong>, starting at <strong>50 model units</strong>, in increments of 50.</p><p>Eligible models are limited. Create a new reserved endpoint, then route a model service to it.</p><p><strong>Existing endpoints cannot convert.</strong></p></article>
+    </div>
+    <p class="callout">Active reservations cannot be canceled or their endpoints deleted. A short lab cleanup cannot undo that commitment.</p>
+    <aside class="notes"><p>Sources: <a href="https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/deploy-prov-throughput-foundation-model-apis">On-demand provisioned throughput</a> and <a href="https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/reserved-provisioned-throughput">Reserved provisioned throughput</a>. The reserved guide documents creation in the UI. GPT OSS 120B is absent from its current eligible list. Do not purchase a reservation in a demonstration without explicit approval. The old slide’s generic scale-to-zero and performance-guarantee claims do not apply universally.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-15" aria-label="Measuring capacity">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">15</span></header>
+    <h2>Measuring capacity</h2>
+    <p class="sub">Request shape matters as much as request count</p>
+    <div class="columns">
+      <article class="panel"><h3>Token volume example</h3><p>2,048 input + 256 output tokens</p><p class="equation">2,304 tokens</p><p>One such request per second represents 2,304 combined tokens per second.</p><p><strong>That arithmetic describes traffic, not a throughput guarantee.</strong></p></article>
+      <article class="panel"><h3>Model units</h3><p>Model units express provisioned capacity. The effective throughput depends on the model and workload.</p><p>Estimate using request volume, input and output sizes, and cache hit rate.</p><p>Benchmark latency and concurrency with realistic requests.</p></article>
+    </div>
+    <p class="footnote">There is no universal conversion from one model unit to a fixed number of tokens per second.</p>
+    <aside class="notes"><p>Sources: <a href="https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/model-units">Model units</a> and the <a href="https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/reserved-provisioned-throughput">reservation estimator</a>. The original slide’s 50 units ≈ 3,250 TPS example was workload-specific. Input processing and output generation have different performance characteristics. Keep usage arithmetic separate from capacity estimation and billing.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-16" aria-label="External models">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">16</span></header>
+    <h2>External models</h2>
+    <p class="sub">Models hosted outside Databricks, accessed through the gateway</p>
+    <div class="rows">
+      <div class="row"><h3>Provider connection</h3><p>A model provider service connects to an external API using provider credentials.</p></div>
+      <div class="row"><h3>Governed access</h3><p>The application calls a Databricks model service with Databricks authentication.</p></div>
+      <div class="row"><h3>Provider behavior</h3><p>Supported modalities, parameters, and limits depend on the chosen provider and model.</p></div>
+      <div class="row"><h3>Operational checks</h3><p>Review network access, credentials, provider charges, and enabled gateway features.</p></div>
+    </div>
+    <aside class="notes"><p>Sources: <a href="https://docs.databricks.com/aws/en/ai-gateway/">Unity Gateway external-provider overview</a> and <a href="https://docs.databricks.com/aws/en/ai-gateway/model-services">model-service destinations</a>. A stable service name does not guarantee identical behavior across models. Show notebook 1.4, identifying any legacy endpoint path separately from the gateway service abstraction.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-17" aria-label="Model hosting comparison">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">17</span></header>
+    <h2>Model hosting comparison</h2>
+    <p class="sub">The hosting choice sits behind the model-service interface</p>
+    <table class="comparison" aria-label="Comparison of three model hosting options">
+      <thead><tr><th scope="col">Consideration</th><th scope="col">Pay-per-token</th><th scope="col">Provisioned</th><th scope="col">External provider</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Capacity</th><td>Shared</td><td>Dedicated</td><td>Provider-managed</td></tr>
+        <tr><th scope="row">Cost basis</th><td>Token usage</td><td>Allocated capacity or reservation</td><td>Provider pricing and applicable gateway charges</td></tr>
+        <tr><th scope="row">Setup</th><td>Model access and permissions</td><td>Endpoint provisioning and service routing</td><td>Provider connection and credentials</td></tr>
+        <tr><th scope="row">Typical use</th><td>Exploration or variable traffic</td><td>Sustained demand with capacity planning</td><td>A specific provider or model requirement</td></tr>
+      </tbody>
+    </table>
+    <p class="footnote">Check eligible models and workspace availability rather than relying on a static model catalog.</p>
+    <aside class="notes"><p>The supplied <a href="assets/image11.png">model catalog graphic</a> is a historical snapshot. Sources for this comparison: <a href="https://docs.databricks.com/aws/en/ai-gateway/model-services">model-service destinations</a>, <a href="https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/deploy-prov-throughput-foundation-model-apis">on-demand capacity</a>, and <a href="https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/reserved-provisioned-throughput">reserved capacity</a>.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-18" aria-label="Gateway capabilities and scope">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">18</span></header>
+    <h2>Gateway capabilities and scope</h2>
+    <p class="sub">The legacy endpoint feature matrix describes a different surface</p>
+    <table class="compact-table" aria-label="Where gateway features are configured">
+      <thead><tr><th scope="col">Capability</th><th scope="col">Configuration or check</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Access</th><td>Unity Catalog privileges on the service and related objects</td></tr>
+        <tr><th scope="row">Routing</th><td>Model-service destinations, traffic weights, and fallbacks</td></tr>
+        <tr><th scope="row">Observability</th><td>Usage records and configured inference logging</td></tr>
+        <tr><th scope="row">Guardrails</th><td>Attached service policies and preview availability</td></tr>
+        <tr><th scope="row">Model features</th><td>Provider, destination model, API, and regional support</td></tr>
+      </tbody>
+    </table>
+    <p class="footnote"><a href="https://docs.databricks.com/aws/en/ai-gateway/">Unity Gateway documentation</a> · Verify the actual service configuration during the demo.</p>
+    <aside class="notes"><p>Source: <a href="https://docs.databricks.com/aws/en/ai-gateway/">Unity Gateway overview</a>. Keep the <a href="assets/image8.png">original legacy-endpoint support matrix</a> as historical reference only. Its “provisioned throughput not supported” row is not a general statement about current model-service routing.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-19" aria-label="AI Gateway fallbacks">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">19</span></header>
+    <h2>AI Gateway fallbacks</h2>
+    <p class="sub">Backup destinations handle failed primary requests</p>
+    <div class="fallback-layout">
+      <figure><img src="assets/image10.png" alt="Original conceptual fallback diagram: an initial model request may fail with 429 or 5xx, then use backup models. Request outcomes feed logging."></figure>
+      <div><h3>Routing behavior</h3><p>Traffic weights choose the initial destination.</p><p>Failures can trigger retries against an ordered fallback list.</p><p>Verify behavior in usage records and test each backup model.</p></div>
+    </div>
+    <p class="footnote">Conceptual diagram from the original lecture. In Unity Gateway, configure fallback order on the model service.</p>
+    <aside class="notes"><p>Source: <a href="https://docs.databricks.com/aws/en/ai-gateway/configure-traffic-splitting">Routing and fallbacks</a>. The source image illustrates the idea, but the service’s configured priority order determines retries. Traffic splitting does not run again for retries. Fallbacks can change model behavior, latency, and cost. Enable and verify payload logging separately.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-20" aria-label="AI Gateway guardrails">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">20</span></header>
+    <h2>AI Gateway guardrails</h2>
+    <p class="sub">Service policies govern request and response content</p>
+    <div class="grid">
+      <article class="panel"><h3>Sensitive information</h3><p>Evaluate content for PII and apply the configured allow or deny decision.</p></article>
+      <article class="panel"><h3>Unsafe content</h3><p>Use supported policies to check content risks, including prompt injection.</p></article>
+      <article class="panel"><h3>Organization rules</h3><p>Attach custom policies for requirements such as eligible project tags.</p></article>
+      <article class="panel"><h3>Input and output</h3><p>Policies can evaluate the request before invocation and the response afterward.</p></article>
+    </div>
+    <p class="footnote">Service policies are Beta. Automated checks do not guarantee detection of every harmful or sensitive input.</p>
+    <aside class="notes"><p>Source: <a href="https://docs.databricks.com/aws/en/data-governance/unity-catalog/service-policies/">Service policies for AI securables</a>. Preview enablement depends on account settings. Access grants and content policies serve different purposes. The <a href="assets/image9.png">original guardrail table</a> described a legacy implementation and should not be treated as the current policy contract.</p></aside>
+  </section>
+
+  <section class="slide" id="slide-21" aria-label="Homework">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">21</span></header>
+    <h2>Homework</h2>
+    <p class="sub">Apply today’s workflow to your own project</p>
+    <ol class="checklist">
+      <li>Choose the use case you want to build.</li>
+      <li>Develop preprocessing in VS Code and run it on Databricks.</li>
+      <li>Experiment with LLM calls through a model service.</li>
+      <li>Submit a pull request with your code and observations.</li>
+    </ol>
+    <p class="footnote">Use the arXiv ingestion notebook as a reference. Keep credentials out of your pull request.</p>
+    <aside class="notes"><p>Retains the homework from the original lecture. Walk through notebook 1.3 and its Delta table output. Discuss the project’s dependencies and configuration before students adapt the example. Review any generated job configuration before running it.</p></aside>
+  </section>
+
+  <section class="slide thank-you" id="slide-22" aria-label="Questions">
+    <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">22</span></header>
+    <div class="thanks-content"><h1>Questions?</h1><p>Development, model access, or your project</p><p class="sub">Continue the conversation on Discord.</p></div>
+    <aside class="notes"><p>Close with questions and clarify the homework. Never leave a paid lab endpoint running unintentionally. Check the resource’s capacity type and ownership before cleanup.</p></aside>
+  </section>
+
+  <nav class="deck-controls" aria-label="Slide controls">
+    <button id="previous" type="button" aria-label="Previous slide">Previous</button>
+    <span id="slide-counter" aria-live="polite">1 / 22</span>
+    <button id="next" type="button" aria-label="Next slide">Next</button>
+    <button id="present" type="button" aria-pressed="false">Present</button>
+    <button id="notes" type="button">Notes</button>
+    <span><kbd>F</kbd> present · <kbd>N</kbd> notes · <kbd>Esc</kbd> exit</span>
+  </nav>
+  <aside id="notes-dialog" class="notes-dialog" aria-label="Speaker notes" hidden>
+    <button id="close-notes" type="button" aria-label="Close speaker notes">Close</button>
+    <div id="notes-content"></div>
+  </aside>
+</body>
+</html>
