@@ -1,0 +1,21 @@
+# Local Python environments and caches
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Build artifacts and generated package metadata
+build/
+dist/
+*.egg-info/
+*.bak
+
+# Databricks local state
+.databricks/
+
+# Local agent and editor settings
+.claude/*.json
+.vscode/*.json
+
+.DS_Store

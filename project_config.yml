@@ -1,0 +1,53 @@
+# Project Configuration for LLMOps Course
+usage_policy_id: "29a355d8-7fa4-3f65-b328-9f900842672e"
+
+# Development environment
+dev:
+  catalog: llmops_dev
+  schema: arxiv
+  volume: arxiv_files
+  llm_endpoint: course_ops.gateway.chat
+  embedding_endpoint: course_ops.gateway.embed
+  warehouse_id: fed166457cfccb89
+  experiment_path: /Shared/arxiv-curator-course
+  lakebase_instance: lb-llmops-dev
+
+# Acceptance/Staging environment
+acc:
+  catalog: llmops_dev
+  schema: arxiv
+  volume: arxiv_files
+  llm_endpoint: course_ops.gateway.chat
+  embedding_endpoint: course_ops.gateway.embed
+  warehouse_id: fed166457cfccb89
+  experiment_path: /Shared/arxiv-curator-course
+  lakebase_instance: lb-llmops-acc
+
+# Production environment
+prd:
+  catalog: llmops_dev
+  schema: arxiv
+  volume: arxiv_files
+  llm_endpoint: course_ops.gateway.chat
+  embedding_endpoint: course_ops.gateway.embed
+  warehouse_id: fed166457cfccb89
+  experiment_path: /Shared/arxiv-curator-course
+  lakebase_instance: lb-llmops-prd
+
+# Model configuration
+model_config:
+  temperature: 0.7
+  max_tokens: 2000
+  top_p: 0.95
+
+# Vector search configuration
+vector_search:
+  embedding_dimension: 1024
+  similarity_metric: cosine
+  num_results: 5
+
+# Chunking configuration
+chunking:
+  chunk_size: 512
+  chunk_overlap: 50
+  separator: "\n\n"
