@@ -87,6 +87,7 @@ workspace_client = None
 
 # COMMAND ----------
 
+
 def estimate_on_demand_cost(
     model_units: int, allocated_hours: float, dbu_per_hour_per_50_units: float
 ) -> float:
@@ -119,7 +120,11 @@ logger.info(f"Illustrative 50 units for 2 hours: {example_dbu:.3f} DBUs")
 
 if RUN_DEPLOYMENT:
     workspace_client = WorkspaceClient(host=WORKSPACE_URL)
-    if not isinstance(CAPACITY_CHUNKS, int) or isinstance(CAPACITY_CHUNKS, bool) or CAPACITY_CHUNKS < 1:
+    if (
+        not isinstance(CAPACITY_CHUNKS, int)
+        or isinstance(CAPACITY_CHUNKS, bool)
+        or CAPACITY_CHUNKS < 1
+    ):
         raise ValueError("CAPACITY_CHUNKS must be a positive integer.")
 
     optimization = workspace_client.api_client.do(
@@ -131,7 +136,9 @@ if RUN_DEPLOYMENT:
         raise ValueError(f"{MODEL_NAME} version {MODEL_VERSION} is not eligible.")
     chunk_size = optimization.get("model_unit_chunk_size")
     if not isinstance(chunk_size, int) or isinstance(chunk_size, bool) or chunk_size <= 0:
-        raise ValueError("No valid model-unit chunk size returned; do not use throughput-band values.")
+        raise ValueError(
+            "No valid model-unit chunk size returned; do not use throughput-band values."
+        )
 
     desired_model_units = CAPACITY_CHUNKS * chunk_size
     logger.info(f"Requested on-demand allocation: {desired_model_units} model units")
@@ -144,7 +151,9 @@ if RUN_DEPLOYMENT:
     except NotFound:
         pass
     else:
-        raise ValueError(f"Endpoint {ENDPOINT_NAME} already exists; inspect it or choose a new lab name.")
+        raise ValueError(
+            f"Endpoint {ENDPOINT_NAME} already exists; inspect it or choose a new lab name."
+        )
 
     try:
         workspace_client.api_client.do(
@@ -234,12 +243,14 @@ if RUN_INFERENCE:
 
     client = OpenAI(
         api_key=databricks_token,
-        base_url=f"{WORKSPACE_URL.rstrip('/')}/ai-gateway/mlflow/v1",
+        base_url=f"{WORKSPACE_URL}/ai-gateway/mlflow/v1",
     )
     response = client.responses.create(
         model=MODEL_SERVICE_NAME,
         max_output_tokens=256,
-        input=[{"role": "user", "content": "Explain the benefits of provisioned throughput for LLMs."}],
+        input=[
+            {"role": "user", "content": "Explain the benefits of provisioned throughput for LLMs."}
+        ],
     )
     logger.info(response.output_text)
     if response.usage is not None:
@@ -294,4 +305,6 @@ if RUN_CLEANUP:
     cleanup_client = WorkspaceClient(host=WORKSPACE_URL)
     cleanup_lab_resources(cleanup_client, MODEL_SERVICE_NAME, ENDPOINT_NAME)
 else:
-    logger.info("Cleanup skipped: set RUN_CLEANUP=True in this cell and rerun it to delete the lab resources.")
+    logger.info(
+        "Cleanup skipped: set RUN_CLEANUP=True in this cell and rerun it to delete the lab resources."
+    )

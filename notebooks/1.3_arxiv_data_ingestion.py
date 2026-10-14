@@ -28,6 +28,7 @@ logger.info(f"Schema {CATALOG}.{SCHEMA} ready")
 # COMMAND ----------
 # Fetch arXiv Paper Metadata from arXiv API: https://arxiv.org/help/api/index
 
+
 def fetch_arxiv_papers(query: str = "cat:cs.AI OR cat:cs.LG", max_results: int = 100):
     """
     Fetch arXiv papers using the arXiv API.
@@ -44,7 +45,7 @@ def fetch_arxiv_papers(query: str = "cat:cs.AI OR cat:cs.LG", max_results: int =
         query=query,
         max_results=max_results,
         sort_by=arxiv.SortCriterion.SubmittedDate,
-        sort_order=arxiv.SortOrder.Descending
+        sort_order=arxiv.SortOrder.Descending,
     )
 
     papers = []
@@ -54,21 +55,24 @@ def fetch_arxiv_papers(query: str = "cat:cs.AI OR cat:cs.LG", max_results: int =
             "title": result.title,
             "authors": [author.name for author in result.authors],  # Array to match reference code
             "summary": result.summary,
-            "published": int(result.published.strftime("%Y%m%d%H%M")),  # Long to match reference code
+            "published": int(
+                result.published.strftime("%Y%m%d%H%M")
+            ),  # Long to match reference code
             "updated": result.updated.isoformat() if result.updated else None,
             "categories": ", ".join(result.categories),
             "pdf_url": result.pdf_url,
             "primary_category": result.primary_category,
             "ingestion_timestamp": datetime.now().isoformat(),
             "processed": None,  # Will be set in Lecture 2.2
-            "volume_path": None  # Will be set in Lecture 2.2
+            "volume_path": None,  # Will be set in Lecture 2.2
         }
         papers.append(paper)
 
     return papers
 
+
 logger.info("Fetching arXiv papers...")
-papers = fetch_arxiv_papers(query="cat:cs.AI OR cat:cs.LG", max_results=50)
+papers = fetch_arxiv_papers(query="cat:cs.AI OR cat:cs.LG", max_results=10)
 logger.info(f"Fetched {len(papers)} papers")
 logger.info("Sample paper:")
 logger.info(f"Title: {papers[0]['title']}")
@@ -81,20 +85,22 @@ logger.info(f"PDF URL: {papers[0]['pdf_url']}")
 # Store the arXiv paper metadata in a Delta table for downstream processing.
 
 # Define schema
-schema = StructType([
-    StructField("arxiv_id", StringType(), False),
-    StructField("title", StringType(), False),
-    StructField("authors", ArrayType(StringType()), True),  # Array to match reference code
-    StructField("summary", StringType(), True),
-    StructField("published", LongType(), True),  # Long to match reference code
-    StructField("updated", StringType(), True),
-    StructField("categories", StringType(), True),
-    StructField("pdf_url", StringType(), True),
-    StructField("primary_category", StringType(), True),
-    StructField("ingestion_timestamp", StringType(), True),
-    StructField("processed", LongType(), True),  # Long to match reference code
-    StructField("volume_path", StringType(), True)  # Will be set in Lecture 2.2
-])
+schema = StructType(
+    [
+        StructField("arxiv_id", StringType(), False),
+        StructField("title", StringType(), False),
+        StructField("authors", ArrayType(StringType()), True),  # Array to match reference code
+        StructField("summary", StringType(), True),
+        StructField("published", LongType(), True),  # Long to match reference code
+        StructField("updated", StringType(), True),
+        StructField("categories", StringType(), True),
+        StructField("pdf_url", StringType(), True),
+        StructField("primary_category", StringType(), True),
+        StructField("ingestion_timestamp", StringType(), True),
+        StructField("processed", LongType(), True),  # Long to match reference code
+        StructField("volume_path", StringType(), True),  # Will be set in Lecture 2.2
+    ]
+)
 
 # Create DataFrame
 df = spark.createDataFrame(papers, schema=schema)
@@ -102,11 +108,7 @@ df = spark.createDataFrame(papers, schema=schema)
 # Write to Delta table
 table_path = f"{CATALOG}.{SCHEMA}.{TABLE_NAME}"
 
-df.write \
-    .format("delta") \
-    .mode("overwrite") \
-    .option("mergeSchema", "true") \
-    .saveAsTable(table_path)
+df.write.format("delta").mode("overwrite").option("mergeSchema", "true").saveAsTable(table_path)
 
 logger.info(f"Created Delta table: {table_path}")
 logger.info(f"Records: {df.count()}")
@@ -132,6 +134,6 @@ logger.info("Papers by primary category:")
 papers_df.groupBy("primary_category").count().orderBy("count", ascending=False).show()
 
 logger.info("Most recent papers:")
-papers_df.select("title", "published", "arxiv_id") \
-    .orderBy("published", ascending=False) \
-    .show(5, truncate=60)
+papers_df.select("title", "published", "arxiv_id").orderBy("published", ascending=False).show(
+    5, truncate=60
+)

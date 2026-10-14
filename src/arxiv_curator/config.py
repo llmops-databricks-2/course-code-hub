@@ -15,21 +15,15 @@ if TYPE_CHECKING:
 class ProjectConfig(BaseModel):
     """Project configuration model."""
 
-    usage_policy_id: str | None = Field(..., description="Usage policy id")
+    usage_policy_id: str | None = Field(None, description="Usage policy id")
     catalog: str = Field(..., description="Unity Catalog name")
     db_schema: str = Field(..., description="Schema name", alias="schema")
     volume: str = Field(..., description="Volume name")
     llm_endpoint: str = Field(..., description="LLM endpoint name")
     embedding_endpoint: str = Field(..., description="Embedding endpoint name")
     warehouse_id: str = Field(..., description="Warehouse ID")
-    lakebase_project_id: str = Field(..., description="Lakebase project id")
-    agent_app_name: str = Field(..., description="Databricks App name for the agent")
-    genie_space_id: str | None = Field(None, description="Genie space ID for MCP integration")
-    experiment_name: str = Field(None, description="Experiment name")
-    system_prompt: str = Field(
-        default="You are a helpful AI assistant that helps users find and understand research papers.",
-        description="System prompt for the agent",
-    )
+    experiment_path: str = Field(..., description="MLflow experiment path")
+    lakebase_instance: str = Field(..., description="Lakebase instance name")
 
     model_config = {"populate_by_name": True}
 
@@ -54,8 +48,8 @@ class ProjectConfig(BaseModel):
             raise ValueError(f"Environment '{env}' not found in config file")
 
         env_config = config_data[env]
-        if "system_prompt" in config_data:
-            env_config["system_prompt"] = config_data["system_prompt"]
+        if "usage_policy_id" in config_data:
+            env_config["usage_policy_id"] = config_data["usage_policy_id"]
 
         return cls(**env_config)
 

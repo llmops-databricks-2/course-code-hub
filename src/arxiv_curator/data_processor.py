@@ -255,9 +255,7 @@ class DataProcessor:
         Process parsed documents to extract and clean chunks.
         Reads from ai_parsed_docs table and saves to arxiv_chunks table.
         """
-        logger.info(
-            f"Processing parsed documents from " f"{self.parsed_table} for end date {self.end}"
-        )
+        logger.info(f"Processing parsed documents from {self.parsed_table} for end date {self.end}")
 
         df = self.spark.table(self.parsed_table).where(f"processed = {self.end}")
 

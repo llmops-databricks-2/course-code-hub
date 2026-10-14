@@ -61,7 +61,6 @@
 
 # COMMAND ----------
 from databricks.sdk import WorkspaceClient
-
 from loguru import logger
 from openai import OpenAI
 
@@ -95,10 +94,10 @@ from openai import OpenAI
 
 # COMMAND ----------
 
-workspace_url = "https://dbc-88df4c2c-4033.cloud.databricks.com"
+workspace_client = WorkspaceClient()
 model_service_name = "course_ops.gateway.chat"
 
-logger.info(f"Workspace: {workspace_url}")
+logger.info(f"Workspace: {workspace_client.config.host}")
 logger.info(f"Unity Catalog model service: {model_service_name}")
 
 # COMMAND ----------
@@ -119,12 +118,11 @@ logger.info(f"Unity Catalog model service: {model_service_name}")
 
 # COMMAND ----------
 
-workspace_client = WorkspaceClient(host=workspace_url)
 databricks_token = workspace_client.tokens.create(lifetime_seconds=1200).token_value
 
 client = OpenAI(
     api_key=databricks_token,
-    base_url=f"{workspace_url.rstrip('/')}/ai-gateway/mlflow/v1",
+    base_url=f"{workspace_client.config.host}/ai-gateway/mlflow/v1",
 )
 
 response = client.responses.create(
@@ -222,6 +220,7 @@ if response.usage is not None:
 
 # COMMAND ----------
 
+
 def calculate_api_cost(
     input_tokens: int,
     output_tokens: int,
@@ -253,9 +252,7 @@ output_tokens = 4_000_000
 api_cost = calculate_api_cost(input_tokens, output_tokens, input_dbu_per_1m, output_dbu_per_1m)
 provisioned_cost = calculate_provisioned_cost(hours, model_units, dbu_per_hour_per_50_units)
 input_fraction = input_tokens / (input_tokens + output_tokens)
-blended_dbu_per_1m = (
-    input_fraction * input_dbu_per_1m + (1 - input_fraction) * output_dbu_per_1m
-)
+blended_dbu_per_1m = input_fraction * input_dbu_per_1m + (1 - input_fraction) * output_dbu_per_1m
 break_even_tokens = provisioned_cost / blended_dbu_per_1m * 1_000_000
 
 logger.info(f"{pricing_model_name}: {input_tokens + output_tokens:,} tokens over {hours}h")

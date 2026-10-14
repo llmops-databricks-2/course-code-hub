@@ -24,6 +24,8 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outlin
 .accent { color: var(--accent); }
 .sub { font-size: 22px; }
 .eyebrow { font-size: 17px; font-weight: 700; letter-spacing: .1em; color: var(--accent); margin-bottom: 24px; }
+.section-heading { height: 100%; display: flex; align-items: center; padding: 0 40px; }
+.section-heading h1 { max-width: 1000px; padding-left: 32px; }
 .cover { position: relative; z-index: 1; margin-top: 48px; max-width: 705px; }
 .cover h1 { font-size: 56px; line-height: 1.16; }
 .cover .date { font-size: 25px; color: var(--ink); margin-top: 38px; }
@@ -41,9 +43,9 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outlin
 .row { display: grid; grid-template-columns: 280px 1fr; gap: 26px; border: 1.5px solid var(--line); border-radius: 8px; padding: 21px 26px; background: #faf9f7; }
 .row h3 { color: var(--accent); }
 .row p { font-size: 23px; }
-/* Keep slide 16 content clear of the footer logo. */
-#slide-16 .rows { gap: 14px; }
-#slide-16 .row { padding-top: 16px; padding-bottom: 16px; }
+/* Keep slide 14 content clear of the footer logo. */
+#slide-14 .rows { gap: 14px; }
+#slide-14 .row { padding-top: 16px; padding-bottom: 16px; }
 .footnote { position: absolute; bottom: 68px; left: 54px; right: 54px; font-size: 16px; line-height: 1.4; }
 .agenda { margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 48px; }
 .agenda article { padding: 16px 0; border-top: 1px solid var(--line); display: flex; gap: 20px; }
@@ -94,7 +96,7 @@ li::marker { color: var(--accent); }
 .three-columns h3 { color: var(--accent); margin-bottom: 15px; }
 .three-columns p { font-size: 23px; }
 .inference-code { margin-top: 25px; font-size: 21px; line-height: 1.45; padding: 23px 28px; }
-#slide-11 .inference-code { font-size: 18px; line-height: 1.4; padding: 18px 24px; }
+#slide-9 .inference-code { font-size: 18px; line-height: 1.4; padding: 18px 24px; }
 .capacity .panel { min-height: 298px; }
 .capacity .panel h3 { font-size: 28px; }
 .capacity .panel p { font-size: 22px; }
@@ -113,13 +115,13 @@ li::marker { color: var(--accent); }
 .checklist { list-style: none; counter-reset: homework; padding: 0; margin-top: 34px; }
 .checklist li { counter-increment: homework; border: 1.5px solid var(--line); border-radius: 8px; background: #faf9f7; display: flex; gap: 28px; align-items: center; padding: 22px 26px; margin-bottom: 18px; color: var(--ink); font-size: 25px; }
 .checklist li::before { content: counter(homework, decimal-leading-zero); color: var(--accent); font-size: 22px; }
-.thank-you { color: white; background: var(--accent); }
+.thank-you, .section-divider { color: white; background: var(--accent); }
 .thanks-content { padding: 138px 44px 0; }
 .thanks-content h1 { font-size: 86px; margin-bottom: 32px; }
 .thanks-content p { color: white; font-size: 30px; }
 .thanks-content .sub { font-size: 23px; margin-top: 24px; }
-.thank-you .official-logo { filter: brightness(0) invert(1); }
-.thank-you .folio { color: white; }
+.thank-you .official-logo, .section-divider .official-logo { filter: brightness(0) invert(1); }
+.thank-you .folio, .section-divider .folio { color: white; }
 .notes { display: none; }
 .deck-controls { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 8px 14px; border: 1px solid #ffffff30; border-radius: 8px; background: #252727ed; color: white; z-index: 10; font-size: 14px; }
 .deck-controls button { font: inherit; background: transparent; color: white; border: 1px solid #ffffff50; border-radius: 4px; padding: 4px 9px; cursor: pointer; }

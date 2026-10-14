@@ -84,7 +84,7 @@ dev = [
 ]
 
 [tool.databricks.environment]
-environment_version = "5"
+environment_version = "6"
 
 # managed by databricks environments setup-local — do not edit
 [tool.uv]

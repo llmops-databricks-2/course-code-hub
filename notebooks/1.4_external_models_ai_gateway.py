@@ -91,7 +91,7 @@ cfg = load_config("../project_config.yml", env)
 # For the demonstration: experiment_name = "/llmops/victor_kuznetsov" and
 # tracing_warehouse_id = "992f5f04071d814b" (wh-llmops-victor-kuznetsov); a student uses their own.
 dbutils.widgets.text("model_service", "course_ops.gateway.openai_demo")
-dbutils.widgets.text("experiment_name", cfg.experiment_name)
+dbutils.widgets.text("experiment_name", cfg.experiment_path)
 dbutils.widgets.text("tracing_warehouse_id", "")
 MODEL_SERVICE = dbutils.widgets.get("model_service")
 EXPERIMENT_NAME = dbutils.widgets.get("experiment_name")
@@ -183,7 +183,7 @@ def answer_text(content) -> str:
 
 workspace = WorkspaceClient()
 client = OpenAI(
-    base_url=f"{workspace.config.host.rstrip('/')}/ai-gateway/mlflow/v1",
+    base_url=f"{workspace.config.host}/ai-gateway/mlflow/v1",
     api_key=workspace.config.authenticate()["Authorization"].removeprefix("Bearer "),
 )
 
