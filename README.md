@@ -1,6 +1,15 @@
 # course-code-hub
 Full code for LLMOps with Datarbricks Course
 
+## Lecture 1 materials
+
+- [Lecture notes in HTML](lecture_materials/lecture1.html) — download and open in a browser.
+- [Lecture notes in PDF](lecture_materials/lecture1-materials.pdf)
+- [Lecture slides in PDF](presentations/lecture1.pdf)
+
+The notes cover serverless environment 5, the current course notebooks, Unity Gateway,
+and the ingestion bundle, with links to the Databricks documentation.
+
 ## Demonstration: an OpenAI model behind the AI Gateway
 
 `resources/gateway_demo.yml` declares two Unity Catalog objects in `course_ops.gateway`, beside the
