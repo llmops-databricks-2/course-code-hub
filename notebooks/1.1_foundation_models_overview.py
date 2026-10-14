@@ -60,7 +60,7 @@
 # MAGIC [model lifecycle](https://docs.databricks.com/aws/en/machine-learning/retired-models-policy).
 
 # COMMAND ----------
-import os
+from databricks.sdk import WorkspaceClient
 
 from loguru import logger
 from openai import OpenAI
@@ -106,9 +106,10 @@ logger.info(f"Unity Catalog model service: {model_service_name}")
 # MAGIC %md
 # MAGIC ### Example: Chat Through the Unified Responses API
 # MAGIC
-# MAGIC Set `DATABRICKS_TOKEN` in the environment before running; do not paste credentials into the notebook.
+# MAGIC `WorkspaceClient` uses configured Databricks authentication to create a token valid for 20 minutes.
+# MAGIC The authenticated identity needs permission to create tokens.
 # MAGIC The token authenticates to Databricks, not directly to the model provider. This example uses the
-# MAGIC existing service and makes a billable inference request; it does not create a service or a token.
+# MAGIC existing service and makes a billable inference request; it creates a temporary token, but no service.
 # MAGIC
 # MAGIC Use `/ai-gateway/mlflow/v1` with the fully qualified service name in `model`.
 # MAGIC Databricks recommends the **Unified Responses API** for provider-independent requests.
@@ -118,9 +119,8 @@ logger.info(f"Unity Catalog model service: {model_service_name}")
 
 # COMMAND ----------
 
-databricks_token = os.environ.get("DATABRICKS_TOKEN")
-if not databricks_token:
-    raise ValueError("Set DATABRICKS_TOKEN in your environment before running this cell.")
+workspace_client = WorkspaceClient(host=workspace_url)
+databricks_token = workspace_client.tokens.create(lifetime_seconds=1200).token_value
 
 client = OpenAI(
     api_key=databricks_token,
