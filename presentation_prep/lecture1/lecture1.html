@@ -234,16 +234,25 @@ print(response.output_text)</code></pre>
     <aside class="notes"><p>Sources: <a href="https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/deploy-prov-throughput-foundation-model-apis">On-demand provisioned throughput</a> and <a href="https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/reserved-provisioned-throughput">Reserved provisioned throughput</a>. The reserved guide documents creation in the UI. GPT OSS 120B is absent from its current eligible list. Do not purchase a reservation in a demonstration without explicit approval. The old slide’s generic scale-to-zero and performance-guarantee claims do not apply universally.</p></aside>
   </section>
 
-  <section class="slide" id="slide-15" aria-label="Measuring capacity">
+  <section class="slide sizing-slide" id="slide-15" aria-label="Sizing provisioned throughput">
     <header><img class="official-logo" src="../kickoff/assets/cauchy-logo.svg" alt="Cauchy"><span class="folio">15</span></header>
-    <h2>Measuring capacity</h2>
-    <p class="sub">Request shape matters as much as request count</p>
-    <div class="columns">
-      <article class="panel"><h3>Token volume example</h3><p>2,048 input + 256 output tokens</p><p class="equation">2,304 tokens</p><p>One such request per second represents 2,304 combined tokens per second.</p><p><strong>That arithmetic describes traffic, not a throughput guarantee.</strong></p></article>
-      <article class="panel"><h3>Model units</h3><p>Model units express provisioned capacity. The effective throughput depends on the model and workload.</p><p>Estimate using request volume, input and output sizes, and cache hit rate.</p><p>Benchmark latency and concurrency with realistic requests.</p></article>
+    <h2>Sizing provisioned throughput</h2>
+    <p class="sub">Workload estimate, supported allocation, then performance testing</p>
+    <div class="grid">
+      <article class="panel"><h3>01 / Describe demand</h3><p>Example: 60 requests/min, each with 2,000 input and 300 output tokens.</p><p><strong>120,000 input + 18,000 output tokens/min</strong></p></article>
+      <article class="panel"><h3>02 / Check supported capacity</h3><p>Notebook 1.2 checks GPT OSS 120B eligibility and reads <code>model_unit_chunk_size</code> from the optimization API.</p></article>
+      <article class="panel"><h3>03 / Allocate and estimate cost</h3><p>The lab sets <code>CAPACITY_CHUNKS = 2</code>, allocates <strong>2 × chunk size</strong>, and estimates DBUs for that allocation.</p></article>
+      <article class="panel"><h3>04 / Validate under load</h3><p>Test realistic traffic against a response-time target. Measure latency and errors, then adjust capacity and retest.</p></article>
     </div>
-    <p class="footnote">There is no universal conversion from one model unit to a fixed number of tokens per second.</p>
-    <aside class="notes"><p>Sources: <a href="https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/model-units">Model units</a> and the <a href="https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/reserved-provisioned-throughput">reservation estimator</a>. The original slide’s 50 units ≈ 3,250 TPS example was workload-specific. Input processing and output generation have different performance characteristics. Keep usage arithmetic separate from capacity estimation and billing.</p></aside>
+    <p class="footnote">Two chunks are a lab setting, not a sizing recommendation. Notebook 1.2 demonstrates deployment and inference, not load testing.</p>
+    <aside class="notes">
+      <p>How do we decide how much capacity our application needs? Start with the traffic we expect. Imagine 60 requests per minute, each averaging 2,000 input tokens and 300 output tokens. That gives us 120,000 input tokens and 18,000 output tokens per minute. I am keeping those separate because processing input and generating output place different demands on the model. This is an illustrative workload, not a benchmark result from our notebook.</p>
+      <p>Now look at what notebook 1.2 actually does. For GPT OSS 120B, it asks the optimization API whether the model is eligible and what allocation increment it supports. That increment is model_unit_chunk_size. Think of it as the size of one block of capacity we can allocate. It does not tell us how many blocks our workload needs.</p>
+      <p>The notebook chooses two blocks with CAPACITY_CHUNKS set to two. It multiplies that value by the returned chunk size and passes the result as provisioned_model_units. It also estimates the hourly DBUs for that allocation. Two chunks do not mean two model units, and they do not mean we have proven this is enough for our example traffic. Likewise, the separate 50-unit cost example explains billing arithmetic, not workload sizing.</p>
+      <p>The missing production step is validation. We would agree on an acceptable response time, run realistic requests at the expected concurrency, and measure latency and errors. Then we would adjust capacity and repeat the test. The notebook makes a demonstration inference call, so it does not perform that load test for us. Also, changing CAPACITY_CHUNKS and rerunning creation will not resize an existing endpoint: the lab deliberately stops when the endpoint name already exists.</p>
+      <p>The takeaway is that traffic estimates describe demand, the API tells us valid allocation increments, and performance testing tells us whether our chosen allocation is enough. Allocated on-demand capacity continues to cost money while idle, so cleanup remains part of the lab.</p>
+      <p>References: notebook 1.2, sections 2–4 and 6; <a href="https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/deploy-prov-throughput-foundation-model-apis">on-demand deployment</a>; <a href="https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/model-units">model units</a>.</p>
+    </aside>
   </section>
 
   <section class="slide" id="slide-16" aria-label="External models">

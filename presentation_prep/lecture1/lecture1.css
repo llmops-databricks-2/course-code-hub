@@ -95,6 +95,10 @@ li::marker { color: var(--accent); }
 .capacity .panel h3 { font-size: 28px; }
 .capacity .panel p { font-size: 22px; }
 .panel .equation { color: var(--accent); font-size: 43px; line-height: 1.2; margin: 18px 0 24px; }
+.sizing-slide .grid { margin-top: 26px; gap: 20px; }
+.sizing-slide .panel { padding: 22px 26px; min-height: 0; }
+.sizing-slide .panel p { font-size: 22px; }
+.sizing-slide .panel p + p { margin-top: 12px; }
 .comparison { font-size: 21px; }
 .comparison th:first-child { width: 19%; }
 .comparison td, .comparison th { padding: 18px 16px; }
