@@ -8,9 +8,10 @@ dev:
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
   embedding_endpoint: course_ops.gateway.embed
+  batch_embedding_model: databricks-gte-large-en
   warehouse_id: fed166457cfccb89
   experiment_path: /Shared/arxiv-curator-course
-  lakebase_instance: lb-llmops-dev
+  lakebase_project_id: lb-llmops-dev
 
 # Acceptance/Staging environment
 acc:
@@ -19,9 +20,10 @@ acc:
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
   embedding_endpoint: course_ops.gateway.embed
+  batch_embedding_model: databricks-gte-large-en
   warehouse_id: fed166457cfccb89
   experiment_path: /Shared/arxiv-curator-course
-  lakebase_instance: lb-llmops-acc
+  lakebase_project_id: lb-llmops-acc
 
 # Production environment
 prd:
@@ -30,9 +32,10 @@ prd:
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
   embedding_endpoint: course_ops.gateway.embed
+  batch_embedding_model: databricks-gte-large-en
   warehouse_id: fed166457cfccb89
   experiment_path: /Shared/arxiv-curator-course
-  lakebase_instance: lb-llmops-prd
+  lakebase_project_id: lb-llmops-prd
 
 # Model configuration
 model_config:

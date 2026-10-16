@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lecture 2 — Context Engineering & RAG</title>
+  <link rel="stylesheet" href="lecture2.css">
+</head>
+<body>
+  <main>
+    <section class="slide" id="slide-1" aria-label="Lecture 2 cover">
+      <div class="cover"><p class="eyebrow">LECTURE 2</p><h1>Context engineering<br><span class="accent">&amp; RAG</span></h1><p class="date">21 October 2026</p><p class="sub">16:00–18:00 CET</p></div>
+      <img class="hero-art" src="../kickoff/assets/course-visual.png" alt="Abstract course illustration">
+      <div class="notes"><p>Welcome to Lecture 2. We move from models to the information we deliberately supply to an application at inference time.</p></div>
+    </section>
+    <section class="slide" id="slide-2" aria-label="Agenda"><p class="eyebrow">LECTURE 2</p><h2>Agenda</h2><div class="agenda">
+      <article><span>01</span><div><h3>Context engineering</h3><p>What goes into an agent’s context window.</p></div></article>
+      <article><span>02</span><div><h3>Reference architecture</h3><p>The arXiv curator retrieval flow.</p></div></article>
+      <article><span>03</span><div><h3>Data ingestion</h3><p>PDF parsing with <code>ai_parse_document</code>.</p></div></article>
+      <article><span>04</span><div><h3>Chunking &amp; embeddings</h3><p>Prepare information for retrieval.</p></div></article>
+      <article class="wide"><span>05</span><div><h3>Lakebase pgvector &amp; RAG</h3><p>Semantic search, metadata filtering, hybrid ranking, and grounded answers.</p></div></article>
+    </div><div class="notes"><p>Set expectations: the practical work is split across notebooks 2.1 to 2.4.</p></div></section>
+    <section class="slide" id="slide-3" aria-label="Context engineering in the course"><p class="eyebrow">CONTEXT ENGINEERING</p><h2>Three context sources in this course</h2><div class="three-columns">
+      <article><h3>Retrieved knowledge</h3><p>Relevant arXiv paper chunks selected for the current question.</p><p class="accent small">Lecture 2 focus</p></article>
+      <article><h3>Tools &amp; interfaces</h3><p>Capabilities an agent can invoke when information or action is needed.</p><p class="accent small">Lecture 3</p></article>
+      <article><h3>Memory &amp; state</h3><p>Information retained across turns or workflows without overfilling the prompt.</p><p class="accent small">Lecture 3</p></article>
+    </div><div class="callout"><strong>Context engineering is selection, not accumulation.</strong>Each source competes for limited attention, latency, and token budget.</div><div class="notes"><p>Context is broader than RAG. Today we focus on retrieved knowledge; later lectures add tools and memory.</p></div></section>
+    <section class="slide" id="slide-4" aria-label="Prompt engineering versus context engineering"><p class="eyebrow">CONTEXT ENGINEERING</p><h2>From prompt writing to context curation</h2><div class="visual-frame"><img src="assets/image7.png" alt="Prompt engineering compared to context engineering for agents"></div><div class="notes"><p>Prompts still matter, but production systems must select documents, tool outputs, and history for every turn.</p></div></section>
+    <section class="slide" id="slide-5" aria-label="The context engineering challenge"><p class="eyebrow">CONTEXT ENGINEERING</p><h2>The challenge is not “more context”</h2><div class="compare-cards">
+      <article><h3>Prompt engineering</h3><ul><li>Instructions and tone</li><li>Static examples</li><li>A carefully written starting point</li></ul></article>
+      <article><h3>Context engineering</h3><ul><li>External data and retrieval</li><li>Tools, state, and conversation history</li><li>Selection, ordering, and compression at runtime</li></ul></article>
+    </div><div class="callout"><strong>Every context window is finite.</strong>Useful systems decide what belongs in it, what does not, and how to keep it trustworthy.</div><div class="notes"><p>Explain that excess context can increase cost and distract the model. The work is curation.</p></div></section>
+    <section class="slide" id="slide-6" aria-label="ArXiv curator reference architecture"><p class="eyebrow">REFERENCE ARCHITECTURE</p><h2>Our arXiv curator pipeline</h2><div class="architecture">
+      <article><h3>Ingest</h3><ul><li>Find new arXiv papers</li><li>Download PDFs to a volume</li><li>Persist paper metadata in Delta</li></ul></article>
+      <article class="middle"><h3>Prepare &amp; index</h3><ul><li>Parse PDFs with <code>ai_parse_document</code></li><li>Create metadata-rich chunks in Delta</li><li>Embed and upsert into Lakebase Postgres</li></ul></article>
+      <article><h3>Retrieve</h3><ul><li>HNSW cosine search</li><li>Metadata filters</li><li>Full-text + vector hybrid ranking</li></ul></article>
+    </div><div class="notes"><p>This reflects the current course code: chunks live in Delta; retrieval vectors and search state live in Lakebase pgvector.</p></div></section>
+    <section class="slide" id="slide-7" aria-label="Scheduled processing workflow"><p class="eyebrow">REFERENCE ARCHITECTURE</p><h2>Scheduled processing, idempotent retrieval updates</h2><div class="visual-frame"><img src="assets/image1.png" alt="Scheduled PDF processing and retrieval indexing workflow"></div><p class="footnote">Updated for this course: the final target is the Lakebase pgvector table rather than the legacy Vector Search index shown in the original source diagram.</p><div class="notes"><p>Only newly discovered papers should be processed. The embedding loader upserts by chunk ID so repeat runs are safe.</p></div></section>
+    <section class="slide" id="slide-8" aria-label="Why PDF parsing is difficult"><p class="eyebrow">DATA INGESTION</p><h2>PDF is designed for viewing, not retrieval</h2><div class="grid">
+      <article class="panel"><h3>Layout is meaning</h3><p>Multi-column pages, tables, figures, equations, headers, and captions make simple text extraction unreliable.</p></article>
+      <article class="panel"><h3>Raw text is not enough</h3><p>We need structured elements and their content before we can form useful chunks.</p></article>
+      <article class="panel"><h3>Metadata must travel</h3><p>Paper ID, title, authors, and dates make retrieval filterable and answers traceable.</p></article>
+      <article class="panel"><h3>Parsing is a quality gate</h3><p>Bad extraction creates bad chunks; retrieval cannot repair missing or scrambled source text.</p></article>
+    </div><div class="notes"><p>Before talking models and embeddings, make the point that retrieval quality starts with source quality.</p></div></section>
+    <section class="slide" id="slide-9" aria-label="AI Parse Documents"><p class="eyebrow">DATA INGESTION</p><h2><code>ai_parse_document</code> for structured extraction</h2><div class="visual-frame"><img src="assets/image2.png" alt="Databricks AI Parse Document documentation"></div><div class="notes"><p>This AI function extracts structured content from unstructured documents. It is in Public Preview, so check workspace and region availability before relying on it in production.</p></div></section>
+    <section class="slide" id="slide-10" aria-label="Parsed document output"><p class="eyebrow">DATA INGESTION</p><h2>Keep the structured output, then derive chunks</h2><div class="visual-frame"><img src="assets/image8.png" alt="Example ai parse document structured output in a table"></div><div class="notes"><p>The raw parsed result includes elements. We clean and convert those elements into retrieval chunks while retaining the source path and paper metadata.</p></div></section>
+    <section class="slide" id="slide-11" aria-label="Data processor workflow"><p class="eyebrow">NOTEBOOK 2.2</p><h2>One reusable processor, one clear data contract</h2><div class="pipeline">
+      <article><h3>Discover</h3><p>Find papers not yet processed.</p></article><span class="arrow">→</span>
+      <article><h3>Download</h3><p>Store PDFs in the Unity Catalog volume.</p></article><span class="arrow">→</span>
+      <article><h3>Parse</h3><p>Extract elements with AI Parse.</p></article><span class="arrow">→</span>
+      <article><h3>Persist</h3><p>Write cleaned, metadata-rich chunks to Delta.</p></article>
+    </div><div class="callout"><strong><code>DataProcessor.process_and_save()</code></strong>Encapsulates this workflow for the notebook and scheduled deployment script.</div><div class="notes"><p>Show how a reusable class prevents the notebook from becoming the only place where pipeline logic lives.</p></div></section>
+    <section class="slide section-divider" id="slide-12" aria-label="Chunking and embeddings section"><div class="section-heading"><h1>Chunking<br>&amp; embeddings</h1></div><div class="notes"><p>Now that content is structured and stored, we decide the units that will be retrieved.</p></div></section>
+    <section class="slide" id="slide-13" aria-label="Embeddings"><p class="eyebrow">EMBEDDINGS</p><h2>Embeddings turn meaning into searchable vectors</h2><div class="columns">
+      <article class="panel"><p class="metric">1024</p><h3>Dimensions in this lab</h3><p>We use the configured Databricks embedding endpoint and store vectors as <code>VECTOR(1024)</code>.</p></article>
+      <article class="panel"><h3>What similarity means</h3><p>Text with related meaning sits closer together in vector space, enabling semantic retrieval beyond exact keywords.</p></article>
+    </div><div class="callout"><strong>One embedding model per index.</strong>Queries and documents must use the same model and vector dimension. Re-index when the model changes.</div><div class="notes"><p>Embeddings are numerical representations, not generated answers. The 1024 dimension is a property of this course configuration, not a universal recommendation.</p></div></section>
+    <section class="slide" id="slide-14" aria-label="Chunking strategies"><p class="eyebrow">CHUNKING</p><h2>Chunking sets the retrieval unit</h2><div class="rows">
+      <article class="row"><h3>Fixed size</h3><p>Fast and predictable; use overlap to reduce boundary loss, but it can split a thought.</p></article>
+      <article class="row"><h3>Sentence / paragraph</h3><p>Preserves readable units; sizes vary and documents need reliable structure.</p></article>
+      <article class="row"><h3>Semantic / structural</h3><p>Use topic or document-element boundaries; typically higher quality but more work.</p></article>
+    </div><div class="notes"><p>There is no magic chunk size. Choose a strategy and validate it against the questions your users actually ask.</p></div></section>
+    <section class="slide" id="slide-15" aria-label="Chunking tradeoffs"><p class="eyebrow">CHUNKING</p><h2>Chunk size is a trade-off to measure</h2><table class="compact-table"><thead><tr><th>Choice</th><th>Benefit</th><th>Risk</th></tr></thead><tbody>
+      <tr><th>Smaller chunks</th><td>More focused retrieval and precise citations.</td><td>Can lose the surrounding argument or table context.</td></tr>
+      <tr><th>Larger chunks</th><td>More local context reaches the model.</td><td>Less precise matches, more tokens, more noise.</td></tr>
+      <tr class="course-row"><th>Structured chunks</th><td>Respect headings, paragraphs, and elements from the parser.</td><td>Still need quality checks and evaluation.</td></tr>
+    </tbody></table><div class="notes"><p>The course starts with AI Parse-derived chunks, then inspects their size distribution and explores alternatives in Notebook 2.3.</p></div></section>
+    <section class="slide" id="slide-16" aria-label="Parsed text elements"><p class="eyebrow">CHUNKING</p><h2>Inspect what the parser actually gave you</h2><div class="visual-frame"><img src="assets/image5.png" alt="Parsed document content shown in Databricks"></div><div class="notes"><p>Do not blindly trust parser output. Check for merged columns, broken hyphenation, irrelevant headers, or unexpectedly large elements.</p></div></section>
+    <section class="slide" id="slide-17" aria-label="Chunk length distribution"><p class="eyebrow">CHUNKING</p><h2>Measure chunk quality before indexing</h2><div class="visual-frame"><img src="assets/image6.png" alt="Histogram and box plot of text chunk lengths"></div><p class="footnote">Notebook 2.3 calculates average, minimum, maximum, and total chunk counts from the Delta table.</p><div class="notes"><p>Outliers are a prompt for investigation. A few huge chunks can dominate context, while many tiny chunks may lack meaning.</p></div></section>
+    <section class="slide section-divider" id="slide-18" aria-label="Retrieval and RAG section"><div class="section-heading"><h1>Retrieval<br>&amp; RAG</h1></div><div class="notes"><p>We now have clean chunks and embeddings. The next question is where to store and retrieve them.</p></div></section>
+    <section class="slide" id="slide-19" aria-label="Lakebase pgvector retrieval layer"><p class="eyebrow">NOTEBOOK 2.4</p><h2>Lakebase Postgres is our retrieval layer</h2><div class="architecture">
+      <article><h3>Delta</h3><ul><li><code>arxiv_chunks_table</code></li><li>Source text and metadata</li><li>Scalable preparation with Spark</li></ul></article>
+      <article class="middle"><h3>Lakebase + pgvector</h3><ul><li>Embeddings and metadata</li><li>HNSW cosine index</li><li>PostgreSQL full-text state</li></ul></article>
+      <article><h3>Application</h3><ul><li>Semantic search</li><li>Year filtering</li><li>Hybrid vector + keyword ranking</li></ul></article>
+    </div><div class="notes"><p>This is the current lab architecture. It replaces the older managed Vector Search index shown in the original PowerPoint.</p></div></section>
+    <section class="slide" id="slide-20" aria-label="Why pgvector"><p class="eyebrow">RETRIEVAL DESIGN</p><h2>Why combine vector search and PostgreSQL?</h2><div class="three-columns">
+      <article><h3>Semantic</h3><p>Cosine similarity captures related concepts and alternate phrasing.</p></article>
+      <article><h3>Keyword</h3><p>PostgreSQL full-text ranking preserves exact terms, acronyms, and model names.</p></article>
+      <article><h3>Metadata</h3><p>SQL filters constrain retrieval to the right year, paper, author, or other business scope.</p></article>
+    </div><div class="callout"><strong>Retrieval is a ranking problem.</strong>The “best” result should be relevant, precise, current, and allowed for the user.</div><div class="notes"><p>Explain why a single retrieval technique is rarely sufficient for a serious application.</p></div></section>
+    <section class="slide" id="slide-21" aria-label="pgvector schema"><p class="eyebrow">NOTEBOOK 2.4</p><h2>Schema: vectors, metadata, and text search</h2><div class="schema-grid">
+      <pre><code>CREATE TABLE arxiv_chunk_embeddings (
+  id TEXT PRIMARY KEY,
+  arxiv_id TEXT,
+  title TEXT,
+  year INTEGER,
+  text TEXT NOT NULL,
+  embedding VECTOR(1024) NOT NULL,
+  search_vector TSVECTOR GENERATED ALWAYS AS (...)
+);</code></pre>
+      <article class="panel"><h3>Indexes created by the manager</h3><p><strong>HNSW</strong> for approximate cosine-similarity search.</p><p><strong>GIN</strong> over <code>tsvector</code> for PostgreSQL full-text ranking.</p></article>
+    </div><div class="notes"><p><code>ensure_schema()</code> enables pgvector, creates the table, then creates HNSW and GIN indexes. This makes the storage contract explicit.</p></div></section>
+    <section class="slide" id="slide-22" aria-label="Embedding and upsert flow"><p class="eyebrow">NOTEBOOK 2.4</p><h2>Embed in batch, then upsert idempotently</h2><div class="process">
+      <article>Delta chunks</article><article><code>ai_query()</code><br>embeddings</article><article>Batch rows</article><article>Postgres upsert</article><article>HNSW + GIN<br>indexes</article>
+    </div><div class="callout"><strong>Safe re-runs matter.</strong>New chunk IDs are embedded by default; set <code>refresh=True</code> after changing the embedding model.</div><div class="notes"><p>We use Databricks AI Functions to embed Delta data and an upsert keyed by chunk ID to avoid duplicates.</p></div></section>
+    <section class="slide" id="slide-23" aria-label="Batch versus continuous indexing"><p class="eyebrow">OPERATING THE PIPELINE</p><h2>Start with a batch job; evolve only when needed</h2><table><thead><tr><th>Pattern</th><th>Best fit</th><th>Trade-off</th></tr></thead><tbody>
+      <tr class="course-row"><th>Scheduled batch</th><td>Daily arXiv ingestion and a controlled course lab.</td><td>New content becomes searchable after the next run.</td></tr>
+      <tr><th>Event-driven / continuous</th><td>Freshness requirements measured in minutes or seconds.</td><td>More operational complexity and failure modes.</td></tr>
+    </tbody></table><div class="notes"><p>Do not make the architecture more complex than the data freshness requirement. This course uses scheduled processing.</p></div></section>
+    <section class="slide" id="slide-24" aria-label="Embeddings in Databricks"><p class="eyebrow">EMBEDDING OPERATIONS</p><h2>Keep the embedding model configuration explicit</h2><div class="columns">
+      <article class="panel"><h3>Document embedding</h3><p>Generate vectors in Spark with <code>ai_query(endpoint, text)</code> and cast the result to <code>ARRAY&lt;FLOAT&gt;</code>.</p></article>
+      <article class="panel"><h3>Query embedding</h3><p>Use the same configured endpoint for the user query before comparing vectors.</p></article>
+    </div><div class="callout"><strong>Dimension mismatch is a schema error.</strong>The endpoint’s output dimension must match the <code>VECTOR(1024)</code> column.</div><div class="notes"><p>Stress consistency. Different models produce incompatible vector spaces, even if dimensions happen to match.</p></div></section>
+    <section class="slide" id="slide-25" aria-label="Metadata stored beside embeddings"><p class="eyebrow">RETRIEVAL DATA MODEL</p><h2>An embedding alone is not enough</h2><div class="grid">
+      <article class="panel"><h3>Identity</h3><p><code>id</code> and <code>arxiv_id</code> support idempotent loading and source citations.</p></article>
+      <article class="panel"><h3>Display context</h3><p>Title, summary, and authors make results understandable to people.</p></article>
+      <article class="panel"><h3>Filters</h3><p>Year, month, and day narrow retrieval before the answer is generated.</p></article>
+      <article class="panel"><h3>Traceability</h3><p>The original text returns with the result so the application can show evidence.</p></article>
+    </div><div class="notes"><p>Metadata is not an afterthought. It enables filters, citations, debugging, and user trust.</p></div></section>
+    <section class="slide" id="slide-26" aria-label="Semantic search"><p class="eyebrow">SEMANTIC SEARCH</p><h2>Query with the same embedding space</h2><div class="code-layout"><pre><code>results = pgvector.search(
+  query="What are the latest techniques
+         in machine learning?",
+  num_results=5,
+)</code></pre><article class="panel"><h3>Under the hood</h3><p>The query is embedded, then PostgreSQL orders rows by cosine distance with <code>embedding &lt;=&gt; query_vector</code>.</p></article></div><div class="notes"><p>Walk through the search call. The return records include the text, metadata, and similarity score for each retrieved chunk.</p></div></section>
+    <section class="slide" id="slide-27" aria-label="Hybrid search"><p class="eyebrow">HYBRID SEARCH</p><h2>Combine semantic and exact-match signals</h2><div class="search-flow">
+      <article><h3>User query</h3><p>“transformer architecture attention mechanism”</p></article>
+      <article><h3>Vector score</h3><p>Cosine similarity captures semantic relevance.</p></article>
+      <article><h3>Text score</h3><p><code>ts_rank_cd()</code> rewards exact terms.</p></article>
+      <article><h3>Weighted rank</h3><p>Return the highest combined score.</p></article>
+    </div><div class="notes"><p>Hybrid retrieval helps when exact terminology matters. The notebook defaults to a 0.7 vector weight but that should be evaluated, not assumed.</p></div></section>
+    <section class="slide" id="slide-28" aria-label="Improving retrieval quality"><p class="eyebrow">RETRIEVAL QUALITY</p><h2>Improve retrieval through evidence</h2><div class="principles">
+      <article><h3>Evaluate queries</h3><p>Build a representative set of questions and expected papers or chunks.</p></article>
+      <article><h3>Inspect failures</h3><p>Is the issue parsing, chunking, embedding, filters, or ranking?</p></article>
+      <article><h3>Tune deliberately</h3><p>Test chunk boundaries, top-k, filters, query rewriting, and hybrid weights.</p></article>
+    </div><div class="callout"><strong>Do not optimize only retrieval scores.</strong>Measure whether the final answer is grounded, useful, and correctly cited.</div><div class="notes"><p>Quality is end-to-end. A high similarity score does not guarantee an answer contains the right evidence.</p></div></section>
+    <section class="slide" id="slide-29" aria-label="What is RAG"><p class="eyebrow">RAG</p><h2>RAG grounds generation in retrieved evidence</h2><div class="columns">
+      <article class="panel"><h3>The problem</h3><p>Model training data can be stale, lacks private information, and does not prove where an answer came from.</p></article>
+      <article class="panel"><h3>The RAG move</h3><p>Retrieve relevant content, assemble it with the question, and ask the model to answer from that evidence.</p></article>
+    </div><div class="callout"><strong>RAG is not fine-tuning.</strong>It changes the information available at inference time without changing model weights.</div><div class="notes"><p>RAG gives fresh, private, and citeable information to an LLM. It does not eliminate hallucinations by itself.</p></div></section>
+    <section class="slide" id="slide-30" aria-label="RAG pipeline"><p class="eyebrow">RAG</p><h2>The RAG pipeline at query time</h2><div class="process">
+      <article>User question</article><article>Embed query</article><article>Retrieve + filter</article><article>Assemble context</article><article>Generate grounded answer</article>
+    </div><div class="notes"><p>The generator receives both the question and carefully selected evidence. It should be instructed to cite sources and state uncertainty.</p></div></section>
+    <section class="slide" id="slide-31" aria-label="Context windows"><p class="eyebrow">CONTEXT WINDOWS</p><h2>A larger context window does not remove curation</h2><div class="three-columns">
+      <article><h3>Cost</h3><p>Every input token affects latency and cost.</p></article>
+      <article><h3>Attention</h3><p>Relevant evidence can be diluted by distractors or buried in the middle.</p></article>
+      <article><h3>Control</h3><p>Smaller, well-ordered context is easier to inspect, cite, and protect.</p></article>
+    </div><div class="notes"><p>Avoid memorizing model-specific context limits: they change. The enduring lesson is to reserve room for instructions, the user question, evidence, and output.</p></div></section>
+    <section class="slide" id="slide-32" aria-label="Context quality versus quantity"><p class="eyebrow">CONTEXT QUALITY</p><h2>More context can make an answer worse</h2><div class="compare-cards">
+      <article><h3>Too little</h3><ul><li>Missed evidence</li><li>Incomplete answers</li><li>Weak source support</li></ul></article>
+      <article><h3>Too much</h3><ul><li>Noise and conflicting facts</li><li>Higher latency and cost</li><li>“Lost in the middle” attention failures</li></ul></article>
+    </div><div class="callout"><strong>Goal: the smallest sufficient evidence set.</strong>Retrieve broadly when needed, then select and compress before generation.</div><div class="notes"><p>Context quality is the central design objective. Retrieval top-k is only an initial candidate set.</p></div></section>
+    <section class="slide" id="slide-33" aria-label="Metadata filtering"><p class="eyebrow">METADATA FILTERING</p><h2>Filter before the model sees the context</h2><div class="code-layout"><pre><code>filtered_results = pgvector.search(
+  query="neural networks and deep learning",
+  num_results=3,
+  year=2026,
+)</code></pre><article class="panel"><h3>Why it matters</h3><p>Filters improve relevance and can enforce boundaries such as source, tenant, date, or access policy.</p></article></div><div class="notes"><p>Metadata filtering is both a quality and governance mechanism. In this example, we narrow to a paper year.</p></div></section>
+    <section class="slide section-divider" id="slide-34" aria-label="Use cases section"><div class="section-heading"><h1>Where context engineering<br>creates value</h1></div><div class="notes"><p>Retrieval is a reusable capability, not only an arXiv demo.</p></div></section>
+    <section class="slide" id="slide-35" aria-label="Use cases"><p class="eyebrow">USE CASES</p><h2>Turn a general model into a grounded assistant</h2><div class="grid">
+      <article class="panel"><h3>Research copilot</h3><p>Answer questions across new papers with traceable evidence.</p></article>
+      <article class="panel"><h3>Support agent</h3><p>Retrieve current product, policy, and account information before responding.</p></article>
+      <article class="panel"><h3>Operational assistant</h3><p>Combine tickets, runbooks, and tools to help teams resolve work.</p></article>
+      <article class="panel"><h3>Agent memory</h3><p>Retrieve durable facts and decisions without replaying every past message.</p></article>
+    </div><div class="notes"><p>Use cases differ, but each needs the same discipline: curate trustworthy context, respect access boundaries, and evaluate outcomes.</p></div></section>
+    <section class="slide" id="slide-36" aria-label="Homework"><p class="eyebrow">HOMEWORK</p><h2>Build the retrieval foundation</h2><ol class="checklist">
+      <li>Run the data processor and inspect the Delta paper and chunk tables.</li>
+      <li>Review chunk sizes and try one alternative chunking strategy.</li>
+      <li>Create the Lakebase pgvector schema and index the Delta chunks.</li>
+      <li>Run semantic, filtered, and hybrid search; capture what changed.</li>
+      <li>Submit your work through the course pull-request process.</li>
+    </ol><div class="notes"><p>Homework is about making retrieval observable. Students should be able to explain what is indexed and why a result was returned.</p></div></section>
+    <section class="slide thank-you" id="slide-37" aria-label="Questions"><div class="thanks-content"><h1>Questions?</h1><p>Context engineering &amp; RAG</p><p class="sub">Next: make the arXiv curator retrieve evidence before it generates answers.</p></div><div class="notes"><p>Invite questions about the distinction between source data, chunks, embeddings, retrieval, and the final answer.</p></div></section>
+  </main>
+  <div class="deck-controls" aria-label="Presentation controls"><button id="previous" type="button">← Previous</button><span id="slide-counter">1 / 37</span><button id="next" type="button">Next →</button><button id="present" type="button" aria-pressed="false">Present</button><button id="notes" type="button">Notes</button></div>
+  <aside id="notes-dialog" class="notes-dialog" hidden><button id="close-notes" type="button">Close</button><div id="notes-content"></div></aside>
+  <script src="lecture2.js"></script>
+</body>
+</html>
