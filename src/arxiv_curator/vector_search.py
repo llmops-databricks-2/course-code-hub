@@ -232,6 +232,64 @@ class LakebasePgVectorManager:
         logger.info(f"Indexed {count} chunks in Lakebase")
         return count
 
+    def index_synced_chunks(self, synced_table: str, refresh: bool = False) -> int:
+        """Embed rows from a Lakebase Synced Table and upsert them into pgvector."""
+        if self.spark is None:
+            raise ValueError("A SparkSession is required to index Synced Table rows")
+        self.ensure_schema()
+        columns = "id, arxiv_id, title, summary, authors, year, month, day, text"
+        with self.connection() as conn:
+            rows = conn.execute(f"SELECT {columns} FROM {synced_table}").fetchall()
+            existing_ids = set()
+            if not refresh:
+                existing_ids = {
+                    row[0]
+                    for row in conn.execute(f"SELECT id FROM {self.table_name}")
+                }
+
+        source_rows = [row for row in rows if refresh or row[0] not in existing_ids]
+        if not source_rows:
+            logger.info("No new Synced Table rows need embeddings")
+            return 0
+
+        chunks = self.spark.createDataFrame(
+            source_rows, [column.strip() for column in columns.split(",")]
+        )
+        embedded = self._embed_dataframe(chunks)
+        insert_sql = f"""
+            INSERT INTO {self.table_name}
+                (id, arxiv_id, title, summary, authors, year, month, day, text, embedding)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::vector)
+            ON CONFLICT (id) DO UPDATE SET
+                arxiv_id = EXCLUDED.arxiv_id, title = EXCLUDED.title,
+                summary = EXCLUDED.summary, authors = EXCLUDED.authors,
+                year = EXCLUDED.year, month = EXCLUDED.month, day = EXCLUDED.day,
+                text = EXCLUDED.text, embedding = EXCLUDED.embedding,
+                updated_at = CURRENT_TIMESTAMP
+        """
+        count = 0
+        with self.connection() as conn:
+            with conn.cursor() as cursor:
+                batch: list[tuple[Any, ...]] = []
+                for row in self._rows_from_dataframe(embedded):
+                    batch.append(
+                        (
+                            row["id"], row.get("arxiv_id"), row.get("title"),
+                            row.get("summary"), row.get("authors"), row.get("year"),
+                            row.get("month"), row.get("day"), row["text"],
+                            self._vector_literal(row["embedding"]),
+                        )
+                    )
+                    if len(batch) >= 100:
+                        cursor.executemany(insert_sql, batch)
+                        count += len(batch)
+                        batch.clear()
+                if batch:
+                    cursor.executemany(insert_sql, batch)
+                    count += len(batch)
+        logger.info(f"Indexed {count} Synced Table rows in Lakebase")
+        return count
+
     def embed_query(self, query: str) -> list[float]:
         """Generate a query embedding with the same model used for documents."""
         if self.spark is not None:
