@@ -142,20 +142,25 @@ logger.info(f"Approximate words: {available_for_context * 0.75:,.0f}")
 # Example: Query rewriting for better retrieval
 from openai import OpenAI
 from databricks.sdk import WorkspaceClient
+from pyspark.sql import SparkSession
+
+from arxiv_curator.config import get_env, load_config
 
 w = WorkspaceClient()
+spark = SparkSession.builder.getOrCreate()
+cfg = load_config("../project_config.yml", get_env(spark))
 
-# Authenticate using Databricks SDK
+# Authenticate using a short-lived Databricks notebook token.
 host = w.config.host
 token = w.tokens.create(lifetime_seconds=1200).token_value
 
 client = OpenAI(
     api_key=token,
-    base_url=f"{host.rstrip('/')}/serving-endpoints"
+    base_url=f"{host.rstrip('/')}/ai-gateway/mlflow/v1",
 )
 
-# Use an available model from your workspace
-MODEL_NAME = "databricks-llama-4-maverick"  # Change to match your available models
+# Use the Unity Catalog AI Gateway service configured for the course.
+MODEL_NAME = cfg.llm_endpoint
 logger.info(f"Using model: {MODEL_NAME}")
 
 def rewrite_query(original_query: str) -> list[str]:
@@ -437,4 +442,3 @@ logger.info(prompt)
 # MAGIC 3. Ignore the "lost in the middle" problem
 # MAGIC 4. Forget to cite sources
 # MAGIC 5. Assume all retrieved docs are relevant
-
