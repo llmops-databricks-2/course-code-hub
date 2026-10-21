@@ -5,9 +5,9 @@ PDFs in Volume + arxiv_papers table
    ↓ (parse_pdfs_with_ai)
 ai_parsed_docs_table (JSON)
    ↓ (process_chunks)
-arxiv_chunks_table (clean text + metadata)
-   ↓ (LakebasePgVectorManager - separate class) (2.4 notebook)
-Lakebase pgvector table (embeddings)
+arxiv_chunks_table (clean text + metadata + embedding)
+   ├─ (AI Search Delta Sync index) (2.4 notebook)
+   └─ (Lakebase Synced Table + LakebasePgVectorManager search) (2.5 notebook)
 """
 
 import json
@@ -24,6 +24,7 @@ from pyspark.sql.functions import (
     concat_ws,
     current_timestamp,
     explode,
+    expr,
     udf,
 )
 from pyspark.sql.types import ArrayType, StringType, StructField, StructType
@@ -252,7 +253,7 @@ class DataProcessor:
 
     def process_chunks(self) -> None:
         """
-        Process parsed documents to extract and clean chunks.
+        Process parsed documents to extract, clean, and embed chunks.
         Reads from ai_parsed_docs table and saves to arxiv_chunks table.
         """
         logger.info(f"Processing parsed documents from {self.parsed_table} for end date {self.end}")
@@ -297,9 +298,19 @@ class DataProcessor:
             .join(metadata_df, "arxiv_id", "left")
         )
 
-        # Write to table
+        # Generate embeddings with the configured model
+        # (ai_query is used via expr: not every runtime exposes it in pyspark.sql.functions)
+        endpoint = self.cfg.embedding_endpoint.replace("'", "''")
+        chunks_df = chunks_df.withColumn(
+            "embedding",
+            expr(f"CAST(ai_query('{endpoint}', text) AS ARRAY<FLOAT>)"),
+        )
+
+        # Write to table (mergeSchema adds the embedding column to existing tables)
         arxiv_chunks_table = f"{self.catalog}.{self.schema}.arxiv_chunks_table"
-        chunks_df.write.mode("append").saveAsTable(arxiv_chunks_table)
+        chunks_df.write.mode("append").option("mergeSchema", "true").saveAsTable(
+            arxiv_chunks_table
+        )
         logger.info(f"Saved chunks to {arxiv_chunks_table}")
 
         # Enable Change Data Feed

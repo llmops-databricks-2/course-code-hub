@@ -21,9 +21,6 @@ class ProjectConfig(BaseModel):
     volume: str = Field(..., description="Volume name")
     llm_endpoint: str = Field(..., description="LLM endpoint name")
     embedding_endpoint: str = Field(..., description="Embedding endpoint name")
-    batch_embedding_model: str = Field(
-        "databricks-gte-large-en", description="Embedding model supported by ai_query"
-    )
     warehouse_id: str = Field(..., description="Warehouse ID")
     experiment_path: str = Field(..., description="MLflow experiment path")
     lakebase_project_id: str = Field(..., description="Lakebase project ID")

@@ -19,7 +19,7 @@ from arxiv_curator.data_processor import DataProcessor
 # COMMAND ----------
 
 spark = DatabricksSession.builder.getOrCreate()
-logger.info("✅ Using Databricks Connect Spark session")
+logger.info("Using Databricks Connect Spark session")
 
 env = get_env(spark)
 cfg = load_config("../project_config.yml", env)

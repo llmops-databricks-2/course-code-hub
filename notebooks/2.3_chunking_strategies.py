@@ -237,14 +237,14 @@ logger.info(sentence_chunks[0][:200] + "...")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### ✅ Do:
+# MAGIC ### Do:
 # MAGIC 1. **Clean text** before chunking (remove extra whitespace, fix hyphenation)
 # MAGIC 2. **Preserve metadata** (paper_id, title, authors, etc.)
 # MAGIC 3. **Test different chunk sizes** for your specific use case
 # MAGIC 4. **Use overlap** for better context (50-100 characters)
 # MAGIC 5. **Monitor chunk quality** (length distribution, content quality)
 # MAGIC
-# MAGIC ### ❌ Don't:
+# MAGIC ### Don't:
 # MAGIC 1. Split in the middle of sentences (unless using fixed-size)
 # MAGIC 2. Ignore document structure (tables, lists, etc.)
 # MAGIC 3. Forget to clean and normalize text

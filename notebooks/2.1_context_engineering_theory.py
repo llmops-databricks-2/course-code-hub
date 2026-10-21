@@ -60,14 +60,20 @@
 # MAGIC
 # MAGIC ### Token Limits by Model
 # MAGIC
-# MAGIC | Model | Context Window | Notes |
-# MAGIC |-------|---------------|-------|
-# MAGIC | GPT-3.5 Turbo | 16K tokens | ~12K words |
-# MAGIC | GPT-4 | 8K-128K tokens | Varies by version |
-# MAGIC | Claude 3 | 200K tokens | ~150K words |
-# MAGIC | Llama 3.1 70B | 128K tokens | ~96K words |
-# MAGIC | Llama 3.1 405B | 128K tokens | ~96K words |
-# MAGIC | Gemini 1.5 Pro | 1M tokens | ~750K words |
+# MAGIC Models available on Databricks (October 2026). Context windows change often: check the
+# MAGIC [supported models](https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/supported-models)
+# MAGIC page and the providers' documentation before relying on a number.
+# MAGIC
+# MAGIC | Model | Provider | Context Window | Notes |
+# MAGIC |-------|----------|---------------|-------|
+# MAGIC | Claude Opus 5.5 / Sonnet 5.5 / Haiku 5.5 | Anthropic | 1M tokens | ~750K words |
+# MAGIC | Kimi K3 | Moonshot AI | 1M tokens | ~750K words |
+# MAGIC | GLM 5.3 | Zhipu AI | 1,048,576 tokens | ~786K words |
+# MAGIC | Grok 4.6 | xAI | 500K tokens | ~375K words |
+# MAGIC | GPT OSS 120B / 20B | OpenAI (open weights) | 128K tokens | ~96K words |
+# MAGIC
+# MAGIC Large windows do not remove the need for retrieval: cost and latency grow with every token,
+# MAGIC and embedding models have far smaller windows than chat models, which bounds chunk size.
 
 # COMMAND ----------
 
@@ -88,7 +94,7 @@ logger.info(f"Short text: {estimate_tokens(short_text)} tokens")
 logger.info(f"Long text: {estimate_tokens(long_text)} tokens")
 
 # Context window example
-context_window = 128_000  # Llama 3.1
+context_window = 128_000  # GPT OSS 120B
 system_prompt_tokens = 200
 user_query_tokens = 100
 max_output_tokens = 2000
@@ -143,19 +149,21 @@ logger.info(f"Approximate words: {available_for_context * 0.75:,.0f}")
 from openai import OpenAI
 from databricks.sdk import WorkspaceClient
 
+from arxiv_curator.config import load_config
+
+cfg = load_config("../project_config.yml")
 w = WorkspaceClient()
 
-# Authenticate using Databricks SDK
-host = w.config.host
-token = w.tokens.create(lifetime_seconds=1200).token_value
+# The course chat model service in Unity AI Gateway (course_ops.gateway.chat),
+# called with a Databricks token valid for 20 minutes
+databricks_token = w.tokens.create(lifetime_seconds=1200).token_value
 
 client = OpenAI(
-    api_key=token,
-    base_url=f"{host.rstrip('/')}/serving-endpoints"
+    api_key=databricks_token,
+    base_url=f"{w.config.host}/ai-gateway/mlflow/v1",
 )
 
-# Use an available model from your workspace
-MODEL_NAME = "databricks-llama-4-maverick"  # Change to match your available models
+MODEL_NAME = cfg.llm_endpoint
 logger.info(f"Using model: {MODEL_NAME}")
 
 def rewrite_query(original_query: str) -> list[str]:
@@ -172,14 +180,13 @@ Generate 3 variations that:
 
 Return only the 3 variations, one per line."""
 
-    response = client.chat.completions.create(
+    response = client.responses.create(
         model=MODEL_NAME,
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=200,
-        temperature=0.7
+        input=[{"role": "user", "content": [{"type": "input_text", "text": prompt}]}],
+        max_output_tokens=200,
     )
     
-    variations = response.choices[0].message.content.strip().split('\n')
+    variations = response.output_text.strip().split('\n')
     return [v.strip() for v in variations if v.strip()]
 
 # Example
@@ -277,14 +284,13 @@ def summarize_chunk(text: str, max_length: int = 100) -> str:
 
 Summary:"""
 
-    response = client.chat.completions.create(
+    response = client.responses.create(
         model=MODEL_NAME,
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=max_length * 2,  # Rough token estimate
-        temperature=0.3
+        input=[{"role": "user", "content": [{"type": "input_text", "text": prompt}]}],
+        max_output_tokens=max_length * 2,  # Rough token estimate
     )
     
-    return response.choices[0].message.content.strip()
+    return response.output_text.strip()
 
 # Example
 long_text = """
@@ -329,6 +335,7 @@ logger.info(f"\nSummary:\n{summary}")
 # MAGIC - **Language**: Specific languages
 
 # COMMAND ----------
+import json
 
 # Example: Metadata structure
 example_document = {
@@ -347,7 +354,7 @@ example_document = {
 }
 
 logger.info("Example document with metadata:")
-import json
+
 logger.info(json.dumps(example_document, indent=2))
 
 # COMMAND ----------
@@ -422,7 +429,7 @@ logger.info(prompt)
 # MAGIC %md
 # MAGIC ## 10. Best Practices Summary
 # MAGIC
-# MAGIC ### ✅ Do:
+# MAGIC ### Do:
 # MAGIC 1. Chunk documents appropriately (more in next notebook)
 # MAGIC 2. Use high-quality embeddings
 # MAGIC 3. Implement metadata filtering
@@ -431,7 +438,7 @@ logger.info(prompt)
 # MAGIC 6. Provide clear instructions in prompts
 # MAGIC 7. Handle cases where context doesn't contain the answer
 # MAGIC
-# MAGIC ### ❌ Don't:
+# MAGIC ### Don't:
 # MAGIC 1. Exceed context window limits
 # MAGIC 2. Include irrelevant information
 # MAGIC 3. Ignore the "lost in the middle" problem

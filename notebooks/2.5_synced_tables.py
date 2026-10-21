@@ -2,31 +2,28 @@
 # MAGIC %md
 # MAGIC # Lecture 2.5: Synced Tables and pgvector on Lakebase
 # MAGIC
-# MAGIC This notebook adds a managed synchronization path to the direct pgvector
-# MAGIC solution from Notebook 2.4.
+# MAGIC The chunks table already holds an `embedding` column (written by
+# MAGIC `process_chunks` and backfilled in Lecture 2.4). A Lakebase Synced Table
+# MAGIC copies it into Postgres, and we search it natively with pgvector.
 # MAGIC
 # MAGIC ```text
-# MAGIC arxiv_chunks_table (Unity Catalog Delta)
-# MAGIC          │
-# MAGIC          └── Synced Table (read-only Lakebase source)
-# MAGIC                  │ read rows
-# MAGIC                  ▼
-# MAGIC          ai_query embeddings + upsert
-# MAGIC                  ▼
-# MAGIC          arxiv_chunk_embeddings (writable pgvector table)
+# MAGIC arxiv_chunks_table (Unity Catalog Delta: text + embedding)
+# MAGIC          │  Synced Table (managed, read-only copy)
+# MAGIC          ▼
+# MAGIC Lakebase Postgres: arxiv_chunks_synced
+# MAGIC          ├── HNSW cosine index on the embedding
+# MAGIC          ├── metadata filters
+# MAGIC          └── PostgreSQL full-text ranking
 # MAGIC ```
 # MAGIC
-# MAGIC A Synced Table is not itself a vector index. It is a managed, read-only
-# MAGIC copy of a Unity Catalog table in Lakebase. This notebook reads that copy,
-# MAGIC generates embeddings with `ai_query`, and maintains the writable
-# MAGIC `arxiv_chunk_embeddings` pgvector table.
+# MAGIC No embeddings are generated or inserted here: Databricks owns the copy, we
+# MAGIC own the indexes and the queries.
 
 # COMMAND ----------
 
 from loguru import logger
 from pyspark.sql import SparkSession
 from databricks.sdk import WorkspaceClient
-from databricks.sdk.service.postgres import Project, ProjectSpec
 
 from arxiv_curator.config import get_env, load_config
 from arxiv_curator.vector_search import LakebasePgVectorManager
@@ -40,17 +37,16 @@ w = WorkspaceClient()
 
 source_table = f"{cfg.catalog}.{cfg.schema}.arxiv_chunks_table"
 synced_table = f"{cfg.catalog}.{cfg.schema}.arxiv_chunks_synced"
-project_name = f"projects/{cfg.lakebase_project_id}"
 postgres_branch = f"projects/{cfg.lakebase_project_id}/branches/production"
 
 # Keep creation disabled until the source table and permissions have been checked.
 RUN_CREATE_SYNC = False
-RUN_INDEX_SYNCED_ROWS = False
 
 logger.info(f"Environment: {env}")
 logger.info(f"Source table: {source_table}")
 logger.info(f"Synced table: {synced_table}")
 logger.info(f"Lakebase project: {cfg.lakebase_project_id}")
+logger.info(f"Embedding endpoint: {cfg.embedding_endpoint}")
 
 # COMMAND ----------
 
@@ -67,6 +63,8 @@ logger.info(f"Lakebase project: {cfg.lakebase_project_id}")
 source_columns = {field.name for field in spark.table(source_table).schema.fields}
 if "id" not in source_columns:
     raise ValueError(f"{source_table} must contain an 'id' primary-key column.")
+if "embedding" not in source_columns:
+    raise ValueError(f"{source_table} has no 'embedding' column. Run Lecture 2.4 first.")
 
 spark.sql(
     f"ALTER TABLE {source_table} "
@@ -78,60 +76,32 @@ logger.info(f"Validated source table and enabled Change Data Feed: {source_table
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 2. Create or reuse the Lakebase project
+# MAGIC ## 2. Create the Synced Table
 # MAGIC
-# MAGIC The project is created by the same SDK flow used in Notebook 2.4. If the
-# MAGIC project already exists, this cell only verifies that it is reachable.
+# MAGIC The first run provisions the target and performs an initial
+# MAGIC synchronization. Later runs inspect the existing synced table instead.
+# MAGIC
+# MAGIC - `type_overrides` syncs `embedding` as a native pgvector `vector(1024)`
+# MAGIC   column. Without it, Delta `ARRAY` columns land in Postgres as `JSONB`.
+# MAGIC - `new_pipeline_spec` sets the usage policy on the sync pipeline and the
+# MAGIC   catalog/schema where the pipeline keeps its checkpoints and event logs.
+# MAGIC - `TRIGGERED` is useful for a classroom because changes are synchronized
+# MAGIC   when requested. Use `SNAPSHOT` for a complete replacement on each run, or
+# MAGIC   `CONTINUOUS` to replicate the source continuously.
 
 # COMMAND ----------
+
+from databricks.sdk.service.postgres import (
+    NewPipelineSpec,
+    SyncedTable,
+    SyncedTableSyncedTableSpec,
+    SyncedTableSyncedTableSpecPgSpecificType,
+    SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy,
+    SyncedTableSyncedTableSpecTypeOverride,
+)
 
 try:
-    project = w.postgres.get_project(name=project_name)
-    logger.info(f"Lakebase project already exists: {project.name}")
-except Exception:
-    logger.info(f"Creating Lakebase project: {cfg.lakebase_project_id}")
-    operation = w.postgres.create_project(
-        project=Project(
-            spec=ProjectSpec(
-                display_name=cfg.lakebase_project_id,
-                pg_version=17,
-            )
-        ),
-        project_id=cfg.lakebase_project_id,
-    )
-    project = operation.wait()
-    logger.info(f"Created Lakebase project: {project.name}")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## 3. Create the Synced Table
-# MAGIC
-# MAGIC The API call below uses the Lakebase Synced Tables API. The first run
-# MAGIC provisions the target and performs an initial synchronization. Later runs
-# MAGIC are idempotent: an existing synced table is inspected rather than created
-# MAGIC again.
-# MAGIC
-# MAGIC `TRIGGERED` is useful for a classroom because changes are synchronized when
-# MAGIC requested. Use `SNAPSHOT` when you want a complete replacement on each run,
-# MAGIC or `CONTINUOUS` when the source should be replicated continuously.
-
-# COMMAND ----------
-
-sync_spec = {
-    "source_table_full_name": source_table,
-    "branch": postgres_branch,
-    "primary_key_columns": ["id"],
-    "scheduling_policy": "TRIGGERED",
-    "postgres_database": "databricks_postgres",
-    "create_database_objects_if_missing": True,
-}
-
-try:
-        synced = w.api_client.do(
-            "GET",
-            f"/api/2.0/postgres/synced_tables/{synced_table}",
-    )
+    synced = w.postgres.get_synced_table(name=f"synced_tables/{synced_table}")
     logger.info(f"Synced Table already exists: {synced_table}")
 except Exception:
     if not RUN_CREATE_SYNC:
@@ -140,18 +110,37 @@ except Exception:
             "this cell to provision it."
         )
     else:
-        synced = w.api_client.do(
-            "POST",
-            "/api/2.0/postgres/synced_tables",
-            query={"synced_table_id": synced_table},
-            body={"name": synced_table, "spec": sync_spec},
-        )
+        synced = w.postgres.create_synced_table(
+            synced_table=SyncedTable(
+                spec=SyncedTableSyncedTableSpec(
+                    source_table_full_name=source_table,
+                    branch=postgres_branch,
+                    postgres_database="databricks_postgres",
+                    primary_key_columns=["id"],
+                    scheduling_policy=SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy.TRIGGERED,
+                    create_database_objects_if_missing=True,
+                    new_pipeline_spec=NewPipelineSpec(
+                        budget_policy_id=cfg.usage_policy_id,
+                        storage_catalog=cfg.catalog,
+                        storage_schema=cfg.schema,
+                    ),
+                    type_overrides=[
+                        SyncedTableSyncedTableSpecTypeOverride(
+                            column_name="embedding",
+                            pg_type=SyncedTableSyncedTableSpecPgSpecificType.PG_SPECIFIC_TYPE_VECTOR,
+                            size=1024,
+                        )
+                    ],
+                )
+            ),
+            synced_table_id=synced_table,
+        ).wait()
         logger.info(f"Created Synced Table: {synced_table}")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 4. Check synchronization status
+# MAGIC ## 3. Check synchronization status
 # MAGIC
 # MAGIC Wait until the Synced Table is online before querying it. The destination
 # MAGIC is read-only: write changes to `arxiv_chunks_table`, not to the Lakebase
@@ -161,30 +150,31 @@ except Exception:
 # COMMAND ----------
 
 try:
-    synced_status = w.api_client.do(
-        "GET",
-        f"/api/2.0/postgres/synced_tables/{synced_table}",
-    )
-    logger.info(synced_status)
+    status = w.postgres.get_synced_table(name=f"synced_tables/{synced_table}").status
+    logger.info(f"State: {status.detailed_state} | {status.message}")
 except Exception as error:
     logger.info(f"Synced Table status is not available yet: {error}")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 5. Query the Lakebase mirror
+# MAGIC ## 4. Query the Lakebase mirror
 # MAGIC
 # MAGIC This table is in Lakebase Postgres, not in the Spark SQL catalog. Query it
-# MAGIC through the Lakebase connection after it reaches `ONLINE`.
+# MAGIC through the Lakebase connection after it reaches `ONLINE`. Thanks to the
+# MAGIC type override, `embedding` is a pgvector `vector`.
 
 # COMMAND ----------
 
-pgvector = LakebasePgVectorManager(config=cfg, spark=spark, workspace=w)
+# The manager obtains a short-lived Lakebase database credential through the
+# Databricks SDK. It does not store a password in the notebook.
+pgvector = LakebasePgVectorManager(config=cfg, workspace=w)
+
 with pgvector.connection() as conn:
     rows = conn.execute(
-        f'''SELECT id, arxiv_id, title, year, text
-            FROM "{cfg.schema}"."arxiv_chunks_synced"
-            LIMIT 10'''
+        f"""SELECT id, arxiv_id, title, year, pg_typeof(embedding) AS embedding_type, text
+            FROM {pgvector.table_name}
+            LIMIT 5"""
     ).fetchall()
 
 for row in rows:
@@ -193,39 +183,116 @@ for row in rows:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 6. Feed the Synced Table into pgvector
+# MAGIC ## 5. Index the Synced Table for retrieval
 # MAGIC
-# MAGIC - The Synced Table provides a managed Lakebase source for low-latency reads.
-# MAGIC - This notebook reads the Synced Table, generates embeddings with `ai_query`,
-# MAGIC   and upserts them into the writable `arxiv_chunk_embeddings` table.
-# MAGIC - `arxiv_chunk_embeddings` contains the `VECTOR(1024)` column and HNSW/GIN
-# MAGIC   indexes used for retrieval.
-# MAGIC - Do not add vectors or indexes to the read-only Synced Table.
+# MAGIC A Synced Table accepts `SELECT`, `CREATE INDEX`, and `DROP TABLE`, but no
+# MAGIC writes. We add:
 # MAGIC
-# MAGIC The two tables can therefore coexist: Synced Tables handle replication,
-# MAGIC while pgvector handles similarity search. There is only one embedding path:
-# MAGIC Synced Table → `ai_query` → `arxiv_chunk_embeddings`.
+# MAGIC - an HNSW index using cosine distance (`<=>`) on `embedding`
+# MAGIC - a GIN index on `to_tsvector('english', title || ' ' || text)` for keyword
+# MAGIC   search; queries use the same expression, so Postgres can use the index
+# MAGIC
+# MAGIC Rerun this cell after a full refresh of the Synced Table.
 
 # COMMAND ----------
 
-if RUN_INDEX_SYNCED_ROWS:
-    indexed_count = pgvector.index_synced_chunks(
-        synced_table=f'"{cfg.schema}"."arxiv_chunks_synced"',
-        refresh=False,
-    )
-    logger.info(f"New Synced Table rows indexed: {indexed_count}")
-else:
+pgvector.ensure_indexes()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 6. Semantic search
+# MAGIC
+# MAGIC The query is embedded with the same endpoint as the documents. PostgreSQL
+# MAGIC ranks rows by cosine distance and returns the highest-scoring chunks.
+
+# COMMAND ----------
+
+query = "What are the latest techniques in machine learning?"
+results = pgvector.search(query=query, num_results=5)
+
+logger.info(f"Query: {query}")
+for position, row in enumerate(results, 1):
     logger.info(
-        "Embedding load skipped. Set RUN_INDEX_SYNCED_ROWS=True after the "
-        "Synced Table reaches ONLINE."
+        f"{position}. {row.get('title', 'N/A')} | "
+        f"arXiv: {row.get('arxiv_id', 'N/A')} | "
+        f"score={float(row['score']):.4f}"
     )
+    logger.info(f"   {row.get('text', '')[:250]}...")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 7. Semantic search with metadata filtering
+
+# COMMAND ----------
+
+query = "neural networks and deep learning"
+year = 2026
+filtered_results = pgvector.search(query=query, num_results=3, year=year)
+
+logger.info(f"Query: {query} | year={year}")
+for position, row in enumerate(filtered_results, 1):
+    logger.info(
+        f"{position}. {row.get('title', 'N/A')} | "
+        f"year={row.get('year', 'N/A')} | score={float(row['score']):.4f}"
+    )
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 8. Hybrid search: vector similarity + full-text ranking
+# MAGIC
+# MAGIC Hybrid search combines semantic similarity with PostgreSQL's
+# MAGIC `ts_rank_cd()` full-text score. This helps with exact terms, acronyms, and
+# MAGIC model names that semantic search alone can underweight.
+
+# COMMAND ----------
+
+query = "transformer architecture attention mechanism"
+hybrid_results = pgvector.hybrid_search(query=query, num_results=5)
+
+logger.info(f"Hybrid query: {query}")
+for position, row in enumerate(hybrid_results, 1):
+    logger.info(
+        f"{position}. {row.get('title', 'N/A')} | "
+        f"score={float(row['score']):.4f} | "
+        f"vector={float(row['vector_score']):.4f} | "
+        f"text={float(row['text_score']):.4f}"
+    )
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 9. Inspect the indexes
+
+# COMMAND ----------
+
+with pgvector.connection() as conn:
+    table_count = conn.execute(f"SELECT count(*) FROM {pgvector.table_name}").fetchone()[0]
+    indexes = conn.execute(
+        """
+        SELECT indexname, indexdef
+        FROM pg_indexes
+        WHERE schemaname = %s AND tablename = %s
+        ORDER BY indexname
+        """,
+        (cfg.schema, pgvector.synced_table_name),
+    ).fetchall()
+
+logger.info(f"Synced rows: {table_count}")
+for index_name, definition in indexes:
+    logger.info(f"{index_name}: {definition}")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC ## Summary
 # MAGIC
-# MAGIC 1. Keep `arxiv_chunks_table` as the source of truth.
-# MAGIC 2. Use a Synced Table as the managed Lakebase source for embedding loads.
-# MAGIC 3. Generate embeddings and write them to `arxiv_chunk_embeddings`.
-# MAGIC 4. Refresh the Synced Table from the source; never write directly to it.
+# MAGIC 1. Keep `arxiv_chunks_table`, with its `embedding` column, as the source of truth.
+# MAGIC 2. A Synced Table replicates it into Lakebase; never write to the copy.
+# MAGIC 3. Index the copy: HNSW (cosine) on `embedding`, GIN on the full-text expression.
+# MAGIC 4. Combine vector, metadata, and full-text ranking in SQL.
+# MAGIC
+# MAGIC For a new embedding model, re-embed the Delta table, refresh the Synced Table,
+# MAGIC and make sure the dimension matches the `vector(1024)` type override.

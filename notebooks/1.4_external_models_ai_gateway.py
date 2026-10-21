@@ -19,7 +19,8 @@
 # MAGIC   that provider service, with a rate limit.
 # MAGIC
 # MAGIC You never see the key. You authenticate to Databricks, and the gateway calls OpenAI with the
-# MAGIC key of the provider service. Running this notebook creates no gateway object and no token.
+# MAGIC key of the provider service. Running this notebook creates no gateway object, only a
+# MAGIC short-lived Databricks token.
 # MAGIC
 # MAGIC **Checked: October 13, 2026 (AWS).** See
 # MAGIC [model provider services](https://docs.databricks.com/aws/en/ai-gateway/model-provider-services)
@@ -37,8 +38,8 @@ from openai import OpenAI
 # MAGIC ## Call the Model Service
 # MAGIC
 # MAGIC The OpenAI client points at the workspace's AI Gateway, `/ai-gateway/mlflow/v1`, and `model`
-# MAGIC is the model service's name. The workspace client authenticates you to Databricks: its token is
-# MAGIC sent to the gateway, never to OpenAI, and no new token is created.
+# MAGIC is the model service's name. `WorkspaceClient` creates a Databricks token valid for 20 minutes
+# MAGIC (the identity needs permission to create tokens). The token is sent to the gateway, never to OpenAI.
 # MAGIC
 # MAGIC To call the model service you need `EXECUTE` on it, plus `USE CATALOG` on `course_ops` and
 # MAGIC `USE SCHEMA` on `course_ops.gateway`. The demonstration service grants `EXECUTE` to the
@@ -47,9 +48,11 @@ from openai import OpenAI
 # COMMAND ----------
 
 workspace = WorkspaceClient()
+databricks_token = workspace.tokens.create(lifetime_seconds=1200).token_value
+
 client = OpenAI(
+    api_key=databricks_token,
     base_url=f"{workspace.config.host}/ai-gateway/mlflow/v1",
-    api_key=workspace.config.authenticate()["Authorization"].removeprefix("Bearer "),
 )
 
 response = client.chat.completions.create(

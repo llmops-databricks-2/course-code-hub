@@ -89,7 +89,7 @@ addEventListener('keydown', event => {
 const logoPath = '../kickoff/assets/cauchy-logo.svg';
 slides.forEach((slide, slideIndex) => {
   const footer = document.createElement('header');
-  footer.innerHTML = `<img class="official-logo" src="${logoPath}" alt="Cauchy"><span class="folio">LECTURE 2 · ${String(slideIndex + 1).padStart(2, '0')}</span>`;
+  footer.innerHTML = `<img class="official-logo" src="${logoPath}" alt="Cauchy"><span class="folio">${slideIndex + 1}</span>`;
   slide.append(footer);
 });
 
