@@ -90,10 +90,14 @@ class LakebasePgVectorManager:
         return psycopg.connect(self._get_connection_string())
 
     def ensure_extension(self) -> None:
-        """Enable pgvector. Must run before the Synced Table with a vector column is created."""
+        """Enable lakebase_vector (installs pgvector with CASCADE).
+
+        Must run before the Synced Table with a vector column is created: creating a
+        synced table does not install extensions.
+        """
         with self.connection() as conn:
-            conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
-        logger.info("pgvector extension ready")
+            conn.execute("CREATE EXTENSION IF NOT EXISTS lakebase_vector CASCADE")
+        logger.info("lakebase_vector extension ready")
 
     def ensure_indexes(self) -> None:
         """Create the vector and full-text indexes on the Synced Table.
@@ -102,13 +106,15 @@ class LakebasePgVectorManager:
         the indexes are missing, for example after the Synced Table was recreated.
         """
         with self.connection() as conn:
-            conn.execute(
-                f"""
-                CREATE INDEX IF NOT EXISTS {self.synced_table_name}_embedding_hnsw
-                ON {self.table_name}
-                USING hnsw (embedding vector_cosine_ops)
-                """
-            )
+            # Disabled: the lakebase_ann index (notebook 2.5, section 9) is the only
+            # vector index on embedding, so ai_search sees a single index type.
+            # conn.execute(
+            #     f"""
+            #     CREATE INDEX IF NOT EXISTS {self.synced_table_name}_embedding_hnsw
+            #     ON {self.table_name}
+            #     USING hnsw (embedding vector_cosine_ops)
+            #     """
+            # )
             conn.execute(
                 f"""
                 CREATE INDEX IF NOT EXISTS {self.synced_table_name}_search_gin

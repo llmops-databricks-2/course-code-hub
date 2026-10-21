@@ -230,7 +230,6 @@ for row in rows:
 # MAGIC `CREATE INDEX` is denied, a `databricks_superuser` must grant you index
 # MAGIC permissions. We add:
 # MAGIC
-# MAGIC - an HNSW index using cosine distance (`<=>`) on `embedding`
 # MAGIC - a GIN index on `to_tsvector('english', title || ' ' || text)` for keyword
 # MAGIC   search; queries use the same expression, so Postgres can use the index
 # MAGIC
@@ -311,8 +310,8 @@ for position, row in enumerate(hybrid_results, 1):
 # MAGIC
 # MAGIC The `ai_search` SQL function (Beta) queries knowledge sources by type:
 # MAGIC `vector_search` for Databricks AI Search indexes (Lecture 2.4) and
-# MAGIC `lakebase_search` for Lakebase synced tables. Several sources in one call are
-# MAGIC deduplicated, reranked together, and returned as one ranked list.
+# MAGIC `lakebase_search` for Lakebase synced tables. The same question is asked of
+# MAGIC each source below.
 # MAGIC See [ai_search](https://docs.databricks.com/aws/en/sql/language-manual/functions/ai_search).
 # MAGIC
 # MAGIC `lakebase_search` needs **Lakebase Search** on the project (project
@@ -339,74 +338,52 @@ logger.info("lakebase_vector extension and lakebase_ann index ready")
 
 # COMMAND ----------
 
-import json
+# MAGIC %md
+# MAGIC ### Databricks AI Search index (Lecture 2.4)
+
+# COMMAND ----------
 
 ai_search_index = f"{cfg.catalog}.{cfg.schema}.arxiv_chunks_ai_search_managed"
 
-ai_search_source = {
-    "type": "vector_search",
-    "config": {
-        "index_name": ai_search_index,
-        "text_col": "text",
-        "doc_uri_col": "id",
-        "filter_columns": ["year"],
-    },
-}
-lakebase_source = {
-    "type": "lakebase_search",
-    "config": {
-        "index_name": synced_table,
-        "text_col": "text",
-        "doc_uri_col": "id",
-        "embedding_column": "embedding",
-        # Must be the model that produced the stored embeddings
-        "embedding_model": cfg.embedding_endpoint,
-        "lakebase_project_id": cfg.lakebase_project_id,
-        "filter_columns": ["year"],
-    },
-}
-
-
-def run_ai_search(query: str, sources: list[dict], generate_answer: bool = False) -> dict:
-    result = spark.sql(
-        """
-        SELECT to_json(ai_search(
-            :query,
-            parse_json(:sources),
-            options => map('generate_answer', :generate_answer)
-        )) AS result
-        """,
-        args={
-            "query": query,
-            "sources": json.dumps(sources),
-            "generate_answer": str(generate_answer).lower(),
-        },
-    ).first()["result"]
-    return json.loads(result)
-
-
-def show_documents(title: str, result: dict) -> None:
-    logger.info(title)
-    for document in result.get("document") or []:
-        logger.info(f"  {document['doc_uri']} | {document['page_content'][:100]}...")
-
-
-query = "transformer architecture attention mechanism"
-
-show_documents("Databricks AI Search", run_ai_search(query, [ai_search_source]))
-show_documents("Lakebase", run_ai_search(query, [lakebase_source]))
+ai_search_result = spark.sql(f"""
+    SELECT ai_search(
+        'transformer architecture attention mechanism',
+        PARSE_JSON('[{{
+            "type": "vector_search",
+            "config": {{
+                "index_name": "{ai_search_index}",
+                "text_col": "text",
+                "doc_uri_col": "id"
+            }}
+        }}]')
+    ) AS result
+""")
+display(ai_search_result)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Both sources in one call, with a generated answer grounded in the retrieved
-# MAGIC chunks.
+# MAGIC ### Lakebase synced table
 
 # COMMAND ----------
 
-combined = run_ai_search(query, [ai_search_source, lakebase_source], generate_answer=True)
-show_documents("AI Search + Lakebase", combined)
-logger.info(f"Answer: {combined.get('answer')}")
+lakebase_result = spark.sql(f"""
+    SELECT ai_search(
+        'transformer architecture attention mechanism',
+        PARSE_JSON('[{{
+            "type": "lakebase_search",
+            "config": {{
+                "index_name": "{synced_table}",
+                "text_col": "text",
+                "doc_uri_col": "id",
+                "embedding_column": "embedding",
+                "embedding_model": "{cfg.embedding_endpoint}",
+                "lakebase_project_id": "{cfg.lakebase_project_id}"
+            }}
+        }}]')
+    ) AS result
+""")
+display(lakebase_result)
 
 # COMMAND ----------
 
