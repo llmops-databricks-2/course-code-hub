@@ -38,12 +38,6 @@ ai_search_endpoint = f"{env}-arxiv-ai-search"
 managed_index = f"{cfg.catalog}.{cfg.schema}.arxiv_chunks_ai_search_managed"
 self_managed_index = f"{cfg.catalog}.{cfg.schema}.arxiv_chunks_ai_search_self_managed"
 
-# Provisioning is intentionally opt-in. AI Search creates billable managed
-# resources.
-RUN_CREATE_ENDPOINT = False
-RUN_CREATE_INDEXES = False
-RUN_QUERY = False
-
 if not cfg.usage_policy_id:
     raise ValueError("usage_policy_id is missing in project_config.yml")
 
@@ -104,21 +98,11 @@ from databricks.vector_search.client import VectorSearchClient
 
 ai_search = VectorSearchClient()
 
-if RUN_CREATE_ENDPOINT:
-    try:
-        ai_search.get_endpoint(name=ai_search_endpoint)
-        logger.info(f"AI Search endpoint already exists: {ai_search_endpoint}")
-    except Exception:
-        ai_search.create_endpoint_and_wait(
-            name=ai_search_endpoint,
-            endpoint_type="STANDARD",
-            usage_policy_id=cfg.usage_policy_id,
-        )
-        logger.info(f"Created AI Search endpoint: {ai_search_endpoint}")
-else:
-    logger.info(
-        "Endpoint creation skipped. Set RUN_CREATE_ENDPOINT=True only when "
-        "you want to provision AI Search resources."
+if not ai_search.endpoint_exists(name=ai_search_endpoint):
+    ai_search.create_endpoint_and_wait(
+        name=ai_search_endpoint,
+        endpoint_type="STANDARD",
+        usage_policy_id=cfg.usage_policy_id,
     )
 
 # COMMAND ----------
@@ -135,19 +119,29 @@ else:
 # MAGIC vectors already in Delta, so AI Search and Lakebase (Lecture 2.5) search the
 # MAGIC same vectors, and the embedding model is a pipeline decision.
 # MAGIC
-# MAGIC An existing index is synchronized instead of created again (`TRIGGERED`
-# MAGIC indexes only pick up source changes when we call `sync()`).
+# MAGIC An existing index is synchronized instead of created again: `TRIGGERED`
+# MAGIC indexes only pick up source changes (for example new chunks from the daily
+# MAGIC data pipeline) when we call `sync()`. A new index runs its first sync as part
+# MAGIC of creation.
 
 # COMMAND ----------
 
+index_specs = {
+    # Option A: AI Search embeds the text column
+    managed_index: {
+        "embedding_source_column": "text",
+        "embedding_model_endpoint_name": cfg.embedding_endpoint,
+    },
+    # Option B: AI Search indexes our precomputed embedding column
+    self_managed_index: {
+        "embedding_vector_column": "embedding",
+        "embedding_dimension": 1024,
+    },
+}
 
-def get_or_create_index(index_name: str, **index_spec):
-    try:
-        index = ai_search.get_index(index_name=index_name)
-        index.sync()
-        logger.info(f"AI Search index already exists, sync started: {index_name}")
-    except Exception:
-        index = ai_search.create_delta_sync_index(
+for index_name, index_spec in index_specs.items():
+    if not ai_search.index_exists(endpoint_name=ai_search_endpoint, index_name=index_name):
+        ai_search.create_delta_sync_index(
             endpoint_name=ai_search_endpoint,
             source_table_name=source_table,
             index_name=index_name,
@@ -156,28 +150,8 @@ def get_or_create_index(index_name: str, **index_spec):
             usage_policy_id=cfg.usage_policy_id,
             **index_spec,
         )
-        logger.info(f"Created AI Search index: {index_name}")
-    return index
-
-
-if RUN_CREATE_INDEXES:
-    # Option A: AI Search embeds the text column
-    get_or_create_index(
-        managed_index,
-        embedding_source_column="text",
-        embedding_model_endpoint_name=cfg.embedding_endpoint,
-    )
-    # Option B: AI Search indexes our precomputed embedding column
-    get_or_create_index(
-        self_managed_index,
-        embedding_vector_column="embedding",
-        embedding_dimension=1024,
-    )
-else:
-    logger.info(
-        "Index creation skipped. Set RUN_CREATE_INDEXES=True after the endpoint "
-        "is ready."
-    )
+    else:
+        ai_search.get_index(index_name=index_name).sync()
 
 # COMMAND ----------
 
@@ -185,7 +159,8 @@ else:
 # MAGIC ## 4. Search options
 # MAGIC
 # MAGIC All queries below go through `similarity_search`. We wait until both
-# MAGIC indexes are ready, then compare the options on the managed index first:
+# MAGIC indexes are ready and their syncs have finished, then compare the options on
+# MAGIC the managed index first:
 # MAGIC
 # MAGIC | Option | Parameter | What it does |
 # MAGIC |---|---|---|
@@ -214,13 +189,10 @@ def show(title: str, results: dict) -> None:
 query = "Chunking strategies for document processing"
 columns = ["id", "arxiv_id", "title", "year", "text"]
 
-if RUN_QUERY:
-    managed = ai_search.get_index(index_name=managed_index)
-    self_managed = ai_search.get_index(index_name=self_managed_index)
-    managed.wait_until_ready()
-    self_managed.wait_until_ready()
-else:
-    logger.info("Queries skipped. Set RUN_QUERY=True after the indexes are online.")
+managed = ai_search.get_index(index_name=managed_index)
+self_managed = ai_search.get_index(index_name=self_managed_index)
+managed.wait_until_ready(wait_for_updates=True)
+self_managed.wait_until_ready(wait_for_updates=True)
 
 # COMMAND ----------
 
@@ -229,11 +201,10 @@ else:
 
 # COMMAND ----------
 
-if RUN_QUERY:
-    show(
-        "ANN",
-        managed.similarity_search(query_text=query, columns=columns, num_results=5),
-    )
+show(
+    "ANN",
+    managed.similarity_search(query_text=query, columns=columns, num_results=5),
+)
 
 # COMMAND ----------
 
@@ -245,13 +216,12 @@ if RUN_QUERY:
 
 # COMMAND ----------
 
-if RUN_QUERY:
-    show(
-        "HYBRID",
-        managed.similarity_search(
-            query_text=query, columns=columns, num_results=5, query_type="HYBRID"
-        ),
-    )
+show(
+    "HYBRID",
+    managed.similarity_search(
+        query_text=query, columns=columns, num_results=5, query_type="HYBRID"
+    ),
+)
 
 # COMMAND ----------
 
@@ -273,22 +243,21 @@ if RUN_QUERY:
 
 # COMMAND ----------
 
-if RUN_QUERY:
-    show(
-        "Filter: year = 2026",
-        managed.similarity_search(
-            query_text=query, columns=columns, num_results=5, filters={"year": 2026}
-        ),
-    )
-    show(
-        "Filter: year >= 2025 AND title contains 'agent'",
-        managed.similarity_search(
-            query_text=query,
-            columns=columns,
-            num_results=5,
-            filters={"year >=": 2025, "title LIKE": "agent"},
-        ),
-    )
+show(
+    "Filter: year = 2026",
+    managed.similarity_search(
+        query_text=query, columns=columns, num_results=5, filters={"year": 2026}
+    ),
+)
+show(
+    "Filter: year >= 2025 AND title contains 'agent'",
+    managed.similarity_search(
+        query_text=query,
+        columns=columns,
+        num_results=5,
+        filters={"year >=": 2025, "title LIKE": "agent"},
+    ),
+)
 
 # COMMAND ----------
 
@@ -297,13 +266,12 @@ if RUN_QUERY:
 
 # COMMAND ----------
 
-if RUN_QUERY:
-    show(
-        "ANN with score_threshold=0.6",
-        managed.similarity_search(
-            query_text=query, columns=columns, num_results=10, score_threshold=0.6
-        ),
-    )
+show(
+    "ANN with score_threshold=0.6",
+    managed.similarity_search(
+        query_text=query, columns=columns, num_results=10, score_threshold=0.6
+    ),
+)
 
 # COMMAND ----------
 
@@ -315,18 +283,17 @@ if RUN_QUERY:
 
 # COMMAND ----------
 
-if RUN_QUERY:
-    show(
-        "HYBRID + filter + reranker",
-        managed.similarity_search(
-            query_text=query,
-            columns=columns,
-            filters={"year": 2026},
-            num_results=5,
-            query_type="HYBRID",
-            reranker=DatabricksReranker(columns_to_rerank=["text", "title"]),
-        ),
-    )
+show(
+    "HYBRID + filter + reranker",
+    managed.similarity_search(
+        query_text=query,
+        columns=columns,
+        filters={"year": 2026},
+        num_results=5,
+        query_type="HYBRID",
+        reranker=DatabricksReranker(columns_to_rerank=["text", "title"]),
+    ),
+)
 
 # COMMAND ----------
 
@@ -339,27 +306,26 @@ if RUN_QUERY:
 
 # COMMAND ----------
 
-if RUN_QUERY:
-    client = w.serving_endpoints.get_open_ai_client()
-    query_vector = (
-        client.embeddings.create(model=cfg.embedding_endpoint, input=query).data[0].embedding
-    )
-    show(
-        "Self-managed ANN",
-        self_managed.similarity_search(
-            query_vector=query_vector, columns=columns, num_results=5
-        ),
-    )
-    show(
-        "Self-managed HYBRID",
-        self_managed.similarity_search(
-            query_vector=query_vector,
-            query_text=query,
-            columns=columns,
-            num_results=5,
-            query_type="HYBRID",
-        ),
-    )
+client = w.serving_endpoints.get_open_ai_client()
+query_vector = (
+    client.embeddings.create(model=cfg.embedding_endpoint, input=query).data[0].embedding
+)
+show(
+    "Self-managed ANN",
+    self_managed.similarity_search(
+        query_vector=query_vector, columns=columns, num_results=5
+    ),
+)
+show(
+    "Self-managed HYBRID",
+    self_managed.similarity_search(
+        query_vector=query_vector,
+        query_text=query,
+        columns=columns,
+        num_results=5,
+        query_type="HYBRID",
+    ),
+)
 
 # COMMAND ----------
 
