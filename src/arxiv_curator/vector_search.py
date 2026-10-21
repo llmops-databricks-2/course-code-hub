@@ -9,6 +9,7 @@ from typing import Any
 import psycopg
 from databricks.sdk import WorkspaceClient
 from loguru import logger
+from openai import OpenAI
 from arxiv_curator.config import ProjectConfig
 
 
@@ -125,7 +126,10 @@ class LakebasePgVectorManager:
     def embed_query(self, query: str) -> list[float]:
         """Generate a query embedding with the same model used for documents."""
         workspace = self.workspace or WorkspaceClient()
-        client = workspace.serving_endpoints.get_open_ai_client()
+        client = OpenAI(
+            api_key=workspace.tokens.create(lifetime_seconds=1200).token_value,
+            base_url=f"{workspace.config.host.rstrip('/')}/ai-gateway/mlflow/v1",
+        )
         response = client.embeddings.create(model=self.embedding_model, input=query)
         if not response.data or not response.data[0].embedding:
             raise ValueError("The embedding endpoint returned no vector")
@@ -168,6 +172,8 @@ class LakebasePgVectorManager:
         query: str,
         num_results: int = 5,
         year: int | None = None,
+        year_from: int | None = None,
+        year_to: int | None = None,
         vector_weight: float = 0.7,
     ) -> list[dict[str, Any]]:
         """Combine cosine similarity and PostgreSQL full-text ranking."""
@@ -178,6 +184,9 @@ class LakebasePgVectorManager:
         if year is not None:
             where += " AND year = %s"
             params.append(year)
+        elif year_from is not None and year_to is not None:
+            where += " AND year BETWEEN %s AND %s"
+            params.extend([year_from, year_to])
         params.extend([vector_weight, text_weight, num_results])
         sql = f"""
             WITH ranked AS (

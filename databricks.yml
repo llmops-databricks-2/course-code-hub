@@ -30,6 +30,7 @@ variables:
 
 include:
   - resources/process_data.yml
+  - resources/lecture3_tools.yml
 
 sync:
   include:

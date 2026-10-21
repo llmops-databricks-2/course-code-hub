@@ -24,6 +24,17 @@ class ProjectConfig(BaseModel):
     warehouse_id: str = Field(..., description="Warehouse ID")
     experiment_path: str = Field(..., description="MLflow experiment path")
     lakebase_project_id: str = Field(..., description="Lakebase project ID")
+    agent_app_name: str | None = Field(None, description="Databricks App name")
+    genie_space_id: str | None = Field(None, description="Genie Space ID")
+    system_prompt: str = Field(
+        "You are a helpful assistant that answers questions about arXiv papers.",
+        description="Agent system prompt",
+    )
+
+    @property
+    def experiment_name(self) -> str:
+        """Expose the configured MLflow experiment using the agent's name."""
+        return self.experiment_path
 
     model_config = {"populate_by_name": True}
 

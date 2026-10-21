@@ -1,0 +1,17 @@
+resources:
+  jobs:
+    lecture3-custom-tools:
+      name: lecture3-custom-tools
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"
+            dependencies:
+              - ../dist/*.whl
+      tasks:
+        - task_key: custom_functions_tools
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/3.1_custom_functions_tools.py
+            base_parameters:
+              env: "${bundle.target}"

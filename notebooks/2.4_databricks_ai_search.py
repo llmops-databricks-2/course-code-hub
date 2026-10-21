@@ -22,6 +22,7 @@
 
 from databricks.sdk import WorkspaceClient
 from loguru import logger
+from openai import OpenAI
 from pyspark.sql import SparkSession
 
 from arxiv_curator.config import get_env, load_config
@@ -340,7 +341,10 @@ if RUN_QUERY:
 # COMMAND ----------
 
 if RUN_QUERY:
-    client = w.serving_endpoints.get_open_ai_client()
+    client = OpenAI(
+        api_key=w.tokens.create(lifetime_seconds=1200).token_value,
+        base_url=f"{w.config.host.rstrip('/')}/ai-gateway/mlflow/v1",
+    )
     query_vector = (
         client.embeddings.create(model=cfg.embedding_endpoint, input=query).data[0].embedding
     )
