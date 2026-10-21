@@ -60,20 +60,14 @@
 # MAGIC
 # MAGIC ### Token Limits by Model
 # MAGIC
-# MAGIC Models available on Databricks (October 2026). Context windows change often: check the
-# MAGIC [supported models](https://docs.databricks.com/aws/en/machine-learning/foundation-model-apis/supported-models)
-# MAGIC page and the providers' documentation before relying on a number.
-# MAGIC
-# MAGIC | Model | Provider | Context Window | Notes |
-# MAGIC |-------|----------|---------------|-------|
-# MAGIC | Claude Opus 5.5 / Sonnet 5.5 / Haiku 5.5 | Anthropic | 1M tokens | ~750K words |
-# MAGIC | Kimi K3 | Moonshot AI | 1M tokens | ~750K words |
-# MAGIC | GLM 5.3 | Zhipu AI | 1,048,576 tokens | ~786K words |
-# MAGIC | Grok 4.6 | xAI | 500K tokens | ~375K words |
-# MAGIC | GPT OSS 120B / 20B | OpenAI (open weights) | 128K tokens | ~96K words |
-# MAGIC
-# MAGIC Large windows do not remove the need for retrieval: cost and latency grow with every token,
-# MAGIC and embedding models have far smaller windows than chat models, which bounds chunk size.
+# MAGIC | Model | Context Window | Notes |
+# MAGIC |-------|---------------|-------|
+# MAGIC | GPT-3.5 Turbo | 16K tokens | ~12K words |
+# MAGIC | GPT-4 | 8K-128K tokens | Varies by version |
+# MAGIC | Claude 3 | 200K tokens | ~150K words |
+# MAGIC | Llama 3.1 70B | 128K tokens | ~96K words |
+# MAGIC | Llama 3.1 405B | 128K tokens | ~96K words |
+# MAGIC | Gemini 1.5 Pro | 1M tokens | ~750K words |
 
 # COMMAND ----------
 
@@ -94,7 +88,7 @@ logger.info(f"Short text: {estimate_tokens(short_text)} tokens")
 logger.info(f"Long text: {estimate_tokens(long_text)} tokens")
 
 # Context window example
-context_window = 128_000  # GPT OSS 120B
+context_window = 128_000  # Llama 3.1
 system_prompt_tokens = 200
 user_query_tokens = 100
 max_output_tokens = 2000
@@ -144,7 +138,6 @@ logger.info(f"Approximate words: {available_for_context * 0.75:,.0f}")
 # MAGIC This improves recall by searching with multiple phrasings.
 
 # COMMAND ----------
-
 # Example: Query rewriting for better retrieval
 from openai import OpenAI
 from databricks.sdk import WorkspaceClient
@@ -156,17 +149,57 @@ w = WorkspaceClient()
 spark = SparkSession.builder.getOrCreate()
 cfg = load_config("../project_config.yml", get_env(spark))
 
-# The course chat model service in Unity AI Gateway (course_ops.gateway.chat),
-# called with a Databricks token valid for 20 minutes.
-databricks_token = w.tokens.create(lifetime_seconds=1200).token_value
+# Authenticate using a short-lived Databricks notebook token.
+host = w.config.host
+token = w.tokens.create(lifetime_seconds=1200).token_value
 
 client = OpenAI(
-    api_key=databricks_token,
-    base_url=f"{w.config.host.rstrip('/')}/ai-gateway/mlflow/v1",
+    api_key=token,
+    base_url=f"{host.rstrip('/')}/ai-gateway/mlflow/v1",
 )
 
+# Use the Unity Catalog AI Gateway service configured for the course.
 MODEL_NAME = cfg.llm_endpoint
 logger.info(f"Using model: {MODEL_NAME}")
+
+
+def response_text(content: object) -> str:
+    """Normalize plain-text and structured OpenAI message content."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, str):
+                text = item
+            elif isinstance(item, dict):
+                text = item.get("text") or item.get("content")
+            else:
+                text = getattr(item, "text", None)
+            if text:
+                parts.append(response_text(text))
+        return "".join(parts)
+    if isinstance(content, dict):
+        return response_text(content.get("text") or content.get("content") or "")
+    output_text = getattr(content, "output_text", None)
+    if output_text:
+        return response_text(output_text)
+    return str(content)
+
+
+def completion_text(response: object) -> str:
+    """Extract text from chat-completion and Responses API result shapes."""
+    output_text = getattr(response, "output_text", None)
+    if output_text:
+        return response_text(output_text).strip()
+    choices = getattr(response, "choices", None) or []
+    if choices:
+        message = getattr(choices[0], "message", None)
+        content = getattr(message, "content", None)
+        text = response_text(content).strip()
+        if text:
+            return text
+    raise ValueError(f"Model response contained no text: {response!r}")
 
 def rewrite_query(original_query: str) -> list[str]:
     """Generate query variations for better retrieval."""
@@ -182,13 +215,14 @@ Generate 3 variations that:
 
 Return only the 3 variations, one per line."""
 
-    response = client.responses.create(
+    response = client.chat.completions.create(
         model=MODEL_NAME,
-        input=[{"role": "user", "content": [{"type": "input_text", "text": prompt}]}],
-        max_output_tokens=200,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=500,
+        temperature=0.7
     )
     
-    variations = response.output_text.strip().split('\n')
+    variations = completion_text(response).split('\n')
     return [v.strip() for v in variations if v.strip()]
 
 # Example
@@ -286,13 +320,14 @@ def summarize_chunk(text: str, max_length: int = 100) -> str:
 
 Summary:"""
 
-    response = client.responses.create(
+    response = client.chat.completions.create(
         model=MODEL_NAME,
-        input=[{"role": "user", "content": [{"type": "input_text", "text": prompt}]}],
-        max_output_tokens=max_length * 2,  # Rough token estimate
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=max(max_length * 2, 500),  # Ensure enough tokens for reasoning + output
+        temperature=0.3
     )
     
-    return response.output_text.strip()
+    return completion_text(response)
 
 # Example
 long_text = """
@@ -337,7 +372,6 @@ logger.info(f"\nSummary:\n{summary}")
 # MAGIC - **Language**: Specific languages
 
 # COMMAND ----------
-import json
 
 # Example: Metadata structure
 example_document = {
@@ -356,7 +390,7 @@ example_document = {
 }
 
 logger.info("Example document with metadata:")
-
+import json
 logger.info(json.dumps(example_document, indent=2))
 
 # COMMAND ----------
@@ -400,6 +434,26 @@ Answer:"""
     
     return prompt
 
+
+def answer_rag_prompt(query: str, context_chunks: list[str]) -> str:
+    """Generate an answer grounded in the supplied context."""
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=[
+            {
+                "role": "system",
+                "content": "Answer only from the supplied context.",
+            },
+            {
+                "role": "user",
+                "content": create_rag_prompt(query, context_chunks),
+            },
+        ],
+        max_tokens=300,
+        temperature=0.2,
+    )
+    return completion_text(response)
+
 # Example
 query = "What is Databricks?"
 context_chunks = [
@@ -409,6 +463,7 @@ context_chunks = [
 
 prompt = create_rag_prompt(query, context_chunks)
 logger.info(prompt)
+logger.info(f"Answer: {answer_rag_prompt(query, context_chunks)}")
 
 # COMMAND ----------
 
@@ -431,7 +486,7 @@ logger.info(prompt)
 # MAGIC %md
 # MAGIC ## 10. Best Practices Summary
 # MAGIC
-# MAGIC ### Do:
+# MAGIC ### ✅ Do:
 # MAGIC 1. Chunk documents appropriately (more in next notebook)
 # MAGIC 2. Use high-quality embeddings
 # MAGIC 3. Implement metadata filtering
@@ -440,7 +495,7 @@ logger.info(prompt)
 # MAGIC 6. Provide clear instructions in prompts
 # MAGIC 7. Handle cases where context doesn't contain the answer
 # MAGIC
-# MAGIC ### Don't:
+# MAGIC ### ❌ Don't:
 # MAGIC 1. Exceed context window limits
 # MAGIC 2. Include irrelevant information
 # MAGIC 3. Ignore the "lost in the middle" problem
