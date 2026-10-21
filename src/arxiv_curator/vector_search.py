@@ -89,14 +89,19 @@ class LakebasePgVectorManager:
         self._connection_string = None
         return psycopg.connect(self._get_connection_string())
 
-    def ensure_indexes(self) -> None:
-        """Enable pgvector and create the vector and full-text indexes on the Synced Table.
-
-        Synced Tables allow CREATE INDEX (but no writes). Run again after a full
-        refresh of the Synced Table in case the indexes were dropped with it.
-        """
+    def ensure_extension(self) -> None:
+        """Enable pgvector. Must run before the Synced Table with a vector column is created."""
         with self.connection() as conn:
             conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+        logger.info("pgvector extension ready")
+
+    def ensure_indexes(self) -> None:
+        """Create the vector and full-text indexes on the Synced Table.
+
+        Synced Tables allow CREATE INDEX (but no writes). Idempotent: rerun it if
+        the indexes are missing, for example after the Synced Table was recreated.
+        """
+        with self.connection() as conn:
             conn.execute(
                 f"""
                 CREATE INDEX IF NOT EXISTS {self.synced_table_name}_embedding_hnsw

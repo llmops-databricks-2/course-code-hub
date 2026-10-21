@@ -41,6 +41,8 @@ postgres_branch = f"projects/{cfg.lakebase_project_id}/branches/production"
 
 # Keep creation disabled until the source table and permissions have been checked.
 RUN_CREATE_SYNC = False
+# Start a sync of the existing Synced Table from code (see section 3)
+RUN_SYNC_NOW = False
 
 logger.info(f"Environment: {env}")
 logger.info(f"Source table: {source_table}")
@@ -88,6 +90,16 @@ logger.info(f"Validated source table and enabled Change Data Feed: {source_table
 # MAGIC - `TRIGGERED` is useful for a classroom because changes are synchronized
 # MAGIC   when requested. Use `SNAPSHOT` for a complete replacement on each run, or
 # MAGIC   `CONTINUOUS` to replicate the source continuously.
+# MAGIC
+# MAGIC Creating a synced table does not install Postgres extensions, so we enable
+# MAGIC pgvector first: the `vector` type override needs it.
+
+# COMMAND ----------
+
+# The manager obtains a short-lived Lakebase database credential through the
+# Databricks SDK. It does not store a password in the notebook.
+pgvector = LakebasePgVectorManager(config=cfg, workspace=w)
+pgvector.ensure_extension()
 
 # COMMAND ----------
 
@@ -144,8 +156,9 @@ except Exception:
 # MAGIC
 # MAGIC Wait until the Synced Table is online before querying it. The destination
 # MAGIC is read-only: write changes to `arxiv_chunks_table`, not to the Lakebase
-# MAGIC copy. For a `TRIGGERED` table, use the Databricks UI or the corresponding
-# MAGIC Databricks CLI command to start a later refresh after source changes.
+# MAGIC copy. A `TRIGGERED` table only syncs later source changes when a sync is
+# MAGIC started: **Sync now** on the synced table's Overview tab, or a Lakeflow Jobs
+# MAGIC *Database Table Sync* task with a table update trigger or a schedule.
 
 # COMMAND ----------
 
@@ -158,6 +171,27 @@ except Exception as error:
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ### Sync now from code
+# MAGIC
+# MAGIC A Synced Table runs on a Lakeflow pipeline, and its status carries that
+# MAGIC pipeline's id. Starting a pipeline update runs a sync, like **Sync now** in
+# MAGIC the UI. This uses the general Pipelines API: the synced tables documentation
+# MAGIC only describes the UI button and the Lakeflow Jobs task.
+
+# COMMAND ----------
+
+if RUN_SYNC_NOW:
+    pipeline_id = w.postgres.get_synced_table(
+        name=f"synced_tables/{synced_table}"
+    ).status.pipeline_id
+    update = w.pipelines.start_update(pipeline_id=pipeline_id)
+    logger.info(f"Started sync: pipeline {pipeline_id}, update {update.update_id}")
+else:
+    logger.info("Sync skipped. Set RUN_SYNC_NOW=True to sync source changes now.")
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## 4. Query the Lakebase mirror
 # MAGIC
 # MAGIC This table is in Lakebase Postgres, not in the Spark SQL catalog. Query it
@@ -165,10 +199,6 @@ except Exception as error:
 # MAGIC type override, `embedding` is a pgvector `vector`.
 
 # COMMAND ----------
-
-# The manager obtains a short-lived Lakebase database credential through the
-# Databricks SDK. It does not store a password in the notebook.
-pgvector = LakebasePgVectorManager(config=cfg, workspace=w)
 
 with pgvector.connection() as conn:
     rows = conn.execute(
@@ -186,13 +216,16 @@ for row in rows:
 # MAGIC ## 5. Index the Synced Table for retrieval
 # MAGIC
 # MAGIC A Synced Table accepts `SELECT`, `CREATE INDEX`, and `DROP TABLE`, but no
-# MAGIC writes. We add:
+# MAGIC writes. The table is owned by an internal `databricks_writer_<dbid>` role; if
+# MAGIC `CREATE INDEX` is denied, a `databricks_superuser` must grant you index
+# MAGIC permissions. We add:
 # MAGIC
 # MAGIC - an HNSW index using cosine distance (`<=>`) on `embedding`
 # MAGIC - a GIN index on `to_tsvector('english', title || ' ' || text)` for keyword
 # MAGIC   search; queries use the same expression, so Postgres can use the index
 # MAGIC
-# MAGIC Rerun this cell after a full refresh of the Synced Table.
+# MAGIC The call is idempotent: rerun it if the indexes are missing, for example
+# MAGIC after the Synced Table was recreated.
 
 # COMMAND ----------
 
