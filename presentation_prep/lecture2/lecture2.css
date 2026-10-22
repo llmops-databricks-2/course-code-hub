@@ -524,3 +524,9 @@ body.present .deck-controls:hover, body.present .deck-controls:focus-within { op
 .rag-refresh-flow article > span { color:var(--accent); font-size:30px; width:32px; flex-shrink:0; }
 .rag-refresh-flow h3 { font-size:23px; }
 .rag-refresh-flow p { font-size:21px; margin-top:6px; }
+
+/* Native vector diagrams for embedding options */
+.embedding-diagram-pair svg { display:block; width:100%; height:360px; }
+.embedding-diagram-pair { margin-top:24px; gap:32px; }
+.embedding-diagram-pair h3 { margin-bottom:12px; }
+.embedding-diagram-pair figcaption { font-size:19px; margin-top:10px; }
