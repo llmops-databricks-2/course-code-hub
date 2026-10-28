@@ -38,12 +38,7 @@ from uuid import uuid4
 import psycopg
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.postgres import (
-    PostgresAPI,
-    Project,
-    ProjectDefaultEndpointSettings,
-    ProjectSpec,
-)
-from google.protobuf.duration_pb2 import Duration
+    PostgresAPI)
 from loguru import logger
 
 from arxiv_curator.config import ProjectConfig
