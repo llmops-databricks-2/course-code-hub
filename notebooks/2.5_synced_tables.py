@@ -39,11 +39,6 @@ source_table = f"{cfg.catalog}.{cfg.schema}.arxiv_chunks_table"
 synced_table = f"{cfg.catalog}.{cfg.schema}.arxiv_chunks_synced"
 postgres_branch = f"projects/{cfg.lakebase_project_id}/branches/production"
 
-# Keep creation disabled until the source table and permissions have been checked.
-RUN_CREATE_SYNC = False
-# Start a sync of the existing Synced Table from code (see section 3)
-RUN_SYNC_NOW = False
-
 logger.info(f"Environment: {env}")
 logger.info(f"Source table: {source_table}")
 logger.info(f"Synced table: {synced_table}")
@@ -78,10 +73,11 @@ logger.info(f"Validated source table and enabled Change Data Feed: {source_table
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 2. Create the Synced Table
+# MAGIC ## 2. Create or sync the Synced Table
 # MAGIC
-# MAGIC The first run provisions the target and performs an initial
-# MAGIC synchronization. Later runs inspect the existing synced table instead.
+# MAGIC The first run creates the synced table, which performs the initial
+# MAGIC synchronization. Later runs sync the existing table, so new chunks (for
+# MAGIC example from the daily data pipeline) reach Lakebase.
 # MAGIC
 # MAGIC - `type_overrides` syncs `embedding` as a native pgvector `vector(1024)`
 # MAGIC   column. Without it, Delta `ARRAY` columns land in Postgres as `JSONB`.
@@ -103,91 +99,105 @@ pgvector.ensure_extension()
 
 # COMMAND ----------
 
+import time
+
+from databricks.sdk.errors import NotFound
+from databricks.sdk.service.pipelines import UpdateInfoState
 from databricks.sdk.service.postgres import (
     NewPipelineSpec,
     SyncedTable,
+    SyncedTableState,
     SyncedTableSyncedTableSpec,
     SyncedTableSyncedTableSpecPgSpecificType,
     SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy,
     SyncedTableSyncedTableSpecTypeOverride,
 )
 
-try:
-    synced = w.postgres.get_synced_table(name=f"synced_tables/{synced_table}")
-    logger.info(f"Synced Table already exists: {synced_table}")
-except Exception:
-    if not RUN_CREATE_SYNC:
-        logger.info(
-            "Synced Table is not created. Set RUN_CREATE_SYNC=True and rerun "
-            "this cell to provision it."
-        )
-    else:
-        synced = w.postgres.create_synced_table(
-            synced_table=SyncedTable(
-                spec=SyncedTableSyncedTableSpec(
-                    source_table_full_name=source_table,
-                    branch=postgres_branch,
-                    postgres_database="databricks_postgres",
-                    primary_key_columns=["id"],
-                    scheduling_policy=SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy.TRIGGERED,
-                    create_database_objects_if_missing=True,
-                    new_pipeline_spec=NewPipelineSpec(
-                        budget_policy_id=cfg.usage_policy_id,
-                        storage_catalog=cfg.catalog,
-                        storage_schema=cfg.schema,
-                    ),
-                    type_overrides=[
-                        SyncedTableSyncedTableSpecTypeOverride(
-                            column_name="embedding",
-                            pg_type=SyncedTableSyncedTableSpecPgSpecificType.PG_SPECIFIC_TYPE_VECTOR,
-                            size=1024,
-                        )
-                    ],
-                )
-            ),
-            synced_table_id=synced_table,
-        ).wait()
-        logger.info(f"Created Synced Table: {synced_table}")
+synced_table_name = f"synced_tables/{synced_table}"
 
-# COMMAND ----------
 
-# MAGIC %md
-# MAGIC ## 3. Check synchronization status
-# MAGIC
-# MAGIC Wait until the Synced Table is online before querying it. The destination
-# MAGIC is read-only: write changes to `arxiv_chunks_table`, not to the Lakebase
-# MAGIC copy. A `TRIGGERED` table only syncs later source changes when a sync is
-# MAGIC started: **Sync now** on the synced table's Overview tab, or a Lakeflow Jobs
-# MAGIC *Database Table Sync* task with a table update trigger or a schedule.
+def synced_table_exists() -> bool:
+    try:
+        w.postgres.get_synced_table(name=synced_table_name)
+        return True
+    except NotFound:
+        return False
 
-# COMMAND ----------
 
-try:
-    status = w.postgres.get_synced_table(name=f"synced_tables/{synced_table}").status
-    logger.info(f"State: {status.detailed_state} | {status.message}")
-except Exception as error:
-    logger.info(f"Synced Table status is not available yet: {error}")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### Sync now from code
-# MAGIC
-# MAGIC A Synced Table runs on a Lakeflow pipeline, and its status carries that
-# MAGIC pipeline's id. Starting a pipeline update runs a sync, like **Sync now** in
-# MAGIC the UI. This uses the general Pipelines API: the synced tables documentation
-# MAGIC only describes the UI button and the Lakeflow Jobs task.
-
-# COMMAND ----------
-
-if RUN_SYNC_NOW:
-    pipeline_id = w.postgres.get_synced_table(
-        name=f"synced_tables/{synced_table}"
-    ).status.pipeline_id
-    update = w.pipelines.start_update(pipeline_id=pipeline_id)
-    logger.info(f"Started sync: pipeline {pipeline_id}, update {update.update_id}")
+if not synced_table_exists():
+    w.postgres.create_synced_table(
+        synced_table=SyncedTable(
+            spec=SyncedTableSyncedTableSpec(
+                source_table_full_name=source_table,
+                branch=postgres_branch,
+                postgres_database="databricks_postgres",
+                primary_key_columns=["id"],
+                scheduling_policy=SyncedTableSyncedTableSpecSyncedTableSchedulingPolicy.TRIGGERED,
+                create_database_objects_if_missing=True,
+                new_pipeline_spec=NewPipelineSpec(
+                    budget_policy_id=cfg.usage_policy_id,
+                    storage_catalog=cfg.catalog,
+                    storage_schema=cfg.schema,
+                ),
+                type_overrides=[
+                    SyncedTableSyncedTableSpecTypeOverride(
+                        column_name="embedding",
+                        pg_type=SyncedTableSyncedTableSpecPgSpecificType.PG_SPECIFIC_TYPE_VECTOR,
+                        size=1024,
+                    )
+                ],
+            )
+        ),
+        synced_table_id=synced_table,
+    ).wait()
+    logger.info(f"Created Synced Table: {synced_table}")
+    update_id = None
 else:
-    logger.info("Sync skipped. Set RUN_SYNC_NOW=True to sync source changes now.")
+    # A Synced Table runs on a Lakeflow pipeline; starting a pipeline update runs a
+    # sync, like "Sync now" in the UI. The synced tables documentation describes only
+    # the UI button and the Lakeflow Jobs task, so this uses the Pipelines API.
+    pipeline_id = w.postgres.get_synced_table(name=synced_table_name).status.pipeline_id
+    update_id = w.pipelines.start_update(pipeline_id=pipeline_id).update_id
+    logger.info(f"Sync started: pipeline {pipeline_id}, update {update_id}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 3. Wait for the synchronization
+# MAGIC
+# MAGIC The destination is read-only: write changes to `arxiv_chunks_table`, not to
+# MAGIC the Lakebase copy. A `TRIGGERED` table only syncs later source changes when a
+# MAGIC sync is started, as above, with **Sync now** on the synced table's Overview
+# MAGIC tab, or with a Lakeflow Jobs *Database Table Sync* task.
+
+# COMMAND ----------
+
+online_states = {
+    SyncedTableState.SYNCED_TABLE_ONLINE,
+    SyncedTableState.SYNCED_TABLE_ONLINE_NO_PENDING_UPDATE,
+}
+failed_states = {
+    SyncedTableState.SYNCED_TABLE_OFFLINE_FAILED,
+    SyncedTableState.SYNCED_TABLE_ONLINE_PIPELINE_FAILED,
+}
+
+while True:
+    status = w.postgres.get_synced_table(name=synced_table_name).status
+    if update_id:
+        # Wait for the sync we started, not just for the table to be online
+        update = w.pipelines.get_update(pipeline_id=status.pipeline_id, update_id=update_id).update
+        if update.state == UpdateInfoState.COMPLETED:
+            break
+        if update.state in {UpdateInfoState.FAILED, UpdateInfoState.CANCELED}:
+            raise RuntimeError(f"Sync {update_id} ended in state {update.state}")
+    elif status.detailed_state in online_states:
+        break
+    if status.detailed_state in failed_states:
+        raise RuntimeError(f"Synced Table failed: {status.detailed_state} | {status.message}")
+    logger.info(f"Waiting for sync: {status.detailed_state}")
+    time.sleep(30)
+
+logger.info(f"Synced Table is up to date: {status.detailed_state} | {status.message}")
 
 # COMMAND ----------
 
@@ -220,7 +230,6 @@ for row in rows:
 # MAGIC `CREATE INDEX` is denied, a `databricks_superuser` must grant you index
 # MAGIC permissions. We add:
 # MAGIC
-# MAGIC - an HNSW index using cosine distance (`<=>`) on `embedding`
 # MAGIC - a GIN index on `to_tsvector('english', title || ' ' || text)` for keyword
 # MAGIC   search; queries use the same expression, so Postgres can use the index
 # MAGIC
@@ -297,7 +306,89 @@ for position, row in enumerate(hybrid_results, 1):
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 9. Inspect the indexes
+# MAGIC ## 9. Compare with `ai_search`: Lakebase and Databricks AI Search
+# MAGIC
+# MAGIC The `ai_search` SQL function (Beta) queries knowledge sources by type:
+# MAGIC `vector_search` for Databricks AI Search indexes (Lecture 2.4) and
+# MAGIC `lakebase_search` for Lakebase synced tables. The same question is asked of
+# MAGIC each source below.
+# MAGIC See [ai_search](https://docs.databricks.com/aws/en/sql/language-manual/functions/ai_search).
+# MAGIC
+# MAGIC `lakebase_search` needs **Lakebase Search** on the project (project
+# MAGIC **Settings** > **Lakebase Search** > **Enable Lakebase Search**). Enabling it
+# MAGIC restarts the project's computes and cannot be turned off.
+# MAGIC
+# MAGIC ![Enable Lakebase Search in the project settings](images/lakebase_search_settings.png)
+# MAGIC
+# MAGIC Then the `lakebase_vector` extension (it builds on pgvector, so our queries
+# MAGIC above keep working) and a `lakebase_ann` index on the `vector(1024)` column.
+
+# COMMAND ----------
+
+with pgvector.connection() as conn:
+    conn.execute("CREATE EXTENSION IF NOT EXISTS lakebase_vector CASCADE")
+    conn.execute(
+        f"""
+        CREATE INDEX IF NOT EXISTS {pgvector.synced_table_name}_embedding_ann
+        ON {pgvector.table_name}
+        USING lakebase_ann (embedding vector_cosine_ops)
+        """
+    )
+logger.info("lakebase_vector extension and lakebase_ann index ready")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Databricks AI Search index (Lecture 2.4)
+
+# COMMAND ----------
+
+ai_search_index = f"{cfg.catalog}.{cfg.schema}.arxiv_chunks_ai_search_managed"
+
+ai_search_result = spark.sql(f"""
+    SELECT ai_search(
+        'transformer architecture attention mechanism',
+        PARSE_JSON('[{{
+            "type": "vector_search",
+            "config": {{
+                "index_name": "{ai_search_index}",
+                "text_col": "text",
+                "doc_uri_col": "id"
+            }}
+        }}]')
+    ) AS result
+""")
+display(ai_search_result)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Lakebase synced table
+
+# COMMAND ----------
+
+lakebase_result = spark.sql(f"""
+    SELECT ai_search(
+        'transformer architecture attention mechanism',
+        PARSE_JSON('[{{
+            "type": "lakebase_search",
+            "config": {{
+                "index_name": "{synced_table}",
+                "text_col": "text",
+                "doc_uri_col": "id",
+                "embedding_column": "embedding",
+                "embedding_model": "{cfg.embedding_endpoint}",
+                "lakebase_project_id": "{cfg.lakebase_project_id}"
+            }}
+        }}]')
+    ) AS result
+""")
+display(lakebase_result)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 10. Inspect the indexes
 
 # COMMAND ----------
 

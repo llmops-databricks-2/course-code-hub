@@ -9,7 +9,6 @@ from typing import Any
 import psycopg
 from databricks.sdk import WorkspaceClient
 from loguru import logger
-from openai import OpenAI
 from arxiv_curator.config import ProjectConfig
 
 
@@ -91,10 +90,14 @@ class LakebasePgVectorManager:
         return psycopg.connect(self._get_connection_string())
 
     def ensure_extension(self) -> None:
-        """Enable pgvector. Must run before the Synced Table with a vector column is created."""
+        """Enable lakebase_vector (installs pgvector with CASCADE).
+
+        Must run before the Synced Table with a vector column is created: creating a
+        synced table does not install extensions.
+        """
         with self.connection() as conn:
-            conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
-        logger.info("pgvector extension ready")
+            conn.execute("CREATE EXTENSION IF NOT EXISTS lakebase_vector CASCADE")
+        logger.info("lakebase_vector extension ready")
 
     def ensure_indexes(self) -> None:
         """Create the vector and full-text indexes on the Synced Table.
@@ -103,13 +106,15 @@ class LakebasePgVectorManager:
         the indexes are missing, for example after the Synced Table was recreated.
         """
         with self.connection() as conn:
-            conn.execute(
-                f"""
-                CREATE INDEX IF NOT EXISTS {self.synced_table_name}_embedding_hnsw
-                ON {self.table_name}
-                USING hnsw (embedding vector_cosine_ops)
-                """
-            )
+            # Disabled: the lakebase_ann index (notebook 2.5, section 9) is the only
+            # vector index on embedding, so ai_search sees a single index type.
+            # conn.execute(
+            #     f"""
+            #     CREATE INDEX IF NOT EXISTS {self.synced_table_name}_embedding_hnsw
+            #     ON {self.table_name}
+            #     USING hnsw (embedding vector_cosine_ops)
+            #     """
+            # )
             conn.execute(
                 f"""
                 CREATE INDEX IF NOT EXISTS {self.synced_table_name}_search_gin
@@ -126,10 +131,7 @@ class LakebasePgVectorManager:
     def embed_query(self, query: str) -> list[float]:
         """Generate a query embedding with the same model used for documents."""
         workspace = self.workspace or WorkspaceClient()
-        client = OpenAI(
-            api_key=workspace.tokens.create(lifetime_seconds=1200).token_value,
-            base_url=f"{workspace.config.host.rstrip('/')}/ai-gateway/mlflow/v1",
-        )
+        client = workspace.serving_endpoints.get_open_ai_client()
         response = client.embeddings.create(model=self.embedding_model, input=query)
         if not response.data or not response.data[0].embedding:
             raise ValueError("The embedding endpoint returned no vector")

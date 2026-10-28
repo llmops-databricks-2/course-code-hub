@@ -176,7 +176,7 @@ requires-dist = [
     { name = "databricks-agents", specifier = "==1.12.0" },
     { name = "databricks-mcp", specifier = "==0.4.0" },
     { name = "databricks-sdk", specifier = "==0.118.0" },
-    { name = "databricks-vectorsearch", specifier = "==0.63" },
+    { name = "databricks-vectorsearch", specifier = "==0.64" },
     { name = "fastapi", specifier = "==0.128.0" },
     { name = "ipykernel", marker = "extra == 'dev'", specifier = ">=6.29.5,<7" },
     { name = "loguru", specifier = "==0.7.3" },
@@ -540,7 +540,7 @@ wheels = [
 
 [[package]]
 name = "databricks-vectorsearch"
-version = "0.63"
+version = "0.64"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "deprecation" },
@@ -549,7 +549,7 @@ dependencies = [
     { name = "requests" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/43/ab/4d6ba34ff89e326cd867e3d1ccf503a2e826558942a36ab3da34e1970ae7/databricks_vectorsearch-0.63-py3-none-any.whl", hash = "sha256:21d98c6f8fb5c35f2177e0d8f22bc3f2ea354089e41537ff83ad8722a553c713", size = 19714, upload-time = "2025-11-13T01:49:19.434Z" },
+    { url = "https://files.pythonhosted.org/packages/42/f7/e4bb15a871fd6bf76869993d437b5da8e0306fb4153b84cfb18d8729082f/databricks_vectorsearch-0.64-py3-none-any.whl", hash = "sha256:a1133fd67bed800613720898c3b3a4bea2ff90fa8fd11f7e3cb413a77a494e3c", size = 21030, upload-time = "2026-01-22T00:29:50.528Z" },
 ]
 
 [[package]]

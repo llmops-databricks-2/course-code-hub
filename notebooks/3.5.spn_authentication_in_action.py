@@ -6,12 +6,10 @@ from loguru import logger
 
 from arxiv_curator.memory import LakebaseMemory
 from arxiv_curator.config import ProjectConfig
-from databricks.sdk.service.postgres import PostgresAPI
 
 cfg = ProjectConfig.from_yaml("../project_config.yml")
 
 w = WorkspaceClient()
-pg_api = PostgresAPI(w.api_client)
 
 project_id = cfg.lakebase_project_id
 
@@ -24,12 +22,6 @@ w = WorkspaceClient()
 os.environ["LAKEBASE_SP_HOST"] = w.config.host
 
 # COMMAND ----------
-instance_name = "arxiv-agent-instance"
-instance = w.database.get_database_instance(instance_name)
-lakebase_host = instance.read_write_dns
-
-project = pg_api.get_project(name=f"projects/{project_id}")
-
 memory = LakebaseMemory(
     project_id=project_id,
 )
