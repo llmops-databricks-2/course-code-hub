@@ -524,3 +524,123 @@ body.present .deck-controls:hover, body.present .deck-controls:focus-within { op
 .rag-refresh-flow article > span { color:var(--accent); font-size:30px; width:32px; flex-shrink:0; }
 .rag-refresh-flow h3 { font-size:23px; }
 .rag-refresh-flow p { font-size:21px; margin-top:6px; }
+
+/* Lecture 3 opening and source diagrams. */
+.lecture-cover { display: flex; align-items: center; }
+.lecture-cover .cover { margin-top: 0; max-width: 640px; }
+.agenda-four { margin-top: 48px; row-gap: 26px; }
+.agenda-four article { padding: 24px 0; }
+.agenda-four h3 { font-size: 27px; }
+.agenda-four p { font-size: 22px; }
+.agent-source-grid { display: grid; grid-template-columns: 1fr 1.15fr; gap: 32px; margin-top: 28px; align-items: center; }
+.agent-source-grid h3 { color: var(--accent); margin-bottom: 12px; }
+.agent-source-grid img { display: block; width: 100%; object-fit: contain; background: white; }
+.agent-source-grid > figure img { height: 310px; }
+.agent-source-grid > div img { height: 155px; }
+.agent-source-grid > div figure + figure { margin-top: 24px; }
+.agent-sequence { display: grid; grid-template-columns: 1.7fr 1fr; gap: 30px; align-items: center; margin-top: 20px; }
+.agent-sequence img { width: 100%; height: 450px; object-fit: contain; }
+.agent-sequence h3 { color: var(--accent); margin: 20px 0 10px; }
+.agent-sequence p { font-size: 22px; }
+.slide[aria-label="Tool-calling loop over pgvector"] .tool-flow { grid-template-columns: 1fr 26px 1fr 26px 1fr 26px 1fr; gap: 10px; margin-top: 32px; }
+.slide[aria-label="Tool-calling loop over pgvector"] .flow-box { padding: 18px; }
+
+/* Editable diagrams matching the lecture 2 palette, frames and connectors. */
+.redrawn-agent-grid { display:grid; grid-template-columns:410fr 658fr; gap:24px; margin-top:24px; }
+.redrawn-agent-grid figure { border:1.5px solid var(--line); border-radius:6px; padding:14px 16px 8px; }
+.redrawn-agent-grid h3 { color:var(--accent); font-size:23px; }
+.redrawn-agent-grid svg { display:block; width:100%; }
+.redrawn-agent-grid > div { display:grid; gap:16px; }
+.redrawn-agent-grid > figure svg { height:400px; }
+.redrawn-agent-grid > div svg { height:180px; }
+.redrawn-sequence { margin-top:20px; border:1.5px solid var(--line); border-radius:6px; padding:8px; }
+.redrawn-sequence svg { display:block; width:100%; height:455px; }
+.workflow-table { margin-top:38px; font-size:23px; }
+.workflow-table th,.workflow-table td { border:0; border-bottom:1px solid var(--line); padding:23px 20px; line-height:1.4; }
+.workflow-table thead th { background:#eeeae6; color:var(--accent); font-size:23px; }
+.workflow-table th:first-child { width:22%; }
+.workflow-table tbody th { color:var(--ink); }
+
+.redrawn-agent-grid > figure svg { height:370px; }
+.redrawn-agent-grid > div svg { height:162px; }
+.redrawn-sequence svg { height:425px; }
+
+.definition-intro { font-size:24px; margin-top:20px; }
+.definition-slide .compare-grid { margin-top:28px; }
+.definition-slide .compare-grid article { padding:22px 26px; }
+.definition-comparison li { font-size:22px; line-height:1.35; margin-bottom:14px; }
+.definition-comparison ul { margin-top:20px; }
+.definition-comparison .definition-emphasis { margin-top:20px; font-weight:700; color:var(--ink); }
+.definition-slide .callout { margin-top:24px; }
+.course-definition { margin-top:28px; padding:24px 28px; border:1.5px solid var(--line); border-radius:8px; background:#faf9f7; }
+.course-definition h3 { color:var(--accent); margin-bottom:18px; }
+.course-definition li { font-size:25px; margin-bottom:10px; }
+.course-rule p { font-size:23px; line-height:1.5; }
+
+.mcp-concept-visual { margin-top:22px; }
+.mcp-concept-visual svg { display:block; width:100%; height:180px; }
+.mcp-capabilities { display:grid; grid-template-columns:repeat(3,1fr); gap:28px; margin-top:14px; }
+.mcp-capabilities article { border-top:2px solid var(--line); padding-top:18px; }
+.mcp-capabilities h3 { color:var(--accent); margin-bottom:10px; }
+.mcp-capabilities p { font-size:21px; line-height:1.35; }
+.mcp-capabilities code { display:block; font-size:16px; margin-top:12px; }
+.mcp-concepts .callout { font-size:21px; margin-top:24px; }
+.mcp-sequence-frame { margin-top:20px; padding:10px; border:1.5px solid var(--line); border-radius:6px; }
+.mcp-sequence-frame svg { display:block; width:100%; height:440px; }
+
+/* Consistent course tables and a full-width platform screenshot. */
+.course-table { margin-top:28px; font-size:22px; }
+.course-table th,.course-table td { border:0; border-bottom:1px solid var(--line); padding:20px 18px; line-height:1.35; }
+.course-table thead th { background:#eeeae6; color:var(--accent); font-size:21px; }
+.course-table th:first-child { width:22%; }
+.course-table tbody th { color:var(--ink); }
+.course-table-slide .endpoint { font-size:17px; }
+.course-table-slide .callout { font-size:21px; margin-top:22px; }
+.course-table-slide .pricing-intro { font-size:23px; margin-top:18px; }
+.mcp-platform-screenshot { padding:18px 18px 58px; background:white; display:flex; align-items:center; }
+.mcp-platform-screenshot > img { display:block; width:100%; height:100%; object-fit:contain; }
+.lecture-cover .cover { max-width:710px; }
+.lecture-cover .cover h1 { font-size:51px; }
+.lecture-cover .hero-art { width:490px; right:-15px; }
+.course-table th,.course-table td { padding-top:16px; padding-bottom:16px; }
+.lecture-cover .cover { position:absolute; top:50%; transform:translateY(-50%); }
+.lecture-cover .hero-art { right:0; }
+
+/* Genie section. */
+.genie-family { display:grid; grid-template-columns:1.4fr 1fr; gap:30px; align-items:center; margin-top:26px; }
+.genie-family > img { width:100%; height:420px; object-fit:contain; }
+.genie-family article { padding:15px 0; border-top:1px solid var(--line); }
+.genie-family h3 { color:var(--accent); margin-bottom:9px; }
+.genie-family p { font-size:21px; line-height:1.35; }
+.genie-routing { display:grid; grid-template-columns:1fr 1.6fr; gap:42px; align-items:center; margin-top:30px; }
+.genie-orchestrator { padding:28px; border:1.5px solid var(--line); border-radius:6px; background:#fff0e9; }
+.genie-routing h3 { color:var(--accent); margin-bottom:12px; }
+.genie-routing p { font-size:22px; line-height:1.35; margin-top:10px; }
+.genie-tool-options { display:grid; gap:20px; }
+.genie-tool-options article { padding:20px 24px; border:1.5px solid var(--line); border-radius:6px; background:#faf9f7; }
+.genie-code { margin-top:28px; padding:23px 28px; font-size:20px; line-height:1.35; }
+.genie-code-note { margin-top:18px; font-size:20px; line-height:1.35; }
+
+/* Editable Genie family illustration. */
+.genie-overview { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin-top:30px; }
+.genie-overview article { border:1.5px solid var(--line); border-top:4px solid var(--accent); border-radius:6px; background:#faf9f7; padding:24px; }
+.genie-overview .genie-focus { background:#fff0e9; border-color:#efb5a8; border-top-color:var(--accent); }
+.genie-symbol svg { width:58px; height:58px; fill:none; stroke:var(--accent); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.genie-overview h3 { font-size:29px; margin-top:12px; }
+.genie-overview p { font-size:21px; line-height:1.4; margin-top:20px; }
+.genie-overview .genie-audience { font-size:17px; color:var(--accent); margin-top:8px; font-weight:700; }
+.genie-detail { border-top:1px solid var(--line); margin-top:26px; padding-top:18px; font-size:19px; color:var(--muted); line-height:1.5; }
+.genie-focus-label { font-size:14px; font-weight:800; color:var(--accent); }
+.genie-routing { margin-top:24px; }
+.genie-tool-options article { padding:16px 24px; }
+.slide[aria-label="Genie as a tool in our agent"] .callout { margin-top:16px; padding:10px 18px; font-size:20px; }
+
+.genie-code { margin-top:20px; padding:18px 24px; font-size:18px; line-height:1.25; }
+.genie-code code { font-size:inherit; line-height:inherit; }
+.genie-code-note { font-size:18px; margin-top:14px; }
+
+.memory-visual { margin-top:26px; padding:10px; border:1.5px solid var(--line); border-radius:8px; background:#faf9f7; }
+.memory-visual svg { display:block; width:100%; height:430px; font-family:Nunito,sans-serif; }
+.memory-svg-title { font-size:23px; fill:var(--ink); font-weight:700; }
+.memory-svg-text { font-size:20px; fill:var(--muted); }
+.memory-svg-label { font-size:18px; fill:var(--muted); font-weight:600; }
