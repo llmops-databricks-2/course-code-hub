@@ -226,3 +226,28 @@ agent = SimpleAgent(
 )
 
 logger.info(agent.chat("Find recent papers about transformer attention mechanisms."))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 5. Unity Catalog Functions through MCP
+# MAGIC
+# MAGIC A Unity Catalog Functions MCP server exposes governed UC functions as discoverable tools. The agent can call an approved function through MCP without importing or reimplementing its Python logic.
+
+# COMMAND ----------
+
+# Call the add_numbers function created in Notebook 3.1c through managed MCP.
+# The agent discovers the governed UC function as a tool instead of importing
+# or reimplementing the function locally.
+uc_function_url = (
+    f"{w.config.host.rstrip('/')}/api/2.0/mcp/functions/"
+    f"{cfg.catalog}/{cfg.schema}/add_numbers"
+)
+uc_function_tools = asyncio.run(create_mcp_tools(w, [uc_function_url]))
+
+logger.info(f"Discovered UC MCP tools: {[tool.name for tool in uc_function_tools]}")
+uc_add_numbers = next(
+    tool for tool in uc_function_tools if tool.name.endswith("add_numbers")
+)
+uc_result = uc_add_numbers.exec_fn(a=10, b=3)
+logger.info(f"MCP call result: {uc_result}")
