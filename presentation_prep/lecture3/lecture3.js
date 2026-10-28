@@ -86,7 +86,7 @@ addEventListener('keydown', event => {
   }
 });
 
-const logoPath = '../kickoff/assets/cauchy-logo.svg';
+const logoPath = 'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjxzdmcKICAgd2lkdGg9IjQyMiIKICAgaGVpZ2h0PSI0MjIuMDAwMDMiCiAgIHZpZXdCb3g9IjAgMCA0MjIgNDIyLjAwMDAzIgogICBmaWxsPSJub25lIgogICB2ZXJzaW9uPSIxLjEiCiAgIGlkPSJzdmc0IgogICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxwYXRoCiAgICAgZD0iTSAyMTAuOTk5OTQsOC40MTI5MDc4ZS02IEEgMjExLDIxMSAwIDAgMCAtNi4wOTM3NWUtNSwyMTEuMDAwMDEgYSAyMTEsMjExIDAgMCAwIDIxMS4wMDAwMDA5Mzc1LDIxMSAyMTEsMjExIDAgMCAwIDIxMSwtMjExIDIxMSwyMTEgMCAwIDAgLTEzLjI3NTQsLTczLjY2MjExIGwgLTEwNi4zMjgxLDYxLjM5MDYzIGEgODcuNSw4Ny41IDAgMCAxIDAuNTg1OSwxMC4xMDkzNyA4Ny41LDg3LjUgMCAwIDEgLTg3LjUsODcuNSA4Ny41LDg3LjUgMCAwIDEgLTg3LjUsLTg3LjUgODcuNSw4Ny41IDAgMCAxIDg3LjUsLTg3LjUgODcuNSw4Ny41IDAgMCAxIDUwLjQ2MjksMTYuMDE3NTggTCAzNzIuODUzNDQsNzUuNjMyODE5IEEgMjExLDIxMSAwIDAgMCAyMTAuOTk5OTQsOC40MTI5MDc4ZS02IFoiCiAgICAgc3R5bGU9ImZpbGw6I2YyNGIzNyIKICAgICBpZD0icGF0aDYiIC8+CiAgPGRlZnMKICAgICBpZD0iZGVmczQiIC8+Cjwvc3ZnPgo=';
 slides.forEach((slide, slideIndex) => {
   const footer = document.createElement('header');
   footer.innerHTML = `<img class="official-logo" src="${logoPath}" alt="Cauchy"><span class="folio">${slideIndex + 1}</span>`;
