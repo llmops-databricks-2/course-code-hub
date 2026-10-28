@@ -41,3 +41,35 @@ resources:
           environment_key: default
           notebook_task:
             notebook_path: ../notebooks/3.2_mcp_integration.py
+
+    lecture3-session-memory:
+      name: lecture3-session-memory
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"
+            dependencies:
+              - ../dist/*.whl
+      tasks:
+        - task_key: session_memory_lakebase
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/3.3_session_memory_lakebase.py
+            base_parameters:
+              env: "${bundle.target}"
+
+    lecture3-spn-authentication:
+      name: lecture3-spn-authentication
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"
+            dependencies:
+              - ../dist/*.whl
+      tasks:
+        - task_key: spn_authentication_lakebase
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/3.4.spn_authentication_lakebase.py
+            base_parameters:
+              env: "${bundle.target}"

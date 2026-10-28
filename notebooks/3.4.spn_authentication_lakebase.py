@@ -13,12 +13,14 @@ w = WorkspaceClient()
 
 project_id = cfg.lakebase_project_id
 
-scope_name = "arxiv-agent-scope"
-os.environ["LAKEBASE_SP_CLIENT_ID"] = dbutils.secrets.get(scope_name, "client_id")
-os.environ["LAKEBASE_SP_CLIENT_SECRET"] = dbutils.secrets.get(scope_name, "client_secret")
- 
-
-w = WorkspaceClient()
+# Service principal credentials are Unity Catalog secrets in the project schema
+# (requires READ SECRET on the secrets, schema or catalog).
+os.environ["LAKEBASE_SP_CLIENT_ID"] = dbutils.secrets.get(
+    catalog=cfg.catalog, schema=cfg.schema, key="client_id"
+)
+os.environ["LAKEBASE_SP_CLIENT_SECRET"] = dbutils.secrets.get(
+    catalog=cfg.catalog, schema=cfg.schema, key="client_secret"
+)
 os.environ["LAKEBASE_SP_HOST"] = w.config.host
 
 # COMMAND ----------
@@ -45,3 +47,6 @@ logger.info(f"✓ Saved {len(test_messages)} messages to session: {session_id}")
 
 # Load messages back
 loaded_messages = memory.load_messages(session_id)
+logger.info(f"Loaded {len(loaded_messages)} messages:")
+for msg in loaded_messages:
+    logger.info(f"  {msg['role']}: {msg['content'][:50]}...")

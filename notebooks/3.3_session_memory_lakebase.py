@@ -55,23 +55,7 @@ pg_api = PostgresAPI(w.api_client)
 
 project_id = cfg.lakebase_project_id
 
-try:
-    project = pg_api.get_project(name=f"projects/{project_id}")
-except Exception:
-    project = pg_api.create_project(
-        project_id=project_id,
-        project=Project(
-            spec=ProjectSpec(
-                display_name=project_id,
-                budget_policy_id=cfg.usage_policy_id,
-                default_endpoint_settings=ProjectDefaultEndpointSettings(
-                    autoscaling_limit_min_cu=1,
-                    autoscaling_limit_max_cu=4,
-                    suspend_timeout_duration=Duration(seconds=300),
-                ),
-            ),
-        ),
-    ).wait()
+project = pg_api.get_project(name=f"projects/{project_id}")
 
 # COMMAND ----------
 # MAGIC %md
