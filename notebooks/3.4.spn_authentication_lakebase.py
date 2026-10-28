@@ -3,11 +3,13 @@ import os
 from databricks.sdk import WorkspaceClient
 from uuid import uuid4
 from loguru import logger
+from pyspark.sql import SparkSession
 
 from arxiv_curator.memory import LakebaseMemory
-from arxiv_curator.config import ProjectConfig
+from arxiv_curator.config import get_env, load_config
 
-cfg = ProjectConfig.from_yaml("../project_config.yml")
+spark = SparkSession.builder.getOrCreate()
+cfg = load_config("../project_config.yml", get_env(spark))
 
 w = WorkspaceClient()
 

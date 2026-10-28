@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import yaml
@@ -113,17 +112,6 @@ def load_config(config_path: str = "project_config.yml", env: str = "dev") -> Pr
     Returns:
         ProjectConfig instance
     """
-    # Handle relative paths from notebooks
-    if not Path(config_path).is_absolute():
-        # Try to find config in parent directories
-        current = Path.cwd()
-        for _ in range(3):  # Search up to 3 levels
-            candidate = current / config_path
-            if candidate.exists():
-                config_path = str(candidate)
-                break
-            current = current.parent
-
     return ProjectConfig.from_yaml(config_path, env)
 
 

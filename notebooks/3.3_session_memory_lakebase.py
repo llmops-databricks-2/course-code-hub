@@ -40,10 +40,12 @@ from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.postgres import (
     PostgresAPI)
 from loguru import logger
+from pyspark.sql import SparkSession
 
-from arxiv_curator.config import ProjectConfig
+from arxiv_curator.config import get_env, load_config
 
-cfg = ProjectConfig.from_yaml("../project_config.yml")
+spark = SparkSession.builder.getOrCreate()
+cfg = load_config("../project_config.yml", get_env(spark))
 
 w = WorkspaceClient()
 pg_api = PostgresAPI(w.api_client)
