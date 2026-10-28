@@ -13,7 +13,7 @@ dependencies = [
     "pydantic==2.10.6",
     "loguru==0.7.3",
     "python-dotenv==1.2.1",
-    "databricks-vectorsearch==0.63",
+    "databricks-vectorsearch==0.64",
     "openai==2.14.0",
     "databricks-mcp==0.4.0",
     "backoff==2.2.1",

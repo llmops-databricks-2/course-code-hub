@@ -21,3 +21,12 @@ resources:
             notebook_path: ../notebooks/1.3_arxiv_data_ingestion.py
             base_parameters:
               env: "${bundle.target}"
+
+        - task_key: pdf_parsing_ai_parse
+          depends_on:
+            - task_key: arxiv_data_ingestion
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/2.2_pdf_parsing_ai_parse.py
+            base_parameters:
+              env: "${bundle.target}"

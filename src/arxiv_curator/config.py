@@ -23,7 +23,7 @@ class ProjectConfig(BaseModel):
     embedding_endpoint: str = Field(..., description="Embedding endpoint name")
     warehouse_id: str = Field(..., description="Warehouse ID")
     experiment_path: str = Field(..., description="MLflow experiment path")
-    lakebase_instance: str = Field(..., description="Lakebase instance name")
+    lakebase_project_id: str = Field(..., description="Lakebase project ID")
 
     model_config = {"populate_by_name": True}
 

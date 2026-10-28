@@ -21,6 +21,8 @@ from databricks.sdk.service.serving import PtEndpointCoreConfig, PtServedModel
 from loguru import logger
 from openai import OpenAI
 
+from arxiv_curator.config import load_config
+
 # COMMAND ----------
 
 # MAGIC %md
@@ -68,6 +70,8 @@ MODEL_SERVICE_NAME = f"{SERVICE_SCHEMA}.{SERVICE_ID}"
 CAPACITY_CHUNKS = 2
 RUN_DEPLOYMENT = False
 RUN_INFERENCE = False
+# Attributes the endpoint's cost to the course usage policy
+USAGE_POLICY_ID = load_config("../project_config.yml").usage_policy_id
 
 workspace_client = None
 
@@ -176,6 +180,7 @@ if RUN_DEPLOYMENT:
                 )
             ]
         ),
+        budget_policy_id=USAGE_POLICY_ID,
     )
     deployed_endpoint = deployment.result(timeout=timedelta(minutes=30))
     logger.info(f"Endpoint deployment complete: {deployed_endpoint.name}")

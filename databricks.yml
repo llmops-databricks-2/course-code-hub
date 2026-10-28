@@ -30,6 +30,8 @@ variables:
 
 include:
   - resources/process_data.yml
+  - resources/ai_search.yml
+  - resources/synced_tables.yml
 
 sync:
   include:

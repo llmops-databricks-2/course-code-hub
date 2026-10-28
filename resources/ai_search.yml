@@ -1,0 +1,19 @@
+resources:
+  jobs:
+    ai-search:
+      name: arxiv-ai-search
+      budget_policy_id: "${var.usage_policy_id}"
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"
+            dependencies:
+              - ../dist/*.whl
+
+      tasks:
+        - task_key: databricks_ai_search
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/2.4_databricks_ai_search.py
+            base_parameters:
+              env: "${bundle.target}"

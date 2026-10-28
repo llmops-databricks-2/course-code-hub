@@ -7,10 +7,13 @@ dev:
   schema: arxiv
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
-  embedding_endpoint: course_ops.gateway.embed
+  # course_ops.gateway.embed can't be used: ai_query doesn't support custom Unity Gateway model
+  # services yet (https://docs.databricks.com/aws/en/ai-gateway/query-model-services#limitations)
+  # embedding_endpoint: course_ops.gateway.embed
+  embedding_endpoint: databricks-gte-large-en
   warehouse_id: fed166457cfccb89
   experiment_path: /Shared/arxiv-curator-course
-  lakebase_instance: lb-llmops-dev
+  lakebase_project_id: lb-llmops-dev
 
 # Acceptance/Staging environment
 acc:
@@ -18,10 +21,13 @@ acc:
   schema: arxiv
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
-  embedding_endpoint: course_ops.gateway.embed
+  # course_ops.gateway.embed can't be used: ai_query doesn't support custom Unity Gateway model
+  # services yet (https://docs.databricks.com/aws/en/ai-gateway/query-model-services#limitations)
+  # embedding_endpoint: course_ops.gateway.embed
+  embedding_endpoint: databricks-gte-large-en
   warehouse_id: fed166457cfccb89
   experiment_path: /Shared/arxiv-curator-course
-  lakebase_instance: lb-llmops-acc
+  lakebase_project_id: lb-llmops-acc
 
 # Production environment
 prd:
@@ -29,10 +35,13 @@ prd:
   schema: arxiv
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
-  embedding_endpoint: course_ops.gateway.embed
+  # course_ops.gateway.embed can't be used: ai_query doesn't support custom Unity Gateway model
+  # services yet (https://docs.databricks.com/aws/en/ai-gateway/query-model-services#limitations)
+  # embedding_endpoint: course_ops.gateway.embed
+  embedding_endpoint: databricks-gte-large-en
   warehouse_id: fed166457cfccb89
   experiment_path: /Shared/arxiv-curator-course
-  lakebase_instance: lb-llmops-prd
+  lakebase_project_id: lb-llmops-prd
 
 # Model configuration
 model_config:
