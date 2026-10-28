@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>From PDF to Vectors</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 422 422%22%3E%3Cpath fill=%22%23f24b37%22 d=%22M 211,0 A 211,211 0 0 0 0,211 a 211,211 0 0 0 211,211 211,211 0 0 0 211,-211 211,211 0 0 0 -13.275,-73.662 l -106.328,61.391 a 87.5,87.5 0 0 1 0.586,10.109 87.5,87.5 0 0 1 -87.5,87.5 87.5,87.5 0 0 1 -87.5,-87.5 87.5,87.5 0 0 1 87.5,-87.5 87.5,87.5 0 0 1 50.463,16.018 L 372.853,75.633 A 211,211 0 0 0 211,0 Z%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap">
+<style>
+/* Cauchy visual identity v2 (cauchy plugin, brand/README.md): one light look, orange is the logo. */
+:root{
+  --bg:#f6f5f3; --panel:#ffffff; --alt:#f0efed; --ink:#1a1a1a; --body:#6b6b6b; --muted:#9a9a9a;
+  --line:#e0dfdd; --line-soft:#ebeae8; --flame:#f24b37; --link:#337FF9;
+  --sage-bg:#f0f5f2; --sage-bd:#c8dad2; --sage:#4e7566;
+  --blue-bg:#f0f4fb; --blue-bd:#cdd8ed; --blue:#506fa0;
+  --warm-bg:#faf6f0; --warm-bd:#e3d9ca; --warm:#8a7556;
+  --accent:var(--blue); --soft:var(--alt); --warn:var(--warm);
+  --p0:#506fa0; --p1:#8a7556; --p2:#4e7566; --p3:#6b6b6b;
+  --t0:#e3eaf6; --t1:#f1e9dc; --t2:#e2ede7; --t3:#ebeae8; --t4:#f5efe4;
+  --ov:#efe4d2;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--body);font:15.5px/1.7 "Nunito",system-ui,sans-serif;padding-inline:16px;padding-block:32px 64px}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+h1,h2,h3{color:var(--ink);font-weight:600}
+h1{font-size:clamp(1.75rem,3vw,2.25rem);line-height:1.2;letter-spacing:-.02em;margin:0;text-wrap:balance}
+h2{font-size:1.25rem;line-height:1.35;margin:0;text-wrap:balance}
+h3{font-size:1.05rem;margin:0}
+p{margin:0;max-width:76ch}
+strong,em{color:var(--ink)}
+code,.mono{font-family:"Fira Code",ui-monospace,monospace;font-size:.85em}
+code{background:var(--alt);color:var(--ink);padding:1px 5px;border-radius:4px}
+.lockup{height:34px;width:137px;display:block;flex:none;overflow:visible}
+.lede{font-size:1.05rem}
+.eyebrow{text-transform:uppercase;letter-spacing:.06em;font-size:.75rem;color:var(--muted);font-weight:500}
+section.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:28px;display:flex;flex-direction:column;gap:16px}
+.step-no{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;border:1px solid var(--ink);color:var(--ink);font-weight:600;font-size:13px;margin-right:10px;vertical-align:2px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.grid2>*{min-width:0}
+label.ctl{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);min-width:150px}
+label.ctl b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--link)}
+select,input[type=text],textarea{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+select:focus,input:focus,textarea:focus,button:focus-visible{outline:2px solid var(--link);outline-offset:1px}
+textarea{width:100%;min-height:96px;resize:vertical}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:5px 14px;font-size:13px;font-weight:500}
+button:hover{background:var(--alt)}
+button.on{background:var(--ink);border-color:var(--ink);color:var(--panel)}
+.note{font-size:13px;color:var(--muted)}
+.flow{display:grid;grid-template-columns:minmax(0,1.1fr) 28px minmax(0,1fr) 28px minmax(170px,.9fr) 28px minmax(0,1.2fr) 28px minmax(0,1fr);gap:10px 0;align-items:stretch}
+.flow .m-only{display:none}
+.flow .lane{grid-column:1/-1;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500;margin-top:4px}
+.flow .box{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--panel);min-width:0;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.flow .box h4{margin:0;font-size:12px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+.flow .arrow{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:18px}
+.flow .model{grid-row:span 2;justify-content:center;text-align:center}
+.flow .model b{font-size:13.5px;color:var(--ink);font-weight:600}
+.flow .box.q{border:1px solid var(--blue-bd);background:var(--blue-bg)}
+.flow .box.q h4{color:var(--blue)}
+.flow .chunkbox{position:relative}
+.flow .chunkbox .full{display:none;position:absolute;left:-1px;top:-1px;width:max(calc(100% + 2px),min(440px,86vw));min-height:calc(100% + 2px);z-index:10;flex-direction:column;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;box-shadow:0 4px 12px rgba(0,0,0,.06);color:var(--ink)}
+.flow .chunkbox:hover .full,.flow .chunkbox:focus-within .full{display:flex}
+.flow .clamp{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;overflow-wrap:anywhere}
+.ask{border:1.5px solid var(--link);background:var(--blue-bg);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.ask label{font-weight:600;color:var(--ink);font-size:15px}
+.ask input{font-size:17px;padding:10px 14px;border:1px solid var(--blue-bd);background:var(--panel);width:100%}
+.ask .row{gap:8px}
+.flow .model .mono{font-size:11px}
+.flow .stored{border-style:dashed;color:var(--muted)}
+.flow .qtoks{display:flex;flex-wrap:wrap;gap:3px;font-family:"Fira Code",ui-monospace,monospace;font-size:11.5px;color:var(--ink)}
+.flow .qtoks span{padding:1px 3px;border-radius:3px}
+.flow canvas{width:100%;height:auto}
+.flow .nums{font-family:"Fira Code",ui-monospace,monospace;font-size:11.5px;color:var(--ink);word-break:break-all}
+.flow.pulse .model{animation:pulse .6s ease}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(51,127,249,.3)}100%{box-shadow:0 0 0 10px rgba(51,127,249,0)}}
+@media (max-width:860px){.flow{grid-template-columns:1fr}.flow .m-only{display:block}.flow .m-hide{display:none}.flow .arrow{transform:rotate(90deg);height:22px}.flow .model{grid-row:auto}.flow .lane{margin-top:10px}}
+.rrbar{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;border:1px solid var(--line-soft);border-radius:8px;padding:12px 14px}
+.rrlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.rrlist li{display:grid;grid-template-columns:30px 1fr auto;gap:8px;align-items:start;border:1px dashed var(--line);border-radius:8px;padding:7px 10px;font-size:13px;color:var(--muted)}
+.rrlist li.msg{display:block;border-style:solid;color:var(--body)}
+.rrlist li.kept{border:1px solid var(--blue-bd);background:var(--blue-bg);color:var(--ink)}
+.rrlist .pos{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.rrlist .sc{font-family:"Fira Code",ui-monospace,monospace;font-size:11.5px;text-align:right;white-space:nowrap}
+.rrlist .snip{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.move{font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.move.up{color:var(--sage)}.move.down{color:var(--warm)}.move.same{color:var(--muted);font-weight:400}
+mark.hit{background:var(--blue-bg);color:var(--blue);border-radius:3px;padding:0 1px}
+.docbox{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line-soft);border-radius:8px;padding:12px 14px}
+.docbox textarea{min-height:120px;font-size:14px}
+.docbar button{padding:3px 11px;font-size:12.5px}
+.callout{border:1px solid var(--blue-bd);background:var(--blue-bg);color:var(--blue);padding:10px 14px;border-radius:8px;font-size:14px}
+.callout.warn{border:1px dashed var(--warm-bd);background:var(--warm-bg);color:var(--warm)}
+.callout.ok{border-color:var(--sage-bd);background:var(--sage-bg);color:var(--sage)}
+.callout code{background:var(--panel)}
+.stats{display:flex;flex-wrap:wrap;gap:10px}
+.stat{border:1px solid var(--line-soft);border-radius:8px;padding:8px 14px;min-width:110px}
+.stat .v{font-size:20px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.stat .k{font-size:12px;color:var(--muted)}
+/* pipeline */
+.pipe{display:flex;flex-wrap:wrap;gap:8px}
+.pipe button{border-radius:8px;padding:8px 12px;text-align:left;display:flex;flex-direction:column;gap:1px;min-width:118px;flex:1 1 118px}
+.pipe button small{color:inherit;opacity:.7;font-size:11.5px;font-weight:400}
+.pipe-detail{border:1px solid var(--line-soft);border-radius:8px;padding:14px 18px;display:flex;flex-direction:column;gap:8px}
+.pipe-detail ul{margin:0;padding-left:20px}
+/* tokens */
+.tokens{line-height:2.2;font-family:"Fira Code",ui-monospace,monospace;font-size:13px;color:var(--ink);word-break:break-word}
+.tok{padding:2px 1px;border-radius:3px;margin-right:2px;white-space:nowrap;display:inline-block;line-height:1.5;margin-bottom:3px}
+.tok.c0{background:var(--t0)}.tok.c1{background:var(--t1)}.tok.c2{background:var(--t2)}.tok.c3{background:var(--t3)}.tok.c4{background:var(--t4)}
+.tok.cut{opacity:.35;text-decoration:line-through}
+.bars{display:flex;flex-direction:column;gap:8px}
+.bar{display:grid;grid-template-columns:150px 1fr 90px;gap:10px;align-items:center;font-size:13px}
+.bar .track{height:10px;background:var(--alt);border-radius:5px;overflow:hidden;position:relative}
+.bar .fill{height:100%;background:var(--blue);border-radius:5px}
+.bar .fill.over{background:var(--warm)}
+.bar .num{font-variant-numeric:tabular-nums;text-align:right;color:var(--muted)}
+/* clean */
+.diff{font-family:"Fira Code",ui-monospace,monospace;font-size:13px;color:var(--ink);white-space:pre-wrap;background:var(--alt);border-radius:8px;padding:14px;overflow-x:auto}
+.diff mark{background:var(--warm-bg);color:var(--warm);border:1px dashed var(--warm-bd);border-radius:3px;padding:0 2px}
+.diff mark.fixed{background:var(--sage-bg);color:var(--sage);border:1px solid var(--sage-bd)}
+/* chunks */
+.ribbon{position:relative;height:58px;border:1px solid var(--line-soft);border-radius:8px;overflow:hidden}
+.seg{position:absolute;height:22px;border-radius:4px;opacity:.8;cursor:pointer}
+.seg:hover{opacity:1;outline:2px solid var(--ink)}
+.chunklist{display:flex;flex-direction:column;gap:10px;max-height:520px;overflow:auto;padding-right:4px}
+.chunk{border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:8px;padding:10px 14px;font-size:14px;background:var(--panel)}
+.chunk.hl{outline:2px solid var(--link)}
+.chunk .meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);margin-bottom:6px;font-family:"Fira Code",ui-monospace,monospace}
+.chunk mark{background:var(--ov);color:var(--ink);border-radius:3px}
+.chunk .over{color:var(--warm);font-weight:600}
+/* search */
+.mapbox{border:1px solid var(--line-soft);border-radius:8px;padding:8px;overflow-x:auto}
+#map text{fill:var(--muted);font-size:11px;font-family:"Nunito",system-ui,sans-serif}
+.results{display:flex;flex-direction:column;gap:8px}
+.res{display:grid;grid-template-columns:28px 1fr;gap:10px;border:1px solid var(--line);border-radius:8px;padding:9px 12px;background:var(--panel);font-size:14px;cursor:pointer}
+.res:hover{background:var(--alt)}
+.res.sel{outline:2px solid var(--link)}
+.res .rank{font-weight:600;font-size:18px;color:var(--ink);font-variant-numeric:tabular-nums}
+.scorebar{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;flex-wrap:wrap}
+.mini{width:70px;height:6px;background:var(--alt);border-radius:3px;overflow:hidden;display:inline-block}
+.mini i{display:block;height:100%;background:var(--blue)}
+.mini.k i{background:var(--warm)}
+canvas{max-width:100%;border-radius:6px;display:block}
+.dims{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.dim{font-size:12px;border:1px solid var(--blue-bd);background:var(--blue-bg);color:var(--blue);border-radius:999px;padding:1px 9px;font-family:"Fira Code",ui-monospace,monospace}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+ul{color:var(--body)}
+footer{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+@media (max-width:560px){.bar{grid-template-columns:100px 1fr 70px}section.card{padding:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header style="display:flex;flex-direction:column;gap:12px">
+  <svg class="lockup" viewBox="0 0 1700 422" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="CAUCHY" role="img">
+    <path d="M 211,0 A 211,211 0 0 0 0,211 a 211,211 0 0 0 211,211 211,211 0 0 0 211,-211 211,211 0 0 0 -13.275,-73.662 l -106.328,61.391 a 87.5,87.5 0 0 1 0.586,10.109 87.5,87.5 0 0 1 -87.5,87.5 87.5,87.5 0 0 1 -87.5,-87.5 87.5,87.5 0 0 1 87.5,-87.5 87.5,87.5 0 0 1 50.463,16.018 L 372.853,75.633 A 211,211 0 0 0 211,0 Z" fill="#f24b37"/>
+    <text x="546" y="248" font-family="'Nunito', sans-serif" font-weight="600" font-size="199" letter-spacing="0.1em" fill="#1a1a1a" text-anchor="start" dominant-baseline="central">CAUCHY</text>
+  </svg>
+  <span class="eyebrow">LLMOps course · Lecture 2 · Context engineering and RAG</span>
+  <h1>From PDF to vectors: how text is prepared for vector search</h1>
+  <p class="lede">A language model cannot read a whole library for every question. So the library is cut into small passages, each passage is turned into a list of numbers that captures its meaning, and at question time the system finds the passages whose numbers are closest to the question's. This page walks through each step with three short sample papers you can cut, embed and search yourself, or with your own text: every step has the same text box, and an edit in any of them changes the text on the whole page.</p>
+  <p class="note">The three sample papers were written for this page. The tokenizer and the embedding on this page are small illustrations that run in your browser; the real ones are named at each step.</p>
+</header>
+
+<section class="card" id="pipeline">
+  <span class="eyebrow">The pipeline</span>
+  <h2>Eight steps from a PDF to an answer</h2>
+  <p>Click a step. Steps 1 to 7 run once per document, in a job. Step 8 runs for every question.</p>
+  <div class="pipe" id="pipe"></div>
+  <div class="pipe-detail" id="pipeDetail"></div>
+</section>
+
+<section class="card" id="clean">
+  <h2><span class="step-no">3</span>Clean the parsed text</h2>
+  <p>A parser reads the PDF's layout, so its text keeps the printed line breaks: words split by a hyphen at the end of a line, and runs of spaces from justified columns. Left in, <code>ele-ments</code> becomes two tokens that mean nothing, and the vector is a little worse.</p>
+  <div class="docbox">
+    <div class="row"><span class="note" style="font-weight:600;color:var(--ink)">The text:</span><span class="row docbar" style="gap:6px"></span></div>
+    <textarea class="docIn" maxlength="20000" aria-label="The text used on this page"></textarea>
+  </div>
+  <p class="note">Below, the text as a PDF parser would return it from a printed page, with its line breaks (simulated from the text above), and after cleaning.</p>
+  <div class="row"><button id="cleanBtn" class="on">Show cleaned</button><span class="note" id="cleanNote"></span></div>
+  <div class="diff" id="cleanView"></div>
+</section>
+
+<section class="card" id="tokens">
+  <h2><span class="step-no">5</span>Tokens: the unit models count in</h2>
+  <p>Models do not read characters or words. A tokenizer splits text into tokens: common words stay whole, rare and long words break into pieces. Every limit in this pipeline is counted in tokens: the embedding model's window, the chunk size, the context budget of the prompt. A rough rule for English is four characters per token.</p>
+  <div class="docbox">
+    <div class="row"><span class="note" style="font-weight:600;color:var(--ink)">The text:</span><span class="row docbar" style="gap:6px"></span></div>
+    <textarea class="docIn" maxlength="20000" aria-label="The text used on this page"></textarea>
+  </div>
+  <div class="stats" id="tokStats"></div>
+  <div class="tokens" id="tokView"></div>
+  <p class="note">Each colour is one token. Pieces that continue a word start with <code>##</code>, as in the WordPiece tokenizers of BERT-style embedding models. This tokenizer is an illustration; the real GTE tokenizer gives slightly different pieces and counts.</p>
+  <h3>Does it fit the embedding model's window?</h3>
+  <div class="bars" id="windowBars"></div>
+  <div class="callout" id="windowNote"></div>
+</section>
+
+<section class="card" id="chunking">
+  <h2><span class="step-no">4</span>Chunking: cutting documents into passages</h2>
+  <p>One vector per paper would blur every topic of the paper into one point. One vector per sentence would lose the context around it. Chunking picks the middle: passages small enough that each vector means one thing, large enough to carry their own context. Change the strategy and the sizes and watch the chunks change.</p>
+  <div class="row" id="stratBtns"></div>
+  <div class="grid2">
+    <label class="ctl">Chunk size <b id="sizeV"></b><input type="range" id="size" min="32" max="1024" step="8" value="64"></label>
+    <label class="ctl">Overlap <b id="ovV"></b><input type="range" id="ov" min="0" max="50" step="5" value="20"></label>
+  </div>
+  <div class="row">
+    <label class="ctl" style="min-width:220px">Embedding model window
+      <select id="winSel"><option value="8192">GTE-large-en-v1.5 · 8,192 tokens</option><option value="512">BGE-large-en · 512 tokens</option></select></label>
+  </div>
+  <div class="docbox">
+    <div class="row"><span class="note" style="font-weight:600;color:var(--ink)">The text to chunk:</span><span class="row docbar" style="gap:6px"></span></div>
+    <textarea class="docIn" maxlength="20000" aria-label="The text used on this page"></textarea>
+  </div>
+  <p class="note">Blank lines separate paragraphs; a short line without a full stop starts a section. Your own text is chunked live and joins the three sample papers in the search below.</p>
+  <div class="callout" id="stratNote"></div>
+  <div class="stats" id="chunkStats"></div>
+  <div>
+    <div class="note" style="margin-bottom:6px">Where each chunk sits in its document (start to end), one band per document. Overlapping bars share text. Click a bar to find its chunk.</div>
+    <div class="ribbon" id="ribbon"></div>
+  </div>
+  <div class="chunklist" id="chunkList"></div>
+  <p class="note">Each card is one row of a chunks table, like the course's <code>arxiv_chunks</code>: a unique <code>id</code> as the primary key, the text, and the paper's metadata kept beside it so search can filter on it. Highlighted text at the start of a chunk is the overlap repeated from the chunk before.</p>
+</section>
+
+<section class="card" id="embed">
+  <h2><span class="step-no">6</span><span class="step-no">7</span><span class="step-no">8</span>Embed, store and search</h2>
+  <p>An embedding model reads a chunk and returns a fixed-length list of numbers, its vector: 1,024 numbers for GTE-large-en-v1.5. Chunks about the same thing get vectors that point in similar directions, even when they use different words. At question time the question is embedded with the <em>same</em> model, and the store returns the chunks whose vectors are closest, measured by cosine similarity.</p>
+  <div class="callout">The embedding here is a toy you can see inside: it counts words, and a small hand-made list groups words with the same meaning (<code>passage</code> and <code>chunk</code>, <code>find</code> and <code>retrieve</code>). A real model learns those relations from billions of sentences, and its 1,024 numbers do not stand for individual words.</div>
+  <div class="docbox">
+    <div class="row"><span class="note" style="font-weight:600;color:var(--ink)">The text searched, beside the three sample papers:</span><span class="row docbar" style="gap:6px"></span></div>
+    <textarea class="docIn" maxlength="20000" aria-label="The text used on this page"></textarea>
+  </div>
+  <div class="ask">
+    <label for="query">Ask a question about the text</label>
+    <input type="text" id="query" placeholder="Type a question, for example: how big should a chunk be?">
+    <div class="row"><span class="note">or try:</span><span class="row" id="queryBtns" style="gap:6px"></span></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <h3>The embedding model turns your question into a vector</h3>
+    <div class="flow" id="flow">
+      <div class="lane">Top: every question, at search time · dashed: each chunk, once, when it is stored</div>
+      <div class="box q"><h4>Your question</h4><div id="fQ" style="color:var(--ink)"></div></div>
+      <div class="arrow">→</div>
+      <div class="box"><h4>Tokens</h4><div class="qtoks" id="fTok"></div><div class="note" id="fTokN"></div></div>
+      <div class="arrow">→</div>
+      <div class="box model"><h4>Embedding model</h4><b>GTE-large-en-v1.5</b><span class="mono">course_ops<wbr>.gateway<wbr>.embed</span><span class="note">reads up to 8,192 tokens<br>returns 1,024 numbers</span><span class="note">the same model for both lanes</span></div>
+      <div class="arrow">→</div>
+      <div class="box"><h4>Question vector</h4><svg id="fVecSvg" viewBox="0 0 170 84" width="100%" style="max-width:190px" role="img" aria-label="The question vector drawn as an arrow"></svg><div class="nums" id="fNums"></div><div class="note">Drawn as the reference direction: a vector's direction among 1,024 dimensions cannot be drawn, only its angle to another. Change the question and the chunk arrows swing, while this one stays.</div></div>
+      <div class="arrow">→</div>
+      <div class="box"><h4>Nearest stored vectors</h4><svg id="fSim" viewBox="0 0 190 150" width="100%" role="img" aria-label="The question vector and the closest chunk vector, with the angle between them"></svg><div id="fSimText" style="color:var(--ink);font-size:13px"></div><div id="fCmp"></div></div>
+      <div class="lane m-only">Each chunk, once, when it is stored</div>
+      <div class="box stored chunkbox" tabindex="0" aria-label="A chunk, stored once: hover or focus to read it whole"><h4>A chunk, stored once</h4><div id="fChunk" class="clamp"></div><div class="full"><h4>A chunk, stored once · <span id="fChunkId"></span></h4><div id="fChunkFull"></div></div></div>
+      <div class="arrow">→</div>
+      <div class="box stored"><h4>Tokens</h4><div id="fChunkTok"></div></div>
+      <div class="arrow">→</div>
+      <div class="arrow m-hide">→</div>
+      <div class="box stored"><h4>Chunk vector</h4><svg id="fCVecSvg" viewBox="0 0 170 84" width="100%" style="max-width:190px" role="img" aria-label="The chunk vector drawn as an arrow"></svg><div class="nums" id="fCNums"></div><div class="note">1,024 numbers, stored once; dashed: the question, for its angle</div></div>
+      <div class="arrow">→</div>
+      <div class="box stored"><h4>Vector store</h4><div>The chunk row, its metadata and its vector: Lakebase with pgvector in this cohort, a Delta Sync index in the lecture</div></div>
+    </div>
+  </div>
+  <div class="grid2">
+    <label class="ctl">Results to return (top k) <b id="kV"></b><input type="range" id="k" min="1" max="8" value="4"></label>
+    <label class="ctl">Hybrid weight: vector vs keyword <b id="aV"></b><input type="range" id="alpha" min="0" max="100" step="5" value="100"></label>
+  </div>
+  <div class="row">
+    <label class="ctl">Metadata filter: year
+      <select id="yearSel"><option value="">any year</option><option>2024</option><option>2025</option></select></label>
+    <label class="ctl">Context budget for the prompt <b id="budV"></b><input type="range" id="budget" min="200" max="3000" step="100" value="1200"></label>
+  </div>
+  <div class="rrbar">
+    <div style="display:flex;flex-direction:column;gap:4px"><span class="note">Second stage</span><button id="rrBtn" class="on">Reranker on</button></div>
+    <label class="ctl" style="flex:1;min-width:220px">Candidates the vector search hands to the reranker (N) <b id="candV"></b><input type="range" id="cand" min="4" max="16" value="10"></label>
+  </div>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h3>The chunks as points</h3>
+      <div class="mapbox"><svg id="map" viewBox="0 0 440 340" width="100%" role="img" aria-label="Chunks placed by similarity, the question as a star"></svg></div>
+      <div class="legend" id="legend"></div>
+      <p class="note">1,024 numbers cannot be drawn, so the points are placed so that similar chunks sit close together. Lines join the question to its results.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h3>Results</h3>
+      <div class="results" id="results"></div>
+      <div class="bars" id="budgetBar"></div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px" id="rrSection">
+    <h3>Two stages: retrieve many, rerank, keep a few</h3>
+    <p>Vector search is fast because every chunk's vector was computed in advance: at question time it only measures distances. But a distance between two separately made vectors is a rough guess at relevance. So the search returns more candidates than needed, and a <strong>reranker</strong> reads the question and each candidate <em>together</em>, scores how well that passage answers that question, and keeps the best k. It is slower, a model call per candidate, which is why it only sees the N candidates and never the whole store. In the course, notebook 2.4 runs <code>similarity_search</code>, then <code>DatabricksReranker</code>.</p>
+    <div class="grid2">
+      <div style="display:flex;flex-direction:column;gap:6px"><span class="eyebrow">1 · Vector search: the N nearest, by similarity</span><ol class="rrlist" id="rrBefore"></ol></div>
+      <div style="display:flex;flex-direction:column;gap:6px"><span class="eyebrow">2 · Reranker: question and passage read together</span><ol class="rrlist" id="rrAfter"></ol></div>
+    </div>
+    <p class="note">Shaded: the k results that go into the prompt. Arrows: how far the reranker moved a candidate from its vector rank. The reranker here is a toy you can see inside: it scores how much of the question a passage covers, rare question words weighing more, a word as written more than one of the same meaning, and the best single sentence most. A real reranker is a cross-encoder, a model that reads both texts in one pass.</p>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <h3 id="vecTitle">The selected chunk as a vector</h3>
+    <canvas id="vec" width="1024" height="48" aria-label="1,024 numbers drawn as coloured cells"></canvas>
+    <p class="note">What a 1,024-number vector looks like, one cell per number, blue below zero and warm brown above, paler near zero. The values are drawn for illustration from the chunk's id; they are not the real GTE output. Below, what the toy vector of this page actually holds, its strongest dimensions:</p>
+    <div class="dims" id="dims"></div>
+  </div>
+</section>
+
+<section class="card" id="course">
+  <span class="eyebrow">In the course</span>
+  <h2>Where each step lives</h2>
+  <div class="grid2">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h3>The lecture (notebooks 2.2 to 2.4)</h3>
+      <ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px">
+        <li>PDFs from the <code>arxiv</code> package into a Unity Catalog volume, metadata into <code>arxiv_papers</code>, only papers not yet processed.</li>
+        <li><code>ai_parse_document</code> over <code>READ_FILES(…, format =&gt; 'binaryFile')</code> into <code>ai_parsed_docs</code>.</li>
+        <li>Cleaned chunks with their metadata into <code>arxiv_chunks</code>, Change Data Feed on.</li>
+        <li>A Delta Sync index with managed embeddings, <code>databricks-gte-large-en</code>, <code>TRIGGERED</code>, then <code>similarity_search</code> with filters, hybrid search and a reranker.</li>
+      </ul>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h3>Practices the course checks</h3>
+      <ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px">
+        <li>Process incrementally, one parse per file; PDFs stay in the volume, never in a Delta table.</li>
+        <li>Every chunk keeps <code>paper_id</code>, <code>title</code>, <code>authors</code> and the date, for filters and reranking, and a unique <code>id</code>.</li>
+        <li>Query and documents are embedded by the same model, called through the gateway (<code>course_ops.gateway.embed</code>).</li>
+        <li>Measure retrieval before changing it: a small test set, then recall@k and precision@k.</li>
+        <li>Never create your own Vector Search endpoint: one bills by the hour whether it is used or not.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>LLMOps course, Cauchy · Sample papers, toy tokenizer and toy embedding written for this page. Model facts: GTE-large-en-v1.5 returns 1,024 numbers and reads up to 8,192 tokens; BGE-large-en reads up to 512. Course facts from the lecture 2 reference file and the student template's README.</footer>
+</div>
+
+<script>
+/* PURE START */
+const PAPERS = [
+ {id:"2410.01234", title:"Retrieval-Augmented Generation for Course Assistants", authors:"A. Rivera, M. Chen", year:2024, sections:[
+  ["Abstract",["Large language models answer questions fluently, but they do not know the contents of a course. Retrieval-augmented generation closes that gap: before the model answers, the system finds the passages of the course material that match the question and places them in the prompt. We describe a course assistant that retrieves from lecture notes and research papers, and we measure how often the retrieved passages contain the answer."]],
+  ["Introduction",["A model's knowledge is frozen at training time. Course material changes every cohort, and fine-tuning a model for each change is slow and costly. Retrieval keeps the model fixed and changes the data instead.","The assistant stores every document as small passages, each with a vector that captures its meaning, and searches those vectors when a question arrives."]],
+  ["Method",["Each PDF is parsed into text elements: titles, paragraphs, tables and captions. We remove hyphenation at line breaks and collapse repeated whitespace.","The cleaned text is cut into chunks of about 300 tokens with an overlap of 50 tokens, so a sentence that straddles a boundary appears whole in at least one chunk. Every chunk keeps the paper id, the title and the section it came from."]],
+  ["Results",["With chunks of 300 tokens the right passage was among the top five results for 82 percent of the test questions. Chunks of 1,000 tokens lowered that to 71 percent, because one vector had to summarise several topics at once. Adding a reranker raised the top-five rate to 88 percent."]]
+ ]},
+ {id:"2502.04567", title:"Chunk Size and Recall in Dense Retrieval", authors:"L. Okafor, J. Haas", year:2025, sections:[
+  ["Abstract",["How large should a chunk be? Small chunks give precise vectors but lose context; large chunks keep context but blur the meaning of the vector. We compare fixed-size, sentence and section-based chunking on 500 questions over technical papers."]],
+  ["Introduction",["An embedding model reads at most a fixed number of tokens, its context window. Text beyond the window is cut off and never influences the vector. A chunk must therefore fit the window of the embedding model, and in practice it should be much smaller than the window."]],
+  ["Method",["Fixed-size chunking cuts every N tokens and repeats the last M tokens at the start of the next chunk. Sentence chunking packs whole sentences until the size limit is reached.","Section chunking follows the headings of the document and only splits a section when it is too long. All three strategies were run with the same embedding model."]],
+  ["Results",["Sentence and section chunking beat fixed-size chunking at the same average size, because they never cut a sentence in half. Overlap helped fixed-size chunking most. Beyond 512 tokens recall fell for every strategy."]]
+ ]},
+ {id:"2509.07890", title:"Hybrid Search with Keyword and Vector Signals", authors:"S. Patel, T. Nguyen", year:2025, sections:[
+  ["Abstract",["Vector search finds passages with similar meaning even when they use different words. Keyword search finds exact terms such as product names, error codes and identifiers. We combine both signals and show that the hybrid ranking retrieves more relevant passages than either signal alone."]],
+  ["Introduction",["A question about the error PERMISSION_DENIED should find the passage that contains that exact string. A dense vector may place it near other passages about access in general. Keyword scoring rewards the exact match, while the vector rewards the meaning."]],
+  ["Method",["For each query we compute a vector similarity and a keyword score, normalise both to the range zero to one, and rank by a weighted sum.","Metadata filters, such as the publication year or the author, are applied before ranking, so the search only considers allowed passages."]],
+  ["Results",["A weight of 0.6 on the vector score and 0.4 on the keyword score gave the best recall on our test set. Filters reduced latency because fewer vectors were compared."]]
+ ]}
+];
+
+
+// What a parser returns from a printed page: lines of about 62 characters, long words hyphenated at
+// the line end, and a doubled space now and then from justified columns. Deterministic.
+function simulateParse(text){
+  return text.split(/\n\s*\n/).map(par=>{
+    const ws=par.trim().split(/\s+/).filter(Boolean); const lines=[]; let line=""; let n=0;
+    for(const w of ws){
+      n++; const gap=line?(n%7===0?"  ":" "):"";
+      if((line+gap+w).length<=62){ line+=gap+w; continue; }
+      const room=62-(line+gap).length-1; const m=/^([A-Za-z]{8,})([,.;:]?)$/.exec(w);
+      if(line && m && room>=4 && m[1].length-room>=3){ lines.push(line+gap+m[1].slice(0,room)+"-"); line=m[1].slice(room)+m[2]; }
+      else { if(line) lines.push(line); line=w; }
+    }
+    if(line) lines.push(line);
+    return lines.join("\n");
+  }).join("\n\n");
+}
+function cleanText(raw){
+  return raw.replace(/(\w)-\n(\w)/g,"$1$2").replace(/([^\n])\n(?!\n)/g,"$1 ").replace(/[ \t]{2,}/g," ");
+}
+
+// Illustrative WordPiece-like tokenizer: words of up to 6 letters stay whole, longer ones split.
+function tokenize(text){
+  const out=[]; const re=/[A-Za-z]+|\d+(?:[.,]\d+)*|[^\sA-Za-z\d]/g; let m;
+  while((m=re.exec(text))){
+    const w=m[0], s=m.index;
+    if(/^[A-Za-z]+$/.test(w) && w.length>6){
+      out.push({t:w.slice(0,5),s:s,e:s+5});
+      for(let i=5;i<w.length;i+=4){const e=Math.min(w.length,i+4);out.push({t:"##"+w.slice(i,e),s:s+i,e:s+e});}
+    } else out.push({t:w,s:s,e:s+w.length});
+  }
+  return out;
+}
+const countTokens = t => tokenize(t).length;
+
+// Build a paper's text with the offsets of its sections, paragraphs and sentences.
+function layout(p){
+  let text=""; const sections=[], paras=[], sents=[];
+  p.sections.forEach(([name,ps],si)=>{
+    if(text) text+="\n\n";
+    const ss=text.length; text+=name;
+    ps.forEach(par=>{
+      text+="\n\n"; const ps0=text.length; text+=par;
+      paras.push({s:ps0,e:text.length,sec:name});
+      // a sentence ends at . ! ? followed by whitespace, so "0.6" or "e.g.x" never splits; the rest is the last sentence
+      let st=0; const re=/[.!?]+(?=\s)/g; let m;
+      while((m=re.exec(par))){const e=m.index+m[0].length; if(par.slice(st,e).trim()) sents.push({s:ps0+st,e:ps0+e,sec:name}); st=e; while(st<par.length&&/\s/.test(par[st])) st++;}
+      if(par.slice(st).trim()) sents.push({s:ps0+st,e:ps0+par.length,sec:name});
+    });
+    sections.push({s:ss,e:text.length,name:name});
+  });
+  return {text,sections,paras,sents};
+}
+PAPERS.forEach((p,i)=>p.index=i);
+// A document from free text: blank lines split paragraphs; a short line with no full stop is a heading.
+function docFromText(t){
+  const paras=t.split(/\n\s*\n/).map(x=>x.replace(/\s*\n\s*/g," ").trim()).filter(Boolean);
+  const sections=[]; let cur=null;
+  for(const x of paras){
+    if(x.length<=60 && !/[.!?:;,]$/.test(x) && paras.length>1){ cur=[x,[]]; sections.push(cur); }
+    else { if(!cur){ cur=["Text",[]]; sections.push(cur); } cur[1].push(x); }
+  }
+  const kept=sections.filter(sec=>sec[1].length);
+  return kept.length? {id:"your-text", title:"Your text", authors:"you", year:"n/a", sections:kept, index:PAPERS.length} : null;
+}
+function sectionAt(L,pos){let n=L.sections[0].name;for(const s of L.sections) if(s.s<=pos) n=s.name;return n;}
+
+function fixedSpans(text,from,to,size,overlap){
+  const toks=tokenize(text.slice(from,to)).map(t=>({s:t.s+from,e:t.e+from}));
+  const spans=[]; if(!toks.length) return spans;
+  const step=Math.max(1,size-overlap);
+  for(let i=0;i<toks.length;i+=step){
+    const j=Math.min(toks.length,i+size);
+    spans.push({s:toks[i].s,e:toks[j-1].e,ovEnd: i>0&&overlap>0 ? toks[Math.min(j,i+overlap)-1].e : null});
+    if(j>=toks.length) break;
+  }
+  return spans;
+}
+// Pack units (sentences or paragraphs) up to the size; overlap carries trailing units back.
+function packSpans(text,units,size,overlap){
+  const spans=[]; let cur=[];
+  const span=(a,b)=>countTokens(text.slice(a.s,b.e));
+  const flush=()=>{ if(cur.length){ const carried=cur.filter(u=>u.carried); spans.push({s:cur[0].s,e:cur[cur.length-1].e,ovEnd:carried.length?carried[carried.length-1].e:null}); } };
+  for(const u of units){
+    if(span(u,u)>size){ flush(); cur=[]; fixedSpans(text,u.s,u.e,size,overlap).forEach(x=>spans.push(x)); continue; }
+    if(cur.length && span(cur[0],u)>size){
+      flush();
+      const last=cur[cur.length-1]; const back=[];
+      for(let i=cur.length-1;i>=0 && overlap>0;i--){ if(span(cur[i],last)>overlap) break; back.unshift({s:cur[i].s,e:cur[i].e,carried:true}); }
+      cur = back.length && span(back[0],u)<=size ? back : [];
+    }
+    cur.push({s:u.s,e:u.e});
+  }
+  flush();
+  return spans;
+}
+
+function chunkPaper(p,strategy,size,overlapPct){
+  const L=layout(p); const overlap=Math.round(size*overlapPct/100);
+  let spans=[];
+  if(strategy==="fixed") spans=fixedSpans(L.text,0,L.text.length,size,overlap);
+  else if(strategy==="sentence") spans=packSpans(L.text,L.sents,size,overlap);
+  else if(strategy==="paragraph") L.paras.forEach(u=>{ if(countTokens(L.text.slice(u.s,u.e))<=size) spans.push({s:u.s,e:u.e,ovEnd:null}); else fixedSpans(L.text,u.s,u.e,size,0).forEach(x=>spans.push({s:x.s,e:x.e,ovEnd:null})); });
+  else { // section, recursively: section, then paragraphs, then sentences, then fixed
+    L.sections.forEach(sec=>{
+      if(countTokens(L.text.slice(sec.s,sec.e))<=size){spans.push({s:sec.s,e:sec.e,ovEnd:null});return;}
+      const ps=L.paras.filter(u=>u.s>=sec.s&&u.e<=sec.e);
+      const units=[]; ps.forEach(u=>{ if(countTokens(L.text.slice(u.s,u.e))<=size) units.push(u); else L.sents.filter(x=>x.s>=u.s&&x.e<=u.e).forEach(x=>units.push(x)); });
+      packSpans(L.text,units,size,0).forEach(x=>spans.push(x));
+    });
+  }
+  return spans.map((x,i)=>{
+    const text=L.text.slice(x.s,x.e);
+    return {id:`${p.id}_${i}`, paper_id:p.id, title:p.title, authors:p.authors, year:p.year, section:sectionAt(L,x.s),
+      s:x.s, e:x.e, len:L.text.length, text, ovLen: x.ovEnd? Math.max(0,x.ovEnd-x.s):0, tokens:countTokens(text), paperIndex:p.index};
+  });
+}
+
+// Toy embedding: words grouped by meaning (concepts) weighted by IDF; keyword score on exact words.
+const STOP=new Set("a an the of to and or in on at for by is are was were be been it its this that these those with as from into than then so but not do does how what why which when should can we our their there each every one two all both only more most much very about after before over under per same other".split(" "));
+const CONCEPTS={chunk:["chunk","passag","piece","segment","split","cut"],size:["size","larg","small","big","long","length","short"],vector:["vector","embed","dens"],search:["search","retriev","find","lookup","fetch"],rank:["rank","rerank","order","reorder"],recall:["recall","precis","accura","relevan","rate","percent"],error:["error","exception","fail"],access:["access","permiss","denied","allow"],overlap:["overlap","repeat","bounda","straddl"],model:["model","llm","languag"],question:["question","query","queri","ask"],meaning:["mean","semant","sense"],keyword:["keyword","exact","term","string","identif"],filter:["filter","metadata","year","author","latency"],window:["window","limit","token"],clean:["clean","hyphen","whitesp","parse","pars"]};
+function words(t){return (t.toLowerCase().match(/[a-z_]+|\d+/g)||[]).flatMap(w=>w.split("_")).filter(w=>w&&!STOP.has(w)&&w.length>1);}
+function plain(w){return w.length>4&&w.endsWith("es")?w.slice(0,-2):w.length>3&&w.endsWith("s")?w.slice(0,-1):w;}
+function concept(w){for(const [c,ps] of Object.entries(CONCEPTS)) if(ps.some(p=>w.startsWith(p))) return "≈"+c; return plain(w);}
+function bag(list){const m=new Map();list.forEach(x=>m.set(x,(m.get(x)||0)+1));return m;}
+function buildIndex(chunks){
+  const vb=chunks.map(c=>bag(words(c.text).map(concept)));
+  const kb=chunks.map(c=>bag(words(c.text).map(plain)));
+  const df=(bags)=>{const d=new Map();bags.forEach(b=>b.forEach((_,k)=>d.set(k,(d.get(k)||0)+1)));return d;};
+  const vdf=df(vb), kdf=df(kb), N=chunks.length;
+  const idf=(d,k)=>Math.log(1+N/((d.get(k)||0)+0.5));
+  const vec=b=>{const v=new Map();let n=0;b.forEach((tf,k)=>{const w=(1+Math.log(tf))*idf(vdf,k);v.set(k,w);n+=w*w;});n=Math.sqrt(n)||1;v.forEach((w,k)=>v.set(k,w/n));return v;};
+  return {vecs:vb.map(vec), kb, kdf, N, embed:t=>vec(bag(words(t).map(concept))), idf:k=>idf(kdf,k), cidf:k=>idf(vdf,k)};
+}
+function cosine(a,b){let s=0;a.forEach((w,k)=>{const x=b.get(k);if(x)s+=w*x;});return s;}
+function keywordScore(I,i,q){let s=0;const b=I.kb[i];new Set(words(q).map(plain)).forEach(k=>{const tf=b.get(k)||0;if(tf)s+=I.idf(k)*(tf*2.2)/(tf+1.2);});return s;}
+function search(chunks,I,q,opts){
+  const qv=I.embed(q);
+  let rows=chunks.map((c,i)=>({c,i,v:Math.max(0,cosine(qv,I.vecs[i])),kw:keywordScore(I,i,q)}));
+  if(opts.year) rows=rows.filter(r=>String(r.c.year)===String(opts.year));
+  const kmax=Math.max(1e-9,...rows.map(r=>r.kw)); const vmax=Math.max(1e-9,...rows.map(r=>r.v));
+  rows.forEach(r=>{r.kn=r.kw/kmax; r.vn=r.v/vmax; r.score=opts.alpha*r.vn+(1-opts.alpha)*r.kn;});
+  rows.sort((a,b)=>b.score-a.score||a.i-b.i);
+  return {qv,rows};
+}
+// Toy reranker (a cross-encoder reads both texts at once; this one is transparent). Each question
+// word weighs by its rarity among the chunks (idf); a word scores 1 where it appears as written and
+// 0.6 where only a word of the same meaning does. The best single sentence counts 0.65, the chunk 0.35.
+function rerankScore(q,text,idf){
+  const terms=[...new Map(words(q).map(w=>[plain(w),{w:plain(w),c:concept(w)}])).values()];
+  if(!terms.length) return 0;
+  const weight=t=>idf?idf(t.c):1, total=terms.reduce((a,t)=>a+weight(t),0)||1;
+  const cover=part=>{const ws=words(part), pw=new Set(ws.map(plain)), cs=new Set(ws.map(concept));
+    return terms.reduce((a,t)=>a+weight(t)*(pw.has(t.w)?1:cs.has(t.c)?.6:0),0)/total;};
+  // a heading inside a chunk (a short line with no full stop) is metadata, not content
+  const body=text.split(/\n\n/).filter(x=>/[.!?]$/.test(x.trim())||x.trim().length>60).join(" ");
+  let best=0; for(const sn of body.split(/(?<=[.!?])\s+/)) if(sn.trim()) best=Math.max(best,cover(sn));
+  return Math.min(1,.65*best+.35*cover(body));
+}
+// Classical MDS of cosine distances, two components by power iteration.
+function mds(vecs){
+  const n=vecs.length; const D=[...Array(n)].map((_,i)=>[...Array(n)].map((_,j)=>{const d=1-cosine(vecs[i],vecs[j]);return d*d;}));
+  const rm=D.map(r=>r.reduce((a,b)=>a+b,0)/n), gm=rm.reduce((a,b)=>a+b,0)/n;
+  const B=D.map((r,i)=>r.map((d,j)=>-0.5*(d-rm[i]-rm[j]+gm)));
+  const comps=[];
+  for(let c=0;c<2;c++){
+    let v=[...Array(n)].map((_,i)=>Math.sin(i*1.7+c*2.3)+1.1), lam=0;
+    for(let it=0;it<200;it++){
+      let w=B.map(r=>r.reduce((a,x,j)=>a+x*v[j],0));
+      comps.forEach(([u,l])=>{const d=u.reduce((a,x,j)=>a+x*v[j],0);w=w.map((x,j)=>x-l*d*u[j]);});
+      const nn=Math.sqrt(w.reduce((a,x)=>a+x*x,0))||1; lam=nn; v=w.map(x=>x/nn);
+    }
+    comps.push([v,lam]);
+  }
+  return [...Array(n)].map((_,i)=>[comps[0][0][i]*Math.sqrt(comps[0][1]),comps[1][0][i]*Math.sqrt(comps[1][1])]);
+}
+/* PURE END */
+
+if(typeof document!=="undefined"){
+const $=id=>document.getElementById(id);
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const PC=["--p0","--p1","--p2","--p3"];
+const fmt=n=>n.toLocaleString("en-US");
+
+/* pipeline */
+const STEPS=[
+ ["1 Ingest","PDFs and metadata","Download each paper once.",["The <code>arxiv</code> package lists new papers; each PDF goes into a Unity Catalog volume, its metadata (title, authors, date) into the Delta table <code>arxiv_papers</code>.","Only papers not yet processed are fetched, with a pause between calls for arXiv's limits."]],
+ ["2 Parse","PDF to text elements","Read the layout, not just the characters.",["<code>ai_parse_document</code> over <code>READ_FILES(…, format =&gt; 'binaryFile')</code> writes <code>ai_parsed_docs</code>: titles, paragraphs, tables, captions and their order.","The PDF stays in the volume; the table never holds the binary."]],
+ ["3 Clean","Fix line-break damage","Join split words, collapse spaces.",["Hyphenation at line ends and runs of whitespace come from the printed layout. See the cleaning step below."]],
+ ["4 Chunk","Text to passages","Small enough to mean one thing.",["Fixed size with overlap, by sentence, by paragraph, or recursively by section. Each chunk keeps its metadata and a unique id. Try it below."]],
+ ["5 Count","Tokens and windows","Every limit is in tokens.",["The embedding model reads at most its window: 8,192 tokens for GTE-large-en-v1.5, 512 for BGE-large-en. Anything longer is cut off. See tokens below."]],
+ ["6 Embed","Chunk to 1,024 numbers","Same model for chunks and questions.",["In this cohort, <code>course_ops.gateway.embed</code> serves GTE-large-en-v1.5 through the gateway, with per-user limits. The lecture's managed index uses <code>databricks-gte-large-en</code>.","Embedding the question with a different model than the chunks makes the distances meaningless."]],
+ ["7 Store","Vectors with their rows","A table you can search by distance.",["The lecture builds a Delta Sync index over <code>arxiv_chunks</code> (Change Data Feed on, <code>TRIGGERED</code> sync).","This cohort keeps the vectors in each student's Lakebase project with pgvector: the chunk row, its metadata and its vector side by side."]],
+ ["8 Retrieve","Question to context","Embed, compare, filter, rank, fit.",["Embed the question, filter on metadata, take the N nearest chunks by cosine similarity, optionally mixed with a keyword score (hybrid).","A reranker then reads the question with each candidate and keeps the best k, which must fit the prompt's token budget. Try it below."]]
+];
+let stepSel=3;
+function drawPipe(){
+  $("pipe").innerHTML=STEPS.map((s,i)=>`<button class="${i===stepSel?"on":""}" data-i="${i}"><span>${s[0]}</span><small>${s[1]}</small></button>`).join("");
+  const s=STEPS[stepSel]; $("pipeDetail").innerHTML=`<h3>${s[0]}: ${s[2]}</h3><ul>${s[3].map(x=>`<li>${x}</li>`).join("")}</ul>`;
+}
+$("pipe").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;stepSel=+b.dataset.i;drawPipe();
+  const target={2:"clean",3:"chunking",4:"tokens",5:"embed",6:"embed",7:"embed"}[stepSel]; if(target) $(target).scrollIntoView({behavior:"smooth",block:"start"});});
+
+/* the shared text */
+const ALL_TEXT=PAPERS.map(p=>layout(p).text).join("\n\n");
+const SAMPLES=[...PAPERS.map((p,i)=>[`Paper ${i+1}`,layout(p).text,p.title]),["All three",ALL_TEXT,"All three sample papers"]];
+let shared=SAMPLES[0][1];
+function docsFor(t){
+  const i=PAPERS.findIndex(p=>layout(p).text===t); if(i>=0) return [PAPERS[i]];
+  if(t===ALL_TEXT) return PAPERS;
+  const d=docFromText(t); return d?[d]:[];
+}
+let shown=docsFor(shared);
+const corpus=()=>{const ids=new Set(PAPERS.map(p=>p.id));return [...PAPERS,...shown.filter(d=>!ids.has(d.id))];};
+document.querySelectorAll(".docbar").forEach(bar=>{bar.innerHTML=SAMPLES.map((x,i)=>`<button data-i="${i}" title="${esc(x[2])}">${x[0]}</button>`).join("");});
+function markSamples(){document.querySelectorAll(".docbar button").forEach(b=>b.classList.toggle("on",SAMPLES[+b.dataset.i][1]===shared));}
+function setShared(t,from){
+  shared=t; shown=docsFor(t);
+  document.querySelectorAll(".docIn").forEach(x=>{if(x!==from) x.value=t;});
+  markSamples(); drawClean(); update();
+}
+document.addEventListener("click",e=>{const b=e.target.closest(".docbar button"); if(!b) return; const i=+b.dataset.i; if(i===SAMPLES.length-1) $("winSel").value="512"; setShared(SAMPLES[i][1],null);});
+document.querySelectorAll(".docIn").forEach(x=>x.addEventListener("input",()=>setShared(x.value,x)));
+
+/* cleaning */
+let showClean=true;
+function drawClean(){
+  const raw=simulateParse(shared);
+  if(showClean){
+    const marked=raw.replace(/([A-Za-z]+)-\n([A-Za-z]+)/g,"\u0001$1$2\u0002");
+    const c=cleanText(raw);
+    $("cleanView").innerHTML=esc(cleanText(marked)).replace(/\u0001([^\u0002]*)\u0002/g,'<mark class="fixed">$1</mark>')||"(no text)";
+    $("cleanNote").textContent=`${fmt(countTokens(raw))} tokens before cleaning, ${fmt(countTokens(c))} after.`;
+  } else {
+    $("cleanView").innerHTML=esc(raw).replace(/([A-Za-z]-)\n/g,'<mark>$1⏎</mark>\n').replace(/ {2,}/g,m=>`<mark>${"·".repeat(m.length)}</mark>`)||"(no text)";
+    $("cleanNote").textContent="Marked: words split at a line end, and runs of spaces.";
+  }
+  $("cleanBtn").textContent=showClean?"Show as parsed":"Show cleaned";
+}
+$("cleanBtn").onclick=()=>{showClean=!showClean;drawClean();};
+
+/* tokens */
+function drawTokens(){
+  const t=shared; const toks=tokenize(t); const win=+$("winSel").value;
+  const wordsN=(t.match(/\S+/g)||[]).length;
+  $("tokStats").innerHTML=[["Characters",t.length],["Words",wordsN],["Tokens",toks.length],["Characters ÷ 4",Math.round(t.length/4)]].map(([k,v])=>`<div class="stat"><div class="v">${fmt(v)}</div><div class="k">${k}</div></div>`).join("");
+  $("tokView").innerHTML=toks.slice(0,1500).map((x,i)=>`<span class="tok c${i%5}${i>=win?" cut":""}" title="token ${i+1}">${esc(x.t)}</span>`).join("")+(toks.length>1500?" …":"");
+  const rows=[["Your text",toks.length],["BGE-large-en window",512],["GTE-large-en-v1.5 window",8192]];
+  $("windowBars").innerHTML=rows.map(([k,v],i)=>`<div class="bar"><span>${k}</span><span class="track"><span class="fill ${i===0&&v>win?"over":""}" style="width:${Math.min(100,v/8192*100)}%"></span></span><span class="num">${fmt(v)}</span></div>`).join("");
+  const n=$("windowNote"); const name=win===512?"BGE-large-en":"GTE-large-en-v1.5";
+  if(toks.length>win){n.className="callout warn";n.innerHTML=`This text is ${fmt(toks.length)} tokens, over ${name}'s window of ${fmt(win)}. Tokens past the window (struck through) are cut off and never reach the vector. Chunk it first.`;}
+  else {n.className="callout ok";n.innerHTML=`This text fits ${name}'s window of ${fmt(win)} tokens. Load <b>All three</b> in the text box to see a text over BGE's 512-token window.`;}
+}
+
+/* chunking */
+const STRATS=[["fixed","Fixed size + overlap","Cuts every N tokens, wherever that falls, and repeats the last tokens at the start of the next chunk so a sentence cut at a boundary is whole in at least one chunk. Simple and predictable; it cuts words and sentences."],
+ ["sentence","By sentence","Packs whole sentences until the next would pass the size. Never cuts a sentence; overlap repeats whole trailing sentences."],
+ ["paragraph","By paragraph","One chunk per paragraph, the author's own units of thought. Sizes vary a lot; a paragraph over the size is cut by fixed size. Overlap does not apply."],
+ ["section","Recursive by section","Keeps a whole section when it fits, otherwise its paragraphs, otherwise sentences, otherwise fixed size. Follows the document's structure; the section name is good metadata. Overlap does not apply."]];
+let strat="sentence", chunks=[], selChunk=null;
+$("stratBtns").innerHTML=STRATS.map(s=>`<button data-s="${s[0]}">${s[1]}</button>`).join("");
+$("stratBtns").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;strat=b.dataset.s;update();});
+function drawChunks(){
+  [...$("stratBtns").children].forEach(b=>b.classList.toggle("on",b.dataset.s===strat));
+  const size=+$("size").value, ovp=+$("ov").value, win=+$("winSel").value;
+  $("sizeV").textContent=`${size} tokens`; $("ovV").textContent=strat==="fixed"||strat==="sentence"?`${ovp} % · ${Math.round(size*ovp/100)} tokens`:"not used by this strategy";
+  $("stratNote").innerHTML=STRATS.find(s=>s[0]===strat)[2];
+  const ids=shown.map(d=>d.index); const mine=chunks.filter(c=>ids.includes(c.paperIndex));
+  if(!mine.length){ $("chunkStats").innerHTML=""; $("ribbon").innerHTML=""; $("ribbon").style.height="58px"; $("chunkList").innerHTML=`<div class="callout">Type or paste a text in the box above to chunk it.</div>`; return; }
+  const tk=mine.map(c=>c.tokens); const over=mine.filter(c=>c.tokens>win).length;
+  $("chunkStats").innerHTML=[["Chunks",mine.length],["Average tokens",Math.round(tk.reduce((a,b)=>a+b,0)/tk.length)],["Smallest",Math.min(...tk)],["Largest",Math.max(...tk)],["Over the window",over]].map(([k,v])=>`<div class="stat"><div class="v" style="${k==="Over the window"&&v?"color:var(--warn)":""}">${fmt(v)}</div><div class="k">${k}</div></div>`).join("");
+  $("ribbon").style.height=`${ids.length*54+6}px`;
+  $("ribbon").innerHTML=mine.map(c=>{const j=ids.indexOf(c.paperIndex); const n=+c.id.split("_").pop();
+    return `<div class="seg" data-id="${c.id}" title="${esc(c.title)} · ${c.id} · ${c.tokens} tokens" style="left:${c.s/c.len*100}%;width:${Math.max(.6,(c.e-c.s)/c.len*100)}%;top:${(j*2+n%2)*27+5}px;background:var(${PC[c.paperIndex]})"></div>`;}).join("");
+  $("chunkList").innerHTML=mine.map(c=>{
+    const ov=c.ovLen?`<mark title="repeated from the previous chunk">${esc(c.text.slice(0,c.ovLen)).replace(/\n\n/g," ¶ ")}</mark>`:"";
+    let body=esc(c.text.slice(c.ovLen));
+    if(c.tokens>win){const toks=tokenize(c.text);const cut=toks[win-1].e;body=esc(c.text.slice(c.ovLen,cut))+`<span class="over"> ✂ ${fmt(c.tokens-win)} tokens past the window are never embedded: </span><span style="opacity:.45">${esc(c.text.slice(cut))}</span>`;}
+    return `<div class="chunk${selChunk===c.id?" hl":""}" id="ch-${c.id}" style="border-left-color:var(${PC[c.paperIndex]})"><div class="meta"><span>id ${c.id}</span><span>paper_id ${c.paper_id}</span><span>section ${esc(c.section)}</span><span>year ${c.year}</span><span>${c.tokens} tokens</span></div>${ov}${body.replace(/\n\n/g," ¶ ")}</div>`;}).join("");
+}
+$("ribbon").addEventListener("click",e=>{const s=e.target.closest(".seg");if(!s)return;selChunk=s.dataset.id;drawChunks();$("ch-"+selChunk).scrollIntoView({behavior:"smooth",block:"nearest"});});
+
+/* search */
+const QUERIES=["How big should a passage be?","PERMISSION_DENIED error","Why does overlap help?","Does a reranker improve the results?","What happens to text longer than the model can read?"];
+$("queryBtns").innerHTML=QUERIES.map(q=>`<button>${esc(q)}</button>`).join("");
+$("queryBtns").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;$("query").value=b.textContent;drawSearch();});
+$("query").value=QUERIES[0];
+let index=null, selRes=null;
+let rerankOn=true;
+$("rrBtn").onclick=()=>{rerankOn=!rerankOn; $("rrBtn").classList.toggle("on",rerankOn); $("rrBtn").textContent=rerankOn?"Reranker on":"Reranker off"; drawSearch();};
+function hits(text,q){const qc=new Set(words(q).map(concept)); return esc(text).replace(/[A-Za-z_]+/g,w=>{const ws=words(w); return ws.length&&ws.some(x=>qc.has(concept(x)))?`<mark class="hit">${w}</mark>`:w;});}
+function moveTag(from,to){const d=from-to; return d>0?`<span class="move up">↑${d}</span>`:d<0?`<span class="move down">↓${-d}</span>`:`<span class="move same">=</span>`;}
+function drawRerank(cands,ordered,kept,q){
+  const li=(r,pos,score,extra)=>`<li class="${kept.has(r.c.id)?"kept":""}"><span class="pos">${pos}</span><span class="snip"><span class="mono" style="font-size:11.5px">${r.c.id}</span> · ${hits(r.c.text.replace(/\n\n/g," ¶ ").slice(0,90),q)}</span><span class="sc">${score}${extra}</span></li>`;
+  $("rrBefore").innerHTML=cands.length?cands.map((r,i)=>li(r,i+1,`sim ${r.score.toFixed(2)}`,"")).join(""):`<li class="msg">No candidates: try another question, or remove the year filter.</li>`;
+  $("rrAfter").innerHTML=!rerankOn?`<li class="msg">The reranker is off: the vector order is final, and the first k candidates go into the prompt.</li>`:ordered.map((r,i)=>li(r,i+1,`rerank ${r.rr.toFixed(2)} `,moveTag(r.first,i+1))).join("");
+}
+function drawLegend(){ $("legend").innerHTML=corpus().map(p=>`<span><i style="background:var(${PC[p.index]})"></i>${esc(p.title)}</span>`).join("")+`<span><i style="background:var(--ink);border-radius:2px"></i>the question</span>`; }
+function drawSearch(){
+  drawLegend();
+  const q=$("query").value, k=+$("k").value, alpha=+$("alpha").value/100, year=$("yearSel").value, budget=+$("budget").value;
+  $("kV").textContent=k; $("budV").textContent=`${fmt(budget)} tokens`;
+  $("aV").textContent=alpha===1?"vector only":alpha===0?"keyword only":`${Math.round(alpha*100)} % vector, ${Math.round((1-alpha)*100)} % keyword`;
+  const {qv,rows}=search(chunks,index,q,{alpha,year});
+  const N=Math.max(+$("cand").value,k); $("candV").textContent=`${N} candidates`;
+  const cands=rows.filter(r=>r.score>0).slice(0,N);
+  cands.forEach((r,i)=>{r.first=i+1; r.rr=rerankScore(q,r.c.text,index.cidf);});
+  const ordered=rerankOn?[...cands].sort((a,b)=>b.rr-a.rr||a.first-b.first):cands;
+  const top=ordered.slice(0,k);
+  drawRerank(cands,ordered,new Set(top.map(r=>r.c.id)),q);
+  if(!selRes||!top.find(r=>r.c.id===selRes)) selRes=top.length?top[0].c.id:chunks[0].id;
+  const all=[...index.vecs,qv]; const P=mds(all);
+  const xs=P.map(p=>p[0]), ys=P.map(p=>p[1]); const pad=24, W=440, H=340;
+  const sx=x=>pad+(x-Math.min(...xs))/((Math.max(...xs)-Math.min(...xs))||1)*(W-2*pad), sy=y=>pad+(y-Math.min(...ys))/((Math.max(...ys)-Math.min(...ys))||1)*(H-2*pad);
+  const qx=sx(P[P.length-1][0]), qy=sy(P[P.length-1][1]); const topIds=new Set(top.map(r=>r.c.id));
+  const allowed=new Set(rows.map(r=>r.c.id));
+  let svg=top.map(r=>`<line x1="${qx}" y1="${qy}" x2="${sx(P[r.i][0])}" y2="${sy(P[r.i][1])}" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4 3"/>`).join("");
+  svg+=chunks.map((c,i)=>{const on=topIds.has(c.id), ok=allowed.has(c.id);return `<circle cx="${sx(P[i][0])}" cy="${sy(P[i][1])}" r="${on?7:4.5}" fill="var(${PC[c.paperIndex]})" fill-opacity="${ok?(on?1:.55):.12}" stroke="${c.id===selRes?"var(--ink)":"none"}" stroke-width="2"><title>${c.id} · ${esc(c.section)}${ok?"":" · filtered out"}</title></circle>`;}).join("");
+  svg+=`<path d="M${qx},${qy-10} L${qx+3},${qy-3} L${qx+10},${qy-3} L${qx+4},${qy+2} L${qx+6},${qy+9} L${qx},${qy+5} L${qx-6},${qy+9} L${qx-4},${qy+2} L${qx-10},${qy-3} L${qx-3},${qy-3} Z" fill="var(--ink)"><title>the question</title></path>`;
+  $("map").innerHTML=svg;
+  $("results").innerHTML=top.length?top.map((r,i)=>`<div class="res${r.c.id===selRes?" sel":""}" data-id="${r.c.id}"><span class="rank">${i+1}</span><div style="min-width:0;display:flex;flex-direction:column;gap:4px"><div class="mono" style="font-size:12px;color:var(--muted)">${r.c.id} · ${esc(r.c.section)} · ${r.c.year} · ${r.c.tokens} tokens</div><div>${hits(r.c.text.replace(/\n\n/g," ¶ ").slice(0,220),q)}${r.c.text.length>220?"…":""}</div><div class="scorebar">vector <span class="mini"><i style="width:${r.vn*100}%"></i></span> ${r.v.toFixed(2)} · keyword <span class="mini k"><i style="width:${r.kn*100}%"></i></span> ${r.kw.toFixed(1)} · combined ${r.score.toFixed(2)}${rerankOn?` · rerank ${r.rr.toFixed(2)}, vector rank ${r.first} ${moveTag(r.first,i+1)}`:""}</div></div></div>`).join(""):`<div class="callout warn">No chunk matches. Try another question, or remove the year filter.</div>`;
+  const used=top.reduce((a,r)=>a+r.c.tokens,0);
+  $("budgetBar").innerHTML=`<div class="bar"><span>Context used</span><span class="track"><span class="fill ${used>budget?"over":""}" style="width:${Math.min(100,used/budget*100)}%"></span></span><span class="num">${fmt(used)} / ${fmt(budget)}</span></div><p class="note">${used>budget?`The ${top.length} results need ${fmt(used)} tokens, over the budget: lower k, use smaller chunks, or compress them before they enter the prompt.`:`The ${top.length} results fit the prompt's budget with ${fmt(budget-used)} tokens to spare for the instructions and the answer.`}</p>`;
+  drawVector();
+  drawFlow(q,top);
+}
+$("results").addEventListener("click",e=>{const r=e.target.closest(".res");if(!r)return;selRes=r.dataset.id;drawSearch();});
+function seeded(text){let seed=7;for(const ch of text) seed=(seed*31+ch.charCodeAt(0))>>>0; seed=seed||1;
+  return ()=>{seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;return ((seed>>>0)/4294967296);};}
+function paintVector(cv,text,cols){
+  const g=cv.getContext("2d"), lo=css("--p0"), hi=css("--p1"), mid=css("--soft"); const rnd=seeded(text);
+  const rows=Math.ceil(1024/cols), cw=cv.width/cols, ch=cv.height/rows; const vals=[];
+  g.clearRect(0,0,cv.width,cv.height);
+  for(let d=0;d<1024;d++){const v=(rnd()+rnd()+rnd())/1.5-1; vals.push(v); g.globalAlpha=Math.min(1,Math.abs(v)*1.6+.08); g.fillStyle=Math.abs(v)<.05?mid:(v<0?lo:hi); g.fillRect((d%cols)*cw,Math.floor(d/cols)*ch,Math.max(1,cw-.5),Math.max(1,ch-1));}
+  g.globalAlpha=1; return vals;
+}
+let lastQ=null;
+function arrowSvg(x1,y1,x2,y2,color,w,dash){
+  const a=Math.atan2(y2-y1,x2-x1), h=7;
+  return `<line x1="${x1}" y1="${y1}" x2="${x2-4*Math.cos(a)}" y2="${y2-4*Math.sin(a)}" stroke="${color}" stroke-width="${w}"${dash?` stroke-dasharray="${dash}"`:""}/>`+
+    `<path d="M${x2},${y2} L${x2-h*Math.cos(a-.42)},${y2-h*Math.sin(a-.42)} L${x2-h*Math.cos(a+.42)},${y2-h*Math.sin(a+.42)} Z" fill="${color}"/>`;
+}
+const Q_ANGLE=12*Math.PI/180, MINI_L=74, MINI_O=[14,76]; // both mini arrows: same origin and length
+function miniArrow(ph,color,label,extra){
+  const [ox,oy]=MINI_O, x=ox+MINI_L*Math.cos(ph), y=oy-MINI_L*Math.sin(ph);
+  return (extra||"")+arrowSvg(ox,oy,x,y,color,2.2)+`<circle cx="${ox}" cy="${oy}" r="2.5" fill="var(--muted)"/>`+
+    `<text x="${x+8}" y="${y+5}" font-size="12.5" fill="${color}" font-weight="600">${label}</text>`;
+}
+function drawCArrow(c,qv){
+  if(!c){ $("fCVecSvg").innerHTML=""; $("fCNums").textContent=""; return; }
+  const i=chunks.findIndex(x=>x.id===c.id), cs=i<0?0:Math.max(-1,Math.min(1,cosine(qv,index.vecs[i])));
+  const [ox,oy]=MINI_O, ghost=`<line x1="${ox}" y1="${oy}" x2="${ox+MINI_L*Math.cos(Q_ANGLE)}" y2="${oy-MINI_L*Math.sin(Q_ANGLE)}" stroke="var(--blue-bd)" stroke-width="1.4" stroke-dasharray="3 3"/>`;
+  $("fCVecSvg").innerHTML=miniArrow(Q_ANGLE+Math.acos(cs),"var(--warm)","chunk",ghost);
+  const rnd=seeded("c:"+c.id), v=[...Array(4)].map(()=>(rnd()+rnd()+rnd())/1.5-1);
+  $("fCNums").textContent="["+v.map(x=>(x/40).toFixed(4)).join(", ")+", … 1,020 more]";
+}
+function drawQArrow(){
+  $("fVecSvg").innerHTML=miniArrow(Q_ANGLE,"var(--blue)","q");
+}
+// Two vectors span a plane, so their angle is exact whatever their length: q and the closest chunk at
+// their real angle (arccos of the cosine), the other candidates as faint lines at theirs to q.
+function drawSim(top){
+  const ox=14, oy=136, L=125, phq=8*Math.PI/180;
+  const tip=ph=>[ox+L*Math.cos(ph), oy-L*Math.sin(ph)];
+  if(!top.length){ $("fSim").innerHTML=""; $("fSimText").textContent="No chunk shares a meaning with the question."; return; }
+  const th=r=>Math.acos(Math.max(-1,Math.min(1,r.v)));
+  let svg=top.slice(1,4).map(r=>{const [x,y]=tip(phq+th(r));return `<line x1="${ox}" y1="${oy}" x2="${x}" y2="${y}" stroke="var(--line)" stroke-width="1.2"/>`;}).join("");
+  const best=top[0], t=th(best), [cx,cy]=tip(phq+t), [qx,qy]=tip(phq);
+  const R=40, a0=phq, a1=phq+t;
+  svg+=`<path d="M${ox+R*Math.cos(a0)},${oy-R*Math.sin(a0)} A${R},${R} 0 0 0 ${ox+R*Math.cos(a1)},${oy-R*Math.sin(a1)}" fill="none" stroke="var(--ink)" stroke-width="1"/>`;
+  const am=(a0+a1)/2; svg+=`<text x="${ox+(R+12)*Math.cos(am)}" y="${oy-(R+12)*Math.sin(am)+5}" font-size="15" fill="var(--ink)">θ</text>`;
+  svg+=arrowSvg(ox,oy,qx,qy,"var(--blue)",2.2)+arrowSvg(ox,oy,cx,cy,"var(--warm)",2.2);
+  svg+=`<text x="${qx}" y="${qy-8}" text-anchor="end" font-size="14" fill="var(--blue)" font-weight="600">question</text>`;
+  svg+=`<text x="${Math.min(cx+7,186)}" y="${Math.max(cy+5,14)}" font-size="14" fill="var(--warm)" font-weight="600" text-anchor="${cx>120?"end":"start"}">chunk</text>`;
+  svg+=`<circle cx="${ox}" cy="${oy}" r="2.5" fill="var(--muted)"/>`;
+  $("fSim").innerHTML=svg;
+  $("fSimText").innerHTML=`Closest: <span class="mono" style="font-size:11.5px">${esc(best.c.id)}</span><br>θ = ${Math.round(t*180/Math.PI)}°, <b>cos θ = ${best.v.toFixed(2)}</b>`;
+}
+function drawFlow(q,top){
+  const toks=tokenize(q);
+  $("fQ").textContent=q||"(type a question)";
+  $("fTok").innerHTML=toks.slice(0,40).map((t,i)=>`<span style="background:var(--t${i%5})">${esc(t.t)}</span>`).join("")+(toks.length>40?" …":"");
+  $("fTokN").textContent=`${toks.length} token${toks.length===1?"":"s"}`;
+  const rnd=seeded("q:"+q), vals=[...Array(4)].map(()=>(rnd()+rnd()+rnd())/1.5-1);
+  drawQArrow(); drawSim(top);
+  $("fNums").textContent="["+vals.slice(0,4).map(v=>(v/40).toFixed(4)).join(", ")+", … 1,020 more]";
+  $("fCmp").innerHTML=`<div class="note">cos θ: 1 = same direction, 0 = nothing in common. The ${top.length} closest of ${fmt(chunks.length)}:</div>`+top.slice(0,4).map(r=>`<div class="mono" style="font-size:11.5px">${r.c.id} · ${r.v.toFixed(2)}</div>`).join("");
+  const c=chunks.find(x=>x.id===selRes)||chunks[0];
+  drawCArrow(c,index.embed(q));
+  if(c){ const t=c.text.replace(/\n\n/g," ¶ "); $("fChunk").textContent=t; $("fChunkFull").textContent=t; $("fChunkId").textContent=c.id; $("fChunkTok").textContent=`${c.tokens} tokens`; }
+  if(q!==lastQ && lastQ!==null){ const f=$("flow"); f.classList.remove("pulse"); void f.offsetWidth; f.classList.add("pulse"); }
+  lastQ=q;
+}
+function drawVector(){
+  const i=chunks.findIndex(c=>c.id===selRes); if(i<0) return; const c=chunks[i];
+  $("vecTitle").textContent=`The selected chunk as a vector: ${c.id}`;
+  paintVector($("vec"),c.id,256);
+  const v=[...index.vecs[i].entries()].sort((a,b)=>b[1]-a[1]).slice(0,10);
+  $("dims").innerHTML=v.map(([k,w])=>`<span class="dim">${esc(k)} ${w.toFixed(2)}</span>`).join("")+`<span class="note">(≈ marks a meaning group)</span>`;
+}
+
+function update(){
+  const size=+$("size").value, ovp=+$("ov").value;
+  chunks=corpus().flatMap(p=>chunkPaper(p,strat,size,ovp));
+  index=buildIndex(chunks); selRes=null;
+  drawChunks(); drawSearch(); drawTokens();
+}
+["size","ov","winSel"].forEach(id=>$(id).addEventListener("input",()=>{ if(id==="winSel"){drawChunks();drawTokens();return;} update();}));
+["query","k","alpha","yearSel","budget","cand"].forEach(id=>$(id).addEventListener("input",drawSearch));
+drawPipe(); setShared(shared,null);
+}
+</script>
+</body>
+</html>
