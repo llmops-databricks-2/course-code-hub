@@ -2,6 +2,7 @@ resources:
   jobs:
     lecture3-custom-tools:
       name: lecture3-custom-tools
+      budget_policy_id: "${var.usage_policy_id}"
       environments:
         - environment_key: default
           spec:
@@ -15,9 +16,22 @@ resources:
             notebook_path: ../notebooks/3.1_custom_functions_tools.py
             base_parameters:
               env: "${bundle.target}"
+        - task_key: simple_rag
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/3.1b_simple_rag.py
+            base_parameters:
+              env: "${bundle.target}"
+        - task_key: uc_function_example
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/3.1c_uc_function_example.py
+            base_parameters:
+              env: "${bundle.target}"
 
     lecture3-genie-mcp:
       name: lecture3-genie-mcp
+      budget_policy_id: "${var.usage_policy_id}"
       parameters:
         - name: env
           default: "${bundle.target}"
@@ -44,6 +58,7 @@ resources:
 
     lecture3-session-memory:
       name: lecture3-session-memory
+      budget_policy_id: "${var.usage_policy_id}"
       environments:
         - environment_key: default
           spec:
@@ -60,6 +75,7 @@ resources:
 
     lecture3-spn-authentication:
       name: lecture3-spn-authentication
+      budget_policy_id: "${var.usage_policy_id}"
       environments:
         - environment_key: default
           spec:
