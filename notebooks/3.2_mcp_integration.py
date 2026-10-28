@@ -23,7 +23,7 @@ from databricks_mcp import DatabricksMCPClient
 from loguru import logger
 from pyspark.sql import SparkSession
 
-from arxiv_curator.config import get_env, load_config
+from arxiv_curator.config import get_env, get_widget, load_config
 from arxiv_curator.mcp import ToolInfo, create_mcp_tools
 from arxiv_curator.vector_search import LakebasePgVectorManager
 
@@ -34,6 +34,9 @@ nest_asyncio.apply()
 spark = SparkSession.builder.getOrCreate()
 env = get_env(spark)
 cfg = load_config("../project_config.yml", env)
+# The job passes the ID of the space deployed by the bundle. The default is the dev space
+# (`databricks bundle summary` shows it) for interactive runs without the widget.
+genie_space_id = get_widget(spark, "genie_space_id", default="01f1d2d392811a448b1126db9a70b2ea")
 w = WorkspaceClient()
 
 pgvector = LakebasePgVectorManager(config=cfg, workspace=w)
@@ -115,13 +118,17 @@ logger.info(search_papers_tool.exec_fn("machine learning and neural networks", 3
 # MAGIC
 # MAGIC Genie remains a managed MCP server. It is independent of the pgvector
 # MAGIC search tool and can be included in the same agent tool list.
+# MAGIC
+# MAGIC The space ID comes from the `genie_space_id` job parameter, which the bundle
+# MAGIC fills from `resources/genie_space.yml`. When running interactively without the
+# MAGIC widget, the deployed dev space is used.
 
 # COMMAND ----------
 
 genie_tools: list[ToolInfo] = []
-if cfg.genie_space_id:
+if genie_space_id:
     host = w.config.host
-    genie_url = f"{host}/api/2.0/mcp/genie/{cfg.genie_space_id}"
+    genie_url = f"{host}/api/2.0/mcp/genie/{genie_space_id}"
     genie_client = DatabricksMCPClient(server_url=genie_url, workspace_client=w)
 
     logger.info(f"Genie MCP URL: {genie_url}")
@@ -130,7 +137,7 @@ if cfg.genie_space_id:
 
     genie_tools = asyncio.run(create_mcp_tools(w, [genie_url]))
 else:
-    logger.warning("No Genie space configured")
+    logger.warning("No genie_space_id parameter set, skipping Genie MCP tools")
 
 # COMMAND ----------
 

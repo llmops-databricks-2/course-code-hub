@@ -25,7 +25,6 @@ class ProjectConfig(BaseModel):
     experiment_path: str = Field(..., description="MLflow experiment path")
     lakebase_project_id: str = Field(..., description="Lakebase project ID")
     agent_app_name: str | None = Field(None, description="Databricks App name")
-    genie_space_id: str | None = Field(None, description="Genie Space ID")
     system_prompt: str = Field(
         "You are a helpful assistant that answers questions about arXiv papers.",
         description="Agent system prompt",
@@ -141,3 +140,18 @@ def get_env(spark: SparkSession) -> str:
         return dbutils.widgets.get("env")
     except Exception:
         return "dev"
+
+
+def get_widget(spark: SparkSession, name: str, default: str | None = None) -> str | None:
+    """Get a notebook widget or job parameter value, falling back to a default.
+
+    Returns:
+        The widget value, or the default if the widget is missing or empty
+    """
+    try:
+        from pyspark.dbutils import DBUtils
+
+        dbutils = DBUtils(spark)
+        return dbutils.widgets.get(name) or default
+    except Exception:
+        return default

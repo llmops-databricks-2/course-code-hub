@@ -15,3 +15,29 @@ resources:
             notebook_path: ../notebooks/3.1_custom_functions_tools.py
             base_parameters:
               env: "${bundle.target}"
+
+    lecture3-genie-mcp:
+      name: lecture3-genie-mcp
+      parameters:
+        - name: env
+          default: "${bundle.target}"
+        # The ID of the Genie space deployed by resources/genie_space.yml.
+        - name: genie_space_id
+          default: "${resources.genie_spaces.arxiv-curator-space.id}"
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"
+            dependencies:
+              - ../dist/*.whl
+      tasks:
+        - task_key: genie
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/3.2b_genie.py
+        - task_key: mcp_integration
+          depends_on:
+            - task_key: genie
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/3.2_mcp_integration.py
