@@ -11,7 +11,7 @@ bundle:
 artifacts:
   default:
     type: whl
-    build: uv build
+    build: uv build --system-certs
     path: .
 
 variables:

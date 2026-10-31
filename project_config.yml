@@ -7,11 +7,11 @@ dev:
   schema: arxiv
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
-  # Use the serving endpoint supported by batch ai_query and AI Search.
-  embedding_endpoint: databricks-gte-large-en
+  embedding_endpoint: course_ops.gateway.embed
   warehouse_id: 0c81a2c322e92b82
   experiment_path: /Shared/arxiv-curator-course
   lakebase_project_id: lb-llmops-dev
+  genie_space_id: 01f1d2d392811a448b1126db9a70b2ea
 
 # Acceptance/Staging environment
 acc:
@@ -19,11 +19,11 @@ acc:
   schema: arxiv
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
-  # Use the serving endpoint supported by batch ai_query and AI Search.
-  embedding_endpoint: databricks-gte-large-en
+  embedding_endpoint: course_ops.gateway.embed
   warehouse_id: 0c81a2c322e92b82
   experiment_path: /Shared/arxiv-curator-course
   lakebase_project_id: lb-llmops-acc
+  genie_space_id: null
 
 # Production environment
 prd:
@@ -31,11 +31,11 @@ prd:
   schema: arxiv
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
-  # Use the serving endpoint supported by batch ai_query and AI Search.
-  embedding_endpoint: databricks-gte-large-en
+  embedding_endpoint: course_ops.gateway.embed
   warehouse_id: 0c81a2c322e92b82
   experiment_path: /Shared/arxiv-curator-course
   lakebase_project_id: lb-llmops-prd
+  genie_space_id: null
 
 # Model configuration
 model_config:
