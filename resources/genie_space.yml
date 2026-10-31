@@ -1,0 +1,71 @@
+resources:
+  genie_spaces:
+    arxiv-curator-space:
+      title: arxiv-curator-space
+      description: Ask questions about the arXiv papers ingested for the course.
+      warehouse_id: "${var.warehouse_id}"
+      # Genie validates this strictly: every id is 32 lowercase hex characters, id-keyed
+      # lists are sorted by id, and column_configs are sorted by column_name.
+      serialized_space:
+        version: 2
+        config:
+          sample_questions:
+            - id: "10000000000000000000000000000001"
+              question: ["What are the 10 most recently published papers?"]
+            - id: "10000000000000000000000000000002"
+              question: ["How many papers were published per month?"]
+            - id: "10000000000000000000000000000003"
+              question: ["Which authors have the most papers?"]
+        data_sources:
+          tables:
+            - identifier: "${var.catalog}.${var.schema}.arxiv_papers"
+              column_configs:
+                - column_name: arxiv_id
+                  description: ["arXiv identifier of the paper, for example 2410.12345v1."]
+                  synonyms: ["paper id", "arxiv id"]
+                - column_name: authors
+                  description: ["Array of author names in publication order."]
+                - column_name: ingest_ts
+                  description: ["Timestamp when the row was written to the table."]
+                  enable_format_assistance: true
+                - column_name: pdf_url
+                  enable_format_assistance: true
+                - column_name: processed
+                  description: ["End of the ingestion window as a yyyyMMddHHmm number."]
+                  enable_format_assistance: true
+                - column_name: published
+                  description: ["Publication time on arXiv as a yyyyMMddHHmm number, for example 202410281530."]
+                  synonyms: ["publication date", "date published"]
+                  enable_format_assistance: true
+                - column_name: summary
+                  description: ["Paper abstract."]
+                  synonyms: ["abstract"]
+                - column_name: title
+                  description: ["Paper title."]
+                  enable_format_assistance: true
+                  enable_entity_matching: true
+                - column_name: volume_path
+                  description: ["Path of the downloaded PDF in the Unity Catalog volume."]
+                  exclude: true
+        instructions:
+          text_instructions:
+            - id: "30000000000000000000000000000001"
+              content:
+                - "Each row in arxiv_papers is one arXiv paper in the cs.AI category."
+                - "published and processed are BIGINT values in yyyyMMddHHmm format, not timestamps. Convert with to_timestamp(CAST(published AS STRING), 'yyyyMMddHHmm') before date arithmetic or when displaying dates."
+                - "'Latest' or 'most recent' papers means ordering by published descending."
+                - "authors is an array of strings. Use explode(authors) to count or filter by author, and array_join(authors, ', ') to display them."
+                - "When listing papers, show arxiv_id, title and the published date. Show summary only when the user asks for it."
+          example_question_sqls:
+            - id: "20000000000000000000000000000001"
+              question: ["What are the 10 most recently published papers?"]
+              sql:
+                - "SELECT arxiv_id, title, to_timestamp(CAST(published AS STRING), 'yyyyMMddHHmm') AS published_at "
+                - "FROM ${var.catalog}.${var.schema}.arxiv_papers "
+                - "ORDER BY published DESC LIMIT 10"
+            - id: "20000000000000000000000000000002"
+              question: ["Which authors have the most papers?"]
+              sql:
+                - "SELECT author, COUNT(*) AS paper_count "
+                - "FROM ${var.catalog}.${var.schema}.arxiv_papers LATERAL VIEW explode(authors) a AS author "
+                - "GROUP BY author ORDER BY paper_count DESC LIMIT 10"

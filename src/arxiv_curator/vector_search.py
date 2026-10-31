@@ -174,6 +174,8 @@ class LakebasePgVectorManager:
         query: str,
         num_results: int = 5,
         year: int | None = None,
+        year_from: int | None = None,
+        year_to: int | None = None,
         vector_weight: float = 0.7,
     ) -> list[dict[str, Any]]:
         """Combine cosine similarity and PostgreSQL full-text ranking."""
@@ -184,6 +186,9 @@ class LakebasePgVectorManager:
         if year is not None:
             where += " AND year = %s"
             params.append(year)
+        elif year_from is not None and year_to is not None:
+            where += " AND year BETWEEN %s AND %s"
+            params.extend([year_from, year_to])
         params.extend([vector_weight, text_weight, num_results])
         sql = f"""
             WITH ranked AS (

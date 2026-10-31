@@ -1,0 +1,91 @@
+resources:
+  jobs:
+    lecture3-custom-tools:
+      name: lecture3-custom-tools
+      budget_policy_id: "${var.usage_policy_id}"
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"
+            dependencies:
+              - ../dist/*.whl
+      tasks:
+        - task_key: custom_functions_tools
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/3.1_custom_functions_tools.py
+            base_parameters:
+              env: "${bundle.target}"
+        - task_key: simple_rag
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/3.1b_simple_rag.py
+            base_parameters:
+              env: "${bundle.target}"
+        - task_key: uc_function_example
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/3.1c_uc_function_example.py
+            base_parameters:
+              env: "${bundle.target}"
+
+    lecture3-genie-mcp:
+      name: lecture3-genie-mcp
+      budget_policy_id: "${var.usage_policy_id}"
+      parameters:
+        - name: env
+          default: "${bundle.target}"
+        # The ID of the Genie space deployed by resources/genie_space.yml.
+        - name: genie_space_id
+          default: "${resources.genie_spaces.arxiv-curator-space.id}"
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"
+            dependencies:
+              - ../dist/*.whl
+      tasks:
+        - task_key: genie
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/3.2b_genie.py
+        - task_key: mcp_integration
+          depends_on:
+            - task_key: genie
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/3.2_mcp_integration.py
+
+    lecture3-session-memory:
+      name: lecture3-session-memory
+      budget_policy_id: "${var.usage_policy_id}"
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"
+            dependencies:
+              - ../dist/*.whl
+      tasks:
+        - task_key: session_memory_lakebase
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/3.3_session_memory_lakebase.py
+            base_parameters:
+              env: "${bundle.target}"
+
+    lecture3-spn-authentication:
+      name: lecture3-spn-authentication
+      budget_policy_id: "${var.usage_policy_id}"
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"
+            dependencies:
+              - ../dist/*.whl
+      tasks:
+        - task_key: spn_authentication_lakebase
+          environment_key: default
+          notebook_task:
+            notebook_path: ../notebooks/3.4.spn_authentication_lakebase.py
+            base_parameters:
+              env: "${bundle.target}"

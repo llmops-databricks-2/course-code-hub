@@ -7,11 +7,9 @@ dev:
   schema: arxiv
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
-  # course_ops.gateway.embed can't be used: ai_query doesn't support custom Unity Gateway model
-  # services yet (https://docs.databricks.com/aws/en/ai-gateway/query-model-services#limitations)
-  # embedding_endpoint: course_ops.gateway.embed
+  # Use the serving endpoint supported by batch ai_query and AI Search.
   embedding_endpoint: databricks-gte-large-en
-  warehouse_id: fed166457cfccb89
+  warehouse_id: 0c81a2c322e92b82
   experiment_path: /Shared/arxiv-curator-course
   lakebase_project_id: lb-llmops-dev
 
@@ -21,11 +19,9 @@ acc:
   schema: arxiv
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
-  # course_ops.gateway.embed can't be used: ai_query doesn't support custom Unity Gateway model
-  # services yet (https://docs.databricks.com/aws/en/ai-gateway/query-model-services#limitations)
-  # embedding_endpoint: course_ops.gateway.embed
+  # Use the serving endpoint supported by batch ai_query and AI Search.
   embedding_endpoint: databricks-gte-large-en
-  warehouse_id: fed166457cfccb89
+  warehouse_id: 0c81a2c322e92b82
   experiment_path: /Shared/arxiv-curator-course
   lakebase_project_id: lb-llmops-acc
 
@@ -35,11 +31,9 @@ prd:
   schema: arxiv
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
-  # course_ops.gateway.embed can't be used: ai_query doesn't support custom Unity Gateway model
-  # services yet (https://docs.databricks.com/aws/en/ai-gateway/query-model-services#limitations)
-  # embedding_endpoint: course_ops.gateway.embed
+  # Use the serving endpoint supported by batch ai_query and AI Search.
   embedding_endpoint: databricks-gte-large-en
-  warehouse_id: fed166457cfccb89
+  warehouse_id: 0c81a2c322e92b82
   experiment_path: /Shared/arxiv-curator-course
   lakebase_project_id: lb-llmops-prd
 
