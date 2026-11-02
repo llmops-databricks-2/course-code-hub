@@ -60,7 +60,7 @@ from arxiv_curator.config import load_config
 
 # COMMAND ----------
 
-WORKSPACE_URL = "https://dbc-88df4c2c-4033.cloud.databricks.com"
+WORKSPACE_URL = "https://dbc-e81ca4d2-f6bd.cloud.databricks.com"
 MODEL_NAME = "system.ai.gpt-oss-120b"
 MODEL_VERSION = "1"
 ENDPOINT_NAME = "course-gpt-oss-120b-on-demand"

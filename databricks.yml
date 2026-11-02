@@ -26,7 +26,7 @@ variables:
     default: PAUSED
   usage_policy_id:
     description: usage policy id for serverless jobs (usage_policy_id in project_config.yml)
-    default: 29a355d8-7fa4-3f65-b328-9f900842672e
+    default: aab31ed1-3d45-30f4-bd70-ec76d652513c
 
 include:
   - resources/process_data.yml
@@ -43,13 +43,13 @@ targets:
     mode: development
     default: true
     workspace:
-      host: https://dbc-88df4c2c-4033.cloud.databricks.com
+      host: https://dbc-e81ca4d2-f6bd.cloud.databricks.com
       root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.target}/${bundle.name}
 
   acc:
     mode: production
     workspace:
-      host: https://dbc-88df4c2c-4033.cloud.databricks.com
+      host: https://dbc-e81ca4d2-f6bd.cloud.databricks.com
       root_path: /Shared/.bundle/${bundle.target}/${bundle.name}
     variables:
       schedule_pause_status: PAUSED
@@ -57,7 +57,7 @@ targets:
   prd:
     mode: production
     workspace:
-      host: https://dbc-88df4c2c-4033.cloud.databricks.com
+      host: https://dbc-e81ca4d2-f6bd.cloud.databricks.com
       root_path: /Shared/.bundle/${bundle.target}/${bundle.name}
     variables:
       schedule_pause_status: UNPAUSED
