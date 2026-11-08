@@ -37,6 +37,9 @@ dev = [
 ci = ["pre-commit>=4.1.0, <5",
       "pytest>=8.3.4, <9"]
 
+[project.scripts]
+start-server = "agent_server.start_server:main"
+
 [build-system]
 requires = [
   "setuptools>=72.0"]
@@ -44,7 +47,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where =["src"]
-include = ["arxiv_curator*"]
+include = ["arxiv_curator*", "agent_server*"]
 
 [tool.setuptools.dynamic]
 version = { file = "version.txt" }

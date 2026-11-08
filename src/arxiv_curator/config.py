@@ -25,6 +25,7 @@ class ProjectConfig(BaseModel):
     experiment_path: str = Field(..., description="MLflow experiment path")
     lakebase_project_id: str = Field(..., description="Lakebase project ID")
     lakebase_user: str | None = Field(None, description="Optional Lakebase user or group role")
+    genie_space_id: str | None = Field(None, description="Genie space or agent ID")
     agent_app_name: str | None = Field(None, description="Databricks App name")
     system_prompt: str = Field(
         "You are a helpful assistant that answers questions about arXiv papers.",

@@ -1,0 +1,25 @@
+resources:
+  jobs:
+    lecture5_release_pipeline:
+      name: lecture5-release-pipeline-${bundle.target}
+      budget_policy_id: "${var.usage_policy_id}"
+      max_concurrent_runs: 1
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"
+            dependencies:
+              - ../dist/*.whl
+      tasks:
+        # - task_key: refresh_knowledge_base
+        #   run_job_task:
+        #     job_id: ${resources.jobs.data-pipeline.id}
+        - task_key: deploy_app
+          # depends_on:
+          #   - task_key: refresh_knowledge_base
+          environment_key: default
+          notebook_task:
+            notebook_path: deployment_scripts/evaluate_and_redeploy_app.py
+            base_parameters:
+              env: "${bundle.target}"
+              genie_space_id: "${resources.genie_spaces.arxiv-curator-space.id}"

@@ -11,7 +11,7 @@ bundle:
 artifacts:
   default:
     type: whl
-    build: uv build
+    build: uv build --system-certs
     path: .
 
 variables:
@@ -41,8 +41,10 @@ variables:
 include:
   - resources/process_data.yml
   - resources/initialize_data.yml
-  - resources/testing_jobs/*.yml
+  # - resources/testing_jobs/*.yml
   - resources/genie_space.yml
+  - resources/agent_app.yml
+  - resources/lecture5_app_deployment.yml
 
 sync:
   include:

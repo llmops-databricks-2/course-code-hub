@@ -1,0 +1,58 @@
+resources:
+  apps:
+    arxiv_agent_app:
+      name: agent-arxiv-curator-${bundle.target}
+      description: Arxiv research agent with Lakebase pgvector retrieval
+      source_code_path: ../
+      config:
+        command: ["uv", "run", "start-server"]
+        env:
+          - name: ARXIV_ENV
+            value: ${bundle.target}
+          - name: PROJECT_CONFIG_PATH
+            value: project_config.yml
+          - name: GENIE_SPACE_ID
+            value: ${resources.genie_spaces.arxiv-curator-space.id}
+          - name: MLFLOW_TRACKING_URI
+            value: databricks
+          - name: MLFLOW_REGISTRY_URI
+            value: databricks-uc
+          - name: MLFLOW_EXPERIMENT_ID
+            value: "898356895824776"
+          - name: ENABLE_MLFLOW_TRACING
+            value: "true"
+          - name: DATABRICKS_CLIENT_ID
+            value_from: sp-deploy-client-id
+          - name: DATABRICKS_CLIENT_SECRET
+            value_from: sp-deploy-client-secret
+          - name: LAKEBASE_ENDPOINT
+            value_from: postgres
+      resources:
+        - name: experiment
+          experiment:
+            experiment_id: "898356895824776"
+            permission: CAN_MANAGE
+        - name: genie-space
+          genie_space:
+            name: arxiv-curator-space
+            space_id: ${resources.genie_spaces.arxiv-curator-space.id}
+            permission: CAN_RUN
+        - name: sql-warehouse
+          sql_warehouse:
+            id: ${var.warehouse_id}
+            permission: CAN_USE
+        - name: postgres
+          postgres:
+            branch: projects/lb-llmops-dev/branches/production
+            database: projects/lb-llmops-dev/branches/production/databases/databricks-postgres
+            permission: CAN_CONNECT_AND_CREATE
+        - name: sp-deploy-client-id
+          secret:
+            scope: grp-admins-llmops
+            key: databricks_client_id
+            permission: CAN_READ
+        - name: sp-deploy-client-secret
+          secret:
+            scope: grp-admins-llmops
+            key: databricks_client_secret
+            permission: CAN_READ

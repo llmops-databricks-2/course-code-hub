@@ -9,12 +9,13 @@ dev:
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
   # Use the serving endpoint supported by batch ai_query and AI Search.
-  embedding_endpoint: databricks-gte-large-en
+  embedding_endpoint: course_ops.gateway.embed
   warehouse_id: 9b96ea2aef8272f6
   experiment_path: /Shared/llmops-arxiv-curator-course
   lakebase_project_id: lb-llmops-dev
   # Group members authenticate with their own OAuth token and this database role.
   lakebase_user: grp-teachers-llmops
+  agent_app_name: agent-arxiv-curator-dev
 
 # Acceptance/Staging environment
 acc:
@@ -23,10 +24,11 @@ acc:
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
   # Use the serving endpoint supported by batch ai_query and AI Search.
-  embedding_endpoint: databricks-gte-large-en
+  embedding_endpoint: course_ops.gateway.embed
   warehouse_id: 9b96ea2aef8272f6
   experiment_path: /Shared/llmops-arxiv-curator-course
   lakebase_project_id: lb-llmops-dev
+  agent_app_name: agent-arxiv-curator-acc
 
 # Production environment
 prd:
@@ -35,10 +37,11 @@ prd:
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
   # Use the serving endpoint supported by batch ai_query and AI Search.
-  embedding_endpoint: databricks-gte-large-en
+  embedding_endpoint: course_ops.gateway.embed
   warehouse_id: 9b96ea2aef8272f6
   experiment_path: /Shared/llmops-arxiv-curator-course
   lakebase_project_id: lb-llmops-dev
+  agent_app_name: agent-arxiv-curator-prd
 
 # Model configuration
 model_config:

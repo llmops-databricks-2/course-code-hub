@@ -24,6 +24,7 @@ from mlflow.types.responses import (
 )
 
 from arxiv_curator.config import ProjectConfig
+from arxiv_curator.auth import get_gateway_token
 from arxiv_curator.mcp import ToolInfo, create_mcp_tools
 from arxiv_curator.memory import LakebaseMemory
 from arxiv_curator.vector_search import LakebasePgVectorManager
@@ -47,10 +48,9 @@ class ArxivAgent(ResponsesAgent):
         self.system_prompt = system_prompt
         self.llm_endpoint = llm_endpoint
         self.workspace_client = WorkspaceClient()
+        gateway_token = get_gateway_token(self.workspace_client)
         self.model_serving_client = OpenAI(
-            api_key=self.workspace_client.tokens.create(
-                lifetime_seconds=1200
-            ).token_value,
+            api_key=gateway_token,
             base_url=(
                 f"{self.workspace_client.config.host}/"
                 "ai-gateway/mlflow/v1"
