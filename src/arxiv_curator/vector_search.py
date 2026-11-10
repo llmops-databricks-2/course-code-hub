@@ -11,8 +11,8 @@ from databricks.sdk import WorkspaceClient
 from loguru import logger
 from openai import OpenAI
 
-from arxiv_curator.config import ProjectConfig
 from arxiv_curator.auth import get_gateway_token
+from arxiv_curator.config import ProjectConfig
 
 
 class LakebasePgVectorManager:
@@ -41,12 +41,8 @@ class LakebasePgVectorManager:
         self.config = config
         self.catalog = config.catalog if config else catalog
         self.schema = config.schema if config else schema
-        self.lakebase_project_id = (
-            config.lakebase_project_id if config else lakebase_project_id
-        )
-        self.embedding_model = embedding_model or (
-            config.embedding_endpoint if config else None
-        )
+        self.lakebase_project_id = config.lakebase_project_id if config else lakebase_project_id
+        self.embedding_model = embedding_model or (config.embedding_endpoint if config else None)
         if not self.catalog or not self.schema or not self.lakebase_project_id:
             raise ValueError("catalog, schema, and lakebase_project_id are required")
         if not self.embedding_model:
@@ -85,8 +81,7 @@ class LakebasePgVectorManager:
         )
 
         self._connection_string = (
-            f"postgresql://{username}:{credential.token}@{host}:5432/"
-            f"{database}?sslmode=require"
+            f"postgresql://{username}:{credential.token}@{host}:5432/{database}?sslmode=require"
         )
         return self._connection_string
 

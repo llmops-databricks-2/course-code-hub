@@ -197,4 +197,7 @@ def test_sync_task_depends_on_processing():
     job = yaml.safe_load((SCRIPTS.parent / "process_data.yml").read_text())
     tasks = {task["task_key"]: task for task in job["resources"]["jobs"]["data-pipeline"]["tasks"]}
     assert tasks["sync_lakebase"]["depends_on"] == [{"task_key": "process_data"}]
-    assert tasks["sync_lakebase"]["notebook_task"]["notebook_path"] == "deployment_scripts/sync_lakebase.py"
+    assert (
+        tasks["sync_lakebase"]["notebook_task"]["notebook_path"]
+        == "deployment_scripts/sync_lakebase.py"
+    )

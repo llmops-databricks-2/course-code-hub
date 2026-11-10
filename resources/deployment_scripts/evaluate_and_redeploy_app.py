@@ -12,11 +12,7 @@ from arxiv_curator.evaluation import evaluate_agent
 def workspace_bundle_root() -> str:
     """Find the workspace folder containing the deployed bundle."""
     notebook_path = (
-        dbutils.notebook.entry_point.getDbutils()
-        .notebook()
-        .getContext()
-        .notebookPath()
-        .get()
+        dbutils.notebook.entry_point.getDbutils().notebook().getContext().notebookPath().get()
     )
     bundle_root = notebook_path.rsplit("/resources/", 1)[0]
     return bundle_root if bundle_root.startswith("/Workspace/") else f"/Workspace{bundle_root}"

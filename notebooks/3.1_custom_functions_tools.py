@@ -46,11 +46,12 @@
 # COMMAND ----------
 
 import json
+
 from databricks.sdk import WorkspaceClient
 from loguru import logger
 from pyspark.sql import SparkSession
 
-from arxiv_curator.config import load_config, get_env
+from arxiv_curator.config import get_env, load_config
 from arxiv_curator.mcp import ToolInfo
 from arxiv_curator.vector_search import LakebasePgVectorManager
 
@@ -98,28 +99,30 @@ pgvector = LakebasePgVectorManager(config=cfg, workspace=w)
 
 # COMMAND ----------
 
+
 def calculator(operation: str, a: float, b: float) -> float:
     """Perform basic arithmetic operations.
-    
+
     Args:
         operation: One of 'add', 'subtract', 'multiply', 'divide'
         a: First number
         b: Second number
-        
+
     Returns:
         Result of the operation
     """
     operations = {
-        'add': lambda x, y: x + y,
-        'subtract': lambda x, y: x - y,
-        'multiply': lambda x, y: x * y,
-        'divide': lambda x, y: x / y if y != 0 else float('inf')
+        "add": lambda x, y: x + y,
+        "subtract": lambda x, y: x - y,
+        "multiply": lambda x, y: x * y,
+        "divide": lambda x, y: x / y if y != 0 else float("inf"),
     }
-    
+
     if operation not in operations:
         raise ValueError(f"Unknown operation: {operation}")
-    
+
     return operations[operation](a, b)
+
 
 # Test the function
 result = calculator("multiply", 5, 3)
@@ -143,20 +146,14 @@ calculator_tool_spec = {
                 "operation": {
                     "type": "string",
                     "enum": ["add", "subtract", "multiply", "divide"],
-                    "description": "The arithmetic operation to perform"
+                    "description": "The arithmetic operation to perform",
                 },
-                "a": {
-                    "type": "number",
-                    "description": "The first number"
-                },
-                "b": {
-                    "type": "number",
-                    "description": "The second number"
-                }
+                "a": {"type": "number", "description": "The first number"},
+                "b": {"type": "number", "description": "The second number"},
             },
-            "required": ["operation", "a", "b"]
-        }
-    }
+            "required": ["operation", "a", "b"],
+        },
+    },
 }
 
 logger.info("Calculator Tool Specification:")
@@ -169,14 +166,15 @@ logger.info(json.dumps(calculator_tool_spec, indent=2))
 
 # COMMAND ----------
 
+
 def search_papers(query: str, num_results: int = 5, year_filter: str | None = None) -> str:
     """Search for relevant papers using Lakebase pgvector hybrid search.
-    
+
     Args:
         query: Search query
         num_results: Number of results to return
         year_filter: Optional year filter (e.g., "2024")
-        
+
     Returns:
         JSON string with search results
     """
@@ -184,9 +182,7 @@ def search_papers(query: str, num_results: int = 5, year_filter: str | None = No
     year_from = year_to = None
     if year_filter:
         if "-" in year_filter:
-            year_from, year_to = [
-                int(value.strip()) for value in year_filter.split("-", 1)
-            ]
+            year_from, year_to = [int(value.strip()) for value in year_filter.split("-", 1)]
             if year_from > year_to:
                 year_from, year_to = year_to, year_from
         else:
@@ -201,16 +197,19 @@ def search_papers(query: str, num_results: int = 5, year_filter: str | None = No
 
     papers = []
     for row in results:
-        papers.append({
-            "title": row.get("title", "N/A"),
-            "arxiv_id": row.get("arxiv_id", "N/A"),
-            "authors": str(row.get("authors", "N/A")),
-            "year": row.get("year", "N/A"),
-            "excerpt": row.get("text", "")[:200] + "...",
-            "score": round(float(row.get("score", 0.0)), 4),
-        })
-    
+        papers.append(
+            {
+                "title": row.get("title", "N/A"),
+                "arxiv_id": row.get("arxiv_id", "N/A"),
+                "authors": str(row.get("authors", "N/A")),
+                "year": row.get("year", "N/A"),
+                "excerpt": row.get("text", "")[:200] + "...",
+                "score": round(float(row.get("score", 0.0)), 4),
+            }
+        )
+
     return json.dumps(papers, indent=2)
+
 
 # Test the function
 results = search_papers("machine learning", num_results=2)
@@ -234,21 +233,21 @@ search_papers_tool_spec = {
             "properties": {
                 "query": {
                     "type": "string",
-                    "description": "The search query describing what papers to find"
+                    "description": "The search query describing what papers to find",
                 },
                 "num_results": {
                     "type": "integer",
                     "description": "Number of results to return (default: 5)",
-                    "default": 5
+                    "default": 5,
                 },
                 "year_filter": {
                     "type": "string",
-                    "description": "Optional year filter to limit results (e.g., '2024')"
-                }
+                    "description": "Optional year filter to limit results (e.g., '2024')",
+                },
             },
-            "required": ["query"]
-        }
-    }
+            "required": ["query"],
+        },
+    },
 }
 
 logger.info("Search Papers Tool Specification:")
@@ -265,16 +264,10 @@ logger.info(json.dumps(search_papers_tool_spec, indent=2))
 # This class represents a tool with name, spec, and execution function
 
 # Create tool info objects
-calculator_tool = ToolInfo(
-    name="calculator",
-    spec=calculator_tool_spec,
-    exec_fn=calculator
-)
+calculator_tool = ToolInfo(name="calculator", spec=calculator_tool_spec, exec_fn=calculator)
 
 search_papers_tool = ToolInfo(
-    name="search_papers",
-    spec=search_papers_tool_spec,
-    exec_fn=search_papers
+    name="search_papers", spec=search_papers_tool_spec, exec_fn=search_papers
 )
 
 logger.info("Available Tools:")
@@ -288,40 +281,42 @@ logger.info(f"2. {search_papers_tool.name}")
 
 # COMMAND ----------
 from typing import Any
+
+
 class ToolRegistry:
     """Registry for managing agent tools."""
-    
+
     def __init__(self):
         self._tools: dict[str, ToolInfo] = {}
-    
+
     def register(self, tool: ToolInfo) -> None:
         """Register a tool."""
         self._tools[tool.name] = tool
         logger.info(f"Registered tool: {tool.name}")
-    
+
     def get_tool(self, name: str) -> ToolInfo:
         """Get a tool by name."""
         if name not in self._tools:
             raise ValueError(f"Tool not found: {name}")
         return self._tools[name]
-    
+
     def get_all_specs(self) -> list[dict]:
         """Get all tool specifications."""
         return [tool.spec for tool in self._tools.values()]
-    
+
     def execute(self, name: str, args: dict) -> Any:
         """Execute a tool with arguments."""
         tool = self.get_tool(name)
         return tool.exec_fn(**args)
-    
+
     def list_tools(self) -> list[str]:
         """List all registered tool names."""
         return list(self._tools.keys())
-    
+
     def get_all_tools(self) -> list[ToolInfo]:
         """Get all tools as a list."""
         return list(self._tools.values())
- 
+
 
 # Create registry and register tools
 registry = ToolRegistry()
@@ -339,18 +334,11 @@ logger.info(f"Tools: {registry.list_tools()}")
 # COMMAND ----------
 
 # Execute calculator tool
-calc_result = registry.execute("calculator", {
-    "operation": "add",
-    "a": 10,
-    "b": 5
-})
+calc_result = registry.execute("calculator", {"operation": "add", "a": 10, "b": 5})
 logger.info(f"Calculator result: {calc_result}")
 
 # Execute search tool
-search_result = registry.execute("search_papers", {
-    "query": "neural networks",
-    "num_results": 3
-})
+search_result = registry.execute("search_papers", {"query": "neural networks", "num_results": 3})
 logger.info(f"Search result:\n{search_result}")
 
 # COMMAND ----------
@@ -421,28 +409,33 @@ logger.info(f"Search result:\n{search_result}")
 
 # COMMAND ----------
 
+
 def test_tool(tool_name: str, test_cases: list[dict]):
     """Test a tool with multiple test cases."""
     logger.info(f"Testing tool: {tool_name}")
     logger.info("=" * 80)
-    
+
     for i, test_case in enumerate(test_cases, 1):
         logger.info(f"Test Case {i}:")
         logger.info(f"  Input: {test_case}")
-        
+
         try:
             result = registry.execute(tool_name, test_case)
-            logger.info(f"  Success")
+            logger.info("  Success")
             logger.info(f"  Result: {str(result)[:100]}...")
         except Exception as e:
             logger.error(f"  Error: {e}")
 
+
 # Test calculator
-test_tool("calculator", [
-    {"operation": "add", "a": 5, "b": 3},
-    {"operation": "multiply", "a": 4, "b": 7},
-    {"operation": "divide", "a": 10, "b": 2},
-])
+test_tool(
+    "calculator",
+    [
+        {"operation": "add", "a": 5, "b": 3},
+        {"operation": "multiply", "a": 4, "b": 7},
+        {"operation": "divide", "a": 10, "b": 2},
+    ],
+)
 
 # COMMAND ----------
 
@@ -453,35 +446,36 @@ test_tool("calculator", [
 
 # COMMAND ----------
 
+
 class SimpleAgent:
     """A simple agent that can call tools in a loop."""
-    
+
     def __init__(self, llm_endpoint: str, system_prompt: str, tools: list[ToolInfo]):
         self.llm_endpoint = llm_endpoint
         self.system_prompt = system_prompt
         self._tools_dict = {tool.name: tool for tool in tools}
         self._client = OpenAI(
             api_key=w.tokens.create(lifetime_seconds=1200).token_value,
-            base_url=f"{w.config.host}/ai-gateway/mlflow/v1"
+            base_url=f"{w.config.host}/ai-gateway/mlflow/v1",
         )
-    
+
     def get_tool_specs(self) -> list[dict]:
         """Get tool specifications for the LLM."""
         return [tool.spec for tool in self._tools_dict.values()]
-    
+
     def execute_tool(self, tool_name: str, args: dict) -> str:
         """Execute a tool by name."""
         if tool_name not in self._tools_dict:
             raise ValueError(f"Unknown tool: {tool_name}")
         return self._tools_dict[tool_name].exec_fn(**args)
-    
+
     def chat(self, user_message: str, max_iterations: int = 10) -> str:
         """Chat with the agent, allowing tool calls."""
         messages = [
             {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": user_message}
+            {"role": "user", "content": user_message},
         ]
-        
+
         for iteration in range(max_iterations):
             # Call LLM
             response = self._client.chat.completions.create(
@@ -489,51 +483,52 @@ class SimpleAgent:
                 messages=messages,
                 tools=self.get_tool_specs() if self._tools_dict else None,
             )
-            
+
             assistant_message = response.choices[0].message
-            
+
             # Check if LLM wants to call tools
             if assistant_message.tool_calls:
                 # Add assistant message with tool calls (exclude unsupported fields)
-                messages.append({
-                    "role": "assistant",
-                    "content": assistant_message.content,
-                    "tool_calls": [
-                        {
-                            "id": tc.id,
-                            "type": "function",
-                            "function": {
-                                "name": tc.function.name,
-                                "arguments": tc.function.arguments
+                messages.append(
+                    {
+                        "role": "assistant",
+                        "content": assistant_message.content,
+                        "tool_calls": [
+                            {
+                                "id": tc.id,
+                                "type": "function",
+                                "function": {
+                                    "name": tc.function.name,
+                                    "arguments": tc.function.arguments,
+                                },
                             }
-                        }
-                        for tc in assistant_message.tool_calls
-                    ]
-                })
-                
+                            for tc in assistant_message.tool_calls
+                        ],
+                    }
+                )
+
                 # Execute each tool call
                 for tool_call in assistant_message.tool_calls:
                     tool_name = tool_call.function.name
                     tool_args = json.loads(tool_call.function.arguments)
-                    
+
                     logger.info(f"Calling tool: {tool_name}({tool_args})")
-                    
+
                     try:
                         result = self.execute_tool(tool_name, tool_args)
                     except Exception as e:
                         result = f"Error: {str(e)}"
-                    
+
                     # Add tool result to messages
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
-                        "content": str(result)
-                    })
+                    messages.append(
+                        {"role": "tool", "tool_call_id": tool_call.id, "content": str(result)}
+                    )
             else:
                 # No tool calls, return the response
                 return assistant_message.content
-        
+
         return "Max iterations reached."
+
 
 # COMMAND ----------
 
@@ -543,12 +538,12 @@ from openai import OpenAI
 agent = SimpleAgent(
     llm_endpoint=cfg.llm_endpoint,
     system_prompt="You are a helpful assistant. Use the available tools to answer questions.",
-    tools=[calculator_tool, search_papers_tool]
+    tools=[calculator_tool, search_papers_tool],
 )
 
 # agent = SimpleAgent(
-# llm_endpoint=cfg.llm_endpoint, 
-# system_prompt="You are a helpful assistant. Use the available tools to answer questions.", 
+# llm_endpoint=cfg.llm_endpoint,
+# system_prompt="You are a helpful assistant. Use the available tools to answer questions.",
 # tools=registry.get_all_tools())
 
 logger.info("Agent created with tools:")

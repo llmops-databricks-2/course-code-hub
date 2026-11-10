@@ -3,8 +3,8 @@
 import os
 
 import mlflow
-from mlflow.genai.agent_server import invoke, stream
 from mlflow.entities import SpanType
+from mlflow.genai.agent_server import invoke, stream
 from mlflow.types.responses import ResponsesAgentRequest, ResponsesAgentResponse
 
 from arxiv_curator.agent import ArxivAgent

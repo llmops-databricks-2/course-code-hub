@@ -77,10 +77,7 @@ spark.sql(f"""
     WHEN MATCHED THEN UPDATE SET target.embedding = source.embedding
 """)
 
-spark.sql(
-    f"ALTER TABLE {source_table} "
-    "SET TBLPROPERTIES (delta.enableChangeDataFeed = true)"
-)
+spark.sql(f"ALTER TABLE {source_table} SET TBLPROPERTIES (delta.enableChangeDataFeed = true)")
 logger.info(f"Validated AI Search source: {source_table}")
 
 # COMMAND ----------
@@ -307,14 +304,10 @@ show(
 # COMMAND ----------
 
 client = w.serving_endpoints.get_open_ai_client()
-query_vector = (
-    client.embeddings.create(model=cfg.embedding_endpoint, input=query).data[0].embedding
-)
+query_vector = client.embeddings.create(model=cfg.embedding_endpoint, input=query).data[0].embedding
 show(
     "Self-managed ANN",
-    self_managed.similarity_search(
-        query_vector=query_vector, columns=columns, num_results=5
-    ),
+    self_managed.similarity_search(query_vector=query_vector, columns=columns, num_results=5),
 )
 show(
     "Self-managed HYBRID",

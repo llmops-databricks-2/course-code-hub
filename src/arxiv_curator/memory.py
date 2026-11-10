@@ -74,8 +74,7 @@ class LakebaseMemory:
         pg_credential = pg_api.generate_database_credential(endpoint=endpoint_name)
 
         return (
-            f"postgresql://{username}:{pg_credential.token}@{host}:5432/"
-            f"{database}?sslmode=require"
+            f"postgresql://{username}:{pg_credential.token}@{host}:5432/{database}?sslmode=require"
         )
 
     def ensure_schema(self) -> None:
@@ -137,8 +136,7 @@ class LakebaseMemory:
             with self._get_pool().connection() as conn:
                 for msg in messages:
                     conn.execute(
-                        "INSERT INTO session_messages (session_id, message_data) "
-                        "VALUES (%s, %s)",
+                        "INSERT INTO session_messages (session_id, message_data) VALUES (%s, %s)",
                         (session_id, json.dumps(msg)),
                     )
         except psycopg.OperationalError:

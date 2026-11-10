@@ -18,14 +18,13 @@
 
 import os
 
-from databricks.sdk import WorkspaceClient
-from openai import OpenAI
-from loguru import logger
 import requests
+from databricks.sdk import WorkspaceClient
+from loguru import logger
+from openai import OpenAI
 
 from arxiv_curator.config import ProjectConfig
 from arxiv_curator.vector_search import LakebasePgVectorManager
-
 
 cfg = ProjectConfig.from_yaml("../project_config.yml", env=os.getenv("ARXIV_ENV", "dev"))
 app_name = cfg.agent_app_name
@@ -58,13 +57,11 @@ app_client_id = app.service_principal_client_id
 pgvector = LakebasePgVectorManager(config=cfg)
 quoted_role = '"' + app_client_id.replace('"', '""') + '"'
 quoted_schema = '"' + cfg.schema.replace('"', '""') + '"'
-quoted_chunks_table = f"{quoted_schema}.\"arxiv_chunks_synced\""
+quoted_chunks_table = f'{quoted_schema}."arxiv_chunks_synced"'
 
 with pgvector.connection() as conn:
     conn.execute(f"GRANT USAGE ON SCHEMA {quoted_schema} TO {quoted_role}")
-    conn.execute(
-        f"GRANT SELECT ON TABLE {quoted_chunks_table} TO {quoted_role}"
-    )
+    conn.execute(f"GRANT SELECT ON TABLE {quoted_chunks_table} TO {quoted_role}")
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS session_messages (
@@ -74,18 +71,14 @@ with pgvector.connection() as conn:
         )
         """
     )
-    conn.execute(
-        f"GRANT SELECT, INSERT ON TABLE session_messages TO {quoted_role}"
-    )
+    conn.execute(f"GRANT SELECT, INSERT ON TABLE session_messages TO {quoted_role}")
 
 logger.info(f"Granted Lakebase table access to App service principal {app_client_id}")
 
 # COMMAND ----------
 
 # Grant the App service principal permission to write MLflow traces.
-experiment_resource = next(
-    resource for resource in app.resources if resource.name == "experiment"
-)
+experiment_resource = next(resource for resource in app.resources if resource.name == "experiment")
 experiment_id = experiment_resource.experiment.experiment_id
 w.api_client.do(
     "PUT",
@@ -123,10 +116,7 @@ for grant_statement in gateway_grants:
         wait_timeout="30s",
     )
 
-logger.info(
-    "Granted Unity AI Gateway access to App service principal "
-    f"{app_client_id}"
-)
+logger.info(f"Granted Unity AI Gateway access to App service principal {app_client_id}")
 
 # COMMAND ----------
 
@@ -140,13 +130,7 @@ logger.info(
 # COMMAND ----------
 
 app_client_id = app.oauth2_app_client_id
-notebook_token = (
-    dbutils.notebook.entry_point.getDbutils()
-    .notebook()
-    .getContext()
-    .apiToken()
-    .get()
-)
+notebook_token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
 
 token_response = requests.post(
     f"{w.config.host}/oidc/v1/token",

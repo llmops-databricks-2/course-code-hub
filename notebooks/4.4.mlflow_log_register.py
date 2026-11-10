@@ -4,11 +4,12 @@ import random
 from datetime import datetime
 from pathlib import Path
 
-import arxiv_curator
 import mlflow
-from arxiv_curator.agent import ArxivAgent
 from pyspark.sql import SparkSession
-from arxiv_curator.config import load_config, get_env, get_widget
+
+import arxiv_curator
+from arxiv_curator.agent import ArxivAgent
+from arxiv_curator.config import get_env, get_widget, load_config
 from arxiv_curator.evaluation import (
     hook_in_post_guideline,
     polite_tone_guideline,
@@ -38,25 +39,18 @@ agent = ArxivAgent(
 # Load evaluation inputs from the bundle workspace root.
 try:
     notebook_path = (
-        dbutils.notebook.entry_point.getDbutils()
-        .notebook()
-        .getContext()
-        .notebookPath()
-        .get()
+        dbutils.notebook.entry_point.getDbutils().notebook().getContext().notebookPath().get()
     )
     bundle_root = notebook_path.rsplit("/notebooks/", 1)[0]
     workspace_root = (
-        bundle_root
-        if bundle_root.startswith("/Workspace/")
-        else f"/Workspace{bundle_root}"
+        bundle_root if bundle_root.startswith("/Workspace/") else f"/Workspace{bundle_root}"
     )
     eval_inputs_path = f"{workspace_root}/eval_inputs.txt"
 except Exception:
     eval_inputs_path = os.path.join(os.getcwd(), "../eval_inputs.txt")
 
 with open(eval_inputs_path) as f:
-    eval_data = [{"inputs": {
-        "question": line.strip()}} for line in f if line.strip()]
+    eval_data = [{"inputs": {"question": line.strip()}} for line in f if line.strip()]
 
 
 def predict_fn(question: str) -> str:
@@ -71,9 +65,7 @@ def predict_fn(question: str) -> str:
 results = mlflow.genai.evaluate(
     predict_fn=predict_fn,
     data=eval_data,
-    scorers=[word_count_check,
-             polite_tone_guideline,
-             hook_in_post_guideline]
+    scorers=[word_count_check, polite_tone_guideline, hook_in_post_guideline],
 )
 
 # COMMAND ----------
@@ -82,10 +74,7 @@ session_id = f"s-{timestamp}-{random.randint(100000, 999999)}"
 request_id = f"req-{timestamp}-{random.randint(100000, 999999)}"
 
 test_request = {
-    "input": [
-        {"role": "user",
-         "content": "What are recent papers about LLMs and reasoning?"}
-    ],
+    "input": [{"role": "user", "content": "What are recent papers about LLMs and reasoning?"}],
     "custom_inputs": {
         "session_id": session_id,
         "request_id": request_id,
@@ -93,24 +82,23 @@ test_request = {
 }
 
 model_config = {
-        "catalog": cfg.catalog,
-        "schema": cfg.schema,
-        "genie_space_id": genie_space_id,
-        "system_prompt": cfg.system_prompt,
-        "llm_endpoint": cfg.llm_endpoint,
-        "lakebase_project_id": cfg.lakebase_project_id,
-        "lakebase_user": cfg.lakebase_user,
-        "embedding_endpoint": cfg.embedding_endpoint,
-    }
+    "catalog": cfg.catalog,
+    "schema": cfg.schema,
+    "genie_space_id": genie_space_id,
+    "system_prompt": cfg.system_prompt,
+    "llm_endpoint": cfg.llm_endpoint,
+    "lakebase_project_id": cfg.lakebase_project_id,
+    "lakebase_user": cfg.lakebase_user,
+    "embedding_endpoint": cfg.embedding_endpoint,
+}
 
 git_sha = "abc"
 run_id = "unset"
 
 package_path = Path(arxiv_curator.__file__).parent
-ts = datetime.now().strftime('%Y-%m-%d')
+ts = datetime.now().strftime("%Y-%m-%d")
 with mlflow.start_run(
-    run_name=f"arxiv-agent-{ts}",
-    tags={"git_sha": git_sha, "run_id": run_id}
+    run_name=f"arxiv-agent-{ts}", tags={"git_sha": git_sha, "run_id": run_id}
 ) as run:
     # Serving uses the dedicated SP OAuth credentials configured on the endpoint.
     # Notebook 4.0 grants access to the UC trace tables.
@@ -131,7 +119,7 @@ registered_model = mlflow.register_model(
     model_uri=model_info.model_uri,
     name=model_name,
     tags={"git_sha": git_sha, "run_id": run_id},
-    env_pack="databricks_model_serving"
+    env_pack="databricks_model_serving",
 )
 
 # COMMAND ----------

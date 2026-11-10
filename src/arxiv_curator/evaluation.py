@@ -1,10 +1,10 @@
-import mlflow
 import os
+
+import mlflow
 from mlflow.genai.scorers import Guidelines
 
 from arxiv_curator.agent import ArxivAgent
 from arxiv_curator.config import ProjectConfig
-
 
 JUDGE_MODEL = os.getenv("JUDGE_MODEL", "databricks:/course_ops.gateway.chat")
 
