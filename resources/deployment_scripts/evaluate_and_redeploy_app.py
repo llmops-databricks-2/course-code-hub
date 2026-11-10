@@ -18,6 +18,14 @@ def workspace_bundle_root() -> str:
     return bundle_root if bundle_root.startswith("/Workspace/") else f"/Workspace{bundle_root}"
 
 
+def resolve_sp_application_id(display_name: str) -> str:
+    w = WorkspaceClient()
+    matches = list(w.service_principals.list(filter=f'displayName eq "{display_name}"'))
+    if len(matches) != 1:
+        raise ValueError(f"Expected 1 SP named {display_name!r}, found {len(matches)}")
+    return str(matches[0].application_id)
+
+
 widgets = dbutils.widgets.getAll()
 env = widgets.get("env", "dev")
 genie_space_id = widgets.get("genie_space_id")
@@ -25,6 +33,7 @@ mode = widgets.get("mode", "evaluate")
 bundle_root = workspace_bundle_root()
 cfg = ProjectConfig.from_yaml(f"{bundle_root}/project_config.yml", env=env)
 cfg.genie_space_id = genie_space_id
+cfg.lakebase_user = resolve_sp_application_id(f"sp-deploy-arxiv-{env}")
 
 if mode == "evaluate":
     results = evaluate_agent(cfg, eval_inputs_path=f"{bundle_root}/eval_inputs.txt")
