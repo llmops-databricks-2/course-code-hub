@@ -1,11 +1,12 @@
 # Databricks notebook source
-"""Lecture 5 App deployment step."""
+"""Lecture 5 evaluation gate and App deployment step."""
 
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.apps import AppDeployment
 from loguru import logger
 
 from arxiv_curator.config import ProjectConfig
+from arxiv_curator.evaluation import evaluate_agent
 
 
 def workspace_bundle_root() -> str:
@@ -24,11 +25,21 @@ def workspace_bundle_root() -> str:
 widgets = dbutils.widgets.getAll()
 env = widgets.get("env", "dev")
 genie_space_id = widgets.get("genie_space_id")
+mode = widgets.get("mode", "evaluate")
 bundle_root = workspace_bundle_root()
 cfg = ProjectConfig.from_yaml(f"{bundle_root}/project_config.yml", env=env)
 cfg.genie_space_id = genie_space_id
 
-logger.info("Evaluation is temporarily skipped; deploying the App directly")
+if mode == "evaluate":
+    results = evaluate_agent(cfg, eval_inputs_path=f"{bundle_root}/eval_inputs.txt")
+    logger.info(f"Evaluation metrics: {results.metrics}")
+    logger.info("Evaluation succeeded")
+    dbutils.notebook.exit("evaluation_succeeded")
+
+if mode != "deploy":
+    raise ValueError(f"Unsupported deployment mode: {mode}")
+
+logger.info("Evaluation already succeeded; deploying the App")
 
 # If evaluation raises an exception, the task fails and this deployment step is not reached.
 w = WorkspaceClient()
