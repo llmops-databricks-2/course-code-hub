@@ -50,9 +50,9 @@ resources:
           secret:
             scope: grp-admins-llmops
             key: databricks_client_id
-            permission: CAN_READ
+            permission: READ
         - name: sp-deploy-client-secret
           secret:
             scope: grp-admins-llmops
             key: databricks_client_secret
-            permission: CAN_READ
+            permission: READ
