@@ -1,7 +1,7 @@
 resources:
   apps:
     arxiv_agent_app:
-      name: agent-arxiv-curator-cd-${bundle.target}
+      name: agent-arxiv-curator-${bundle.target}
       description: Arxiv research agent with Lakebase pgvector retrieval
       source_code_path: ../
       config:
