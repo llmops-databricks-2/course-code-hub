@@ -1,6 +1,13 @@
 # course-code-hub
 Full code for LLMOps with Datarbricks Course
 
+## Lecture 5 presentation
+
+- [Browser presentation](presentation_prep/lecture5/lecture5.html)
+
+Press **F** to present, use the arrow keys to navigate, and **N** for speaker notes.
+Keep the HTML, CSS, JavaScript, and assets together when downloading.
+
 ## Lecture 4 materials
 
 - [Lecture notes in HTML](lecture_materials/lecture4.html) — download and open in a browser.
