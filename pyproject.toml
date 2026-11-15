@@ -9,7 +9,7 @@ dependencies = [
     "numpy==2.1.3",
     "pandas==2.2.3",
     "pyarrow==21.0.0",
-    "databricks-sdk==0.118.0",
+    "databricks-sdk==0.166.0",
     "pydantic==2.10.6",
     "loguru==0.7.3",
     "python-dotenv==1.2.1",

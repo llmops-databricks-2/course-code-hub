@@ -9,7 +9,7 @@ dev:
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
   # Use the serving endpoint supported by batch ai_query and AI Search.
-  embedding_endpoint: course_ops.gateway.embed
+  embedding_endpoint: databricks-gte-large-en
   warehouse_id: 9b96ea2aef8272f6
   experiment_path: /Shared/llmops-arxiv-curator-course
   lakebase_project_id: lb-llmops-dev
@@ -24,7 +24,7 @@ acc:
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
   # Use the serving endpoint supported by batch ai_query and AI Search.
-  embedding_endpoint: course_ops.gateway.embed
+  embedding_endpoint: databricks-gte-large-en
   warehouse_id: 9b96ea2aef8272f6
   experiment_path: /Shared/llmops-arxiv-curator-course
   lakebase_project_id: lb-llmops-dev
@@ -37,7 +37,7 @@ prd:
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
   # Use the serving endpoint supported by batch ai_query and AI Search.
-  embedding_endpoint: course_ops.gateway.embed
+  embedding_endpoint: databricks-gte-large-en
   warehouse_id: 9b96ea2aef8272f6
   experiment_path: /Shared/llmops-arxiv-curator-course
   lakebase_project_id: lb-llmops-dev

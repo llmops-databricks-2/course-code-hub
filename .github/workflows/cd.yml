@@ -18,9 +18,9 @@ jobs:
       contents: read
       id-token: write
     env:
+      DATABRICKS_AUTH_TYPE: github-oidc
       DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
-      DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
-      DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
 
     steps:
       - name: Checkout source code
@@ -28,16 +28,6 @@ jobs:
 
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
-
-      - name: Configure Databricks CLI
-        run: |
-          mkdir -p ~/.databricks
-          cat > ~/.databrickscfg << EOF
-          [DEFAULT]
-          host = $DATABRICKS_HOST
-          client_id = $DATABRICKS_CLIENT_ID
-          client_secret = $DATABRICKS_CLIENT_SECRET
-          EOF
 
       - name: Install uv
         uses: astral-sh/setup-uv@0c5e2b8115b80b4c7c5ddf6ffdd634974642d182 # v5.4.1
@@ -48,7 +38,31 @@ jobs:
             --target dev \
             --var="git_sha=${GITHUB_SHA}"
 
-      - name: Run evaluation-gated release pipeline
+      - name: Evaluate and grant App secret access
         run: |
-          databricks bundle run lecture5_release_pipeline \
+          databricks bundle run evaluate_grant_permissions \
             --target dev
+
+      - name: Start or restart App
+        run: |
+          databricks bundle run arxiv_agent_app \
+            --target dev
+
+      - name: Wait for App startup
+        env:
+          APP_NAME: agent-arxiv-curator-dev
+        run: |
+          for attempt in $(seq 1 20); do
+            state=$(databricks apps get "$APP_NAME" --output json | jq -r '.app_status.state')
+            echo "Attempt $attempt/20: App state=$state"
+            if [ "$state" = "RUNNING" ]; then
+              exit 0
+            fi
+            if [ "$state" = "CRASHED" ]; then
+              echo "App startup failed" >&2
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "App did not reach RUNNING state within 5 minutes" >&2
+          exit 1

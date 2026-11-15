@@ -1,16 +1,24 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Lecture 5.1: Agent Deployment with Databricks Apps
+# MAGIC # Lecture 5.1: Invoke the Agent App
 # MAGIC
 # MAGIC The agent is deployed by the Databricks bundle as a Databricks App. The app
 # MAGIC exposes the MLflow Responses API at `/responses` and can be opened from the
 # MAGIC Databricks Apps UI.
 # MAGIC
-# MAGIC Deploy from the repository root:
+# MAGIC Choose a permission setup path after creating the App:
+# MAGIC
+# MAGIC - **Notebook:** deploy the bundle, run the optional secret-grant cell below,
+# MAGIC   then run the start and invocation cells.
+# MAGIC - **CD:** the workflow deploys the bundle, runs the
+# MAGIC   `evaluate_grant_permissions` job, then starts the App. Skip the grant cell.
+# MAGIC
+# MAGIC The equivalent CD commands, from the repository root:
 # MAGIC
 # MAGIC ```bash
 # MAGIC databricks bundle validate -t dev --profile dev
 # MAGIC databricks bundle deploy -t dev --profile dev
+# MAGIC databricks bundle run evaluate_grant_permissions -t dev --profile dev
 # MAGIC databricks bundle run arxiv_agent_app -t dev --profile dev
 # MAGIC ```
 
@@ -19,12 +27,12 @@
 import os
 
 from databricks.sdk import WorkspaceClient
+from databricks.sdk.service.apps import ComputeState
 from openai import OpenAI
 from loguru import logger
-import requests
 
+from arxiv_curator.app_permissions import grant_app_secret_access
 from arxiv_curator.config import ProjectConfig
-from arxiv_curator.vector_search import LakebasePgVectorManager
 
 
 cfg = ProjectConfig.from_yaml("../project_config.yml", env=os.getenv("ARXIV_ENV", "dev"))
@@ -39,133 +47,95 @@ logger.info(f"State: {app.active_deployment.status if app.active_deployment else
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## App service-principal permissions
+# MAGIC ## Optional: grant UC secret access from this notebook
 # MAGIC
-# MAGIC Databricks creates a dedicated service principal when the App is created.
-# MAGIC The bundle grants it resource-level access to Lakebase, but PostgreSQL table
-# MAGIC privileges are separate. The pgvector table was created by the notebook user,
-# MAGIC so we grant the App only the privileges required by the agent.
-# MAGIC
-# MAGIC This setup runs after App creation and discovers the service-principal client
-# MAGIC ID programmatically. It is safe to rerun.
-# MAGIC
-# MAGIC The App also needs Unity Catalog permissions for the AI Gateway model
-# MAGIC services. The next cell grants those permissions before invocation.
+# MAGIC Run this cell for the notebook setup path. Skip it if the CD job has already
+# MAGIC applied the grants. The executing identity must be allowed to grant these
+# MAGIC UC privileges. Only the two credential secrets and their parent access are
+# MAGIC granted to the App SPN; runtime data permissions belong to the existing SPN.
 
 # COMMAND ----------
 
-app_client_id = app.service_principal_client_id
-pgvector = LakebasePgVectorManager(config=cfg)
-quoted_role = '"' + app_client_id.replace('"', '""') + '"'
-quoted_schema = '"' + cfg.schema.replace('"', '""') + '"'
-quoted_chunks_table = f"{quoted_schema}.\"arxiv_chunks_synced\""
+app_spn_client_id = app.service_principal_client_id
+if not app_spn_client_id:
+    raise RuntimeError("Deploy the bundle first to create the App and its SPN")
 
-with pgvector.connection() as conn:
-    conn.execute(f"GRANT USAGE ON SCHEMA {quoted_schema} TO {quoted_role}")
-    conn.execute(
-        f"GRANT SELECT ON TABLE {quoted_chunks_table} TO {quoted_role}"
-    )
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS session_messages (
-            session_id TEXT NOT NULL,
-            message_data JSONB NOT NULL,
-            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-    )
-    conn.execute(
-        f"GRANT SELECT, INSERT ON TABLE session_messages TO {quoted_role}"
-    )
-
-logger.info(f"Granted Lakebase table access to App service principal {app_client_id}")
-
-# COMMAND ----------
-
-# Grant the App service principal permission to write MLflow traces.
-experiment_resource = next(
-    resource for resource in app.resources if resource.name == "experiment"
-)
-experiment_id = experiment_resource.experiment.experiment_id
-w.api_client.do(
-    "PUT",
-    f"/api/2.0/permissions/experiments/{experiment_id}",
-    body={
-        "access_control_list": [
-            {
-                "service_principal_name": app_client_id,
-                "permission_level": "CAN_MANAGE",
-            }
-        ]
-    },
-)
-logger.info(
-    f"Granted MLflow CAN_MANAGE on experiment {experiment_id} "
-    f"to App service principal {app_client_id}"
-)
-
-# COMMAND ----------
-
-# Grant the App service principal access to the Unity AI Gateway services.
-# The executing notebook identity must have permission to grant these privileges.
-gateway_principal = f"`{app_client_id.replace('`', '``')}`"
-gateway_grants = [
-    f"GRANT USE CATALOG ON CATALOG course_ops TO {gateway_principal}",
-    f"GRANT USE SCHEMA ON SCHEMA course_ops.gateway TO {gateway_principal}",
-    f"GRANT EXECUTE ON MODEL SERVICE course_ops.gateway.chat TO {gateway_principal}",
-    f"GRANT EXECUTE ON MODEL SERVICE course_ops.gateway.embed TO {gateway_principal}",
-]
-
-for grant_statement in gateway_grants:
-    w.statement_execution.execute_statement(
-        warehouse_id=cfg.warehouse_id,
-        statement=grant_statement,
-        wait_timeout="30s",
-    )
-
-logger.info(
-    "Granted Unity AI Gateway access to App service principal "
-    f"{app_client_id}"
-)
+grant_app_secret_access(w, cfg.catalog, cfg.schema, app_spn_client_id)
+logger.info(f"Granted UC secret access to App SPN {app_spn_client_id}")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Test the deployed app
-# MAGIC
-# MAGIC Apps use the OpenAI Responses API with the `apps/<app-name>` model name.
-# MAGIC Databricks Apps require OAuth authentication; do not use a PAT generated by
-# MAGIC `w.tokens.create()` here.
+# MAGIC Start the previously deployed App after applying the grants and wait for
+# MAGIC it to be ready before invoking it.
 
 # COMMAND ----------
 
-app_client_id = app.oauth2_app_client_id
-notebook_token = (
-    dbutils.notebook.entry_point.getDbutils()
-    .notebook()
-    .getContext()
-    .apiToken()
-    .get()
-)
+app = w.apps.get(name=app_name)
+if app.compute_status.state == ComputeState.STOPPED:
+    app = w.apps.start_and_wait(name=app_name)
+logger.info(f"App state: {app.app_status.state}")
 
-token_response = requests.post(
-    f"{w.config.host}/oidc/v1/token",
-    data={
-        "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
-        "subject_token": notebook_token,
-        "subject_token_type": "urn:databricks:params:oauth:token-type:personal-access-token",
-        "requested_token_type": "urn:ietf:params:oauth:token-type:access_token",
-        "scope": "all-apis",
-        "audience": app_client_id,
-    },
-    timeout=30,
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Invoke the deployed app
+# MAGIC
+# MAGIC Both setup paths lead to the same invocation below. The caller needs
+# MAGIC permission to use the deployed App.
+# MAGIC
+# MAGIC Apps use the OpenAI Responses API with the `apps/<app-name>` model name.
+# MAGIC Use a WorkspaceClient authenticated with OAuth to invoke the App.
+# MAGIC
+# MAGIC ### Why this differs from notebook 1.1
+# MAGIC
+# MAGIC Both PATs and OAuth access tokens are bearer tokens. Their issuance,
+# MAGIC lifetime, and supported destinations differ:
+# MAGIC
+# MAGIC | | Notebook 1.1: PAT | App invocation: OAuth |
+# MAGIC |---|---|---|
+# MAGIC | SDK call | `w.tokens.create(lifetime_seconds=1200).token_value` | `app_client.config.oauth_token().access_token` |
+# MAGIC | What it does | Creates a new personal access token | Retrieves an access token from the client's OAuth provider |
+# MAGIC | Lifetime | Requested explicitly: 1,200 seconds (20 minutes) | Determined by Databricks; M2M tokens typically last one hour |
+# MAGIC | Renewal | Create a replacement PAT | SDK refreshes tokens when requested through the OAuth provider |
+# MAGIC | Model API used in 1.1 | Accepted | Accepted |
+# MAGIC | Databricks App URL | Not accepted | Accepted |
+# MAGIC
+# MAGIC In both cases OpenAI receives `api_key=token`; the destination determines
+# MAGIC which token types are accepted. The `oauth_token()` call does not accept
+# MAGIC a `lifetime_seconds` parameter. Once copied into the OpenAI client, the token
+# MAGIC is a fixed string: fetch a fresh token and update the client after expiry.
+# MAGIC
+# MAGIC **PATs do not work for App invocation: use an OAuth token.** This notebook
+# MAGIC obtains one with SPN OAuth M2M; the default notebook-context client cannot
+# MAGIC supply it through `oauth_token()`. OAuth is not exclusive to SPNs: user OAuth
+# MAGIC is also supported. See the
+# MAGIC [App authentication guide](https://docs.databricks.com/aws/en/dev-tools/databricks-apps/connect-local).
+# MAGIC
+# MAGIC **Production recommendation:** use different SPNs for the caller and the
+# MAGIC agent running inside the App. Grant the caller `CAN_USE` on the App, and
+# MAGIC grant data/model/trace permissions to the runtime SPN. For this course we
+# MAGIC reuse the existing SPN, which already has `CAN_MANAGE` (including `CAN_USE`).
+# MAGIC The notebook identity also needs `READ SECRET` and parent catalog/schema
+# MAGIC usage permissions to retrieve the credentials below.
+
+# COMMAND ----------
+
+app_client = WorkspaceClient(
+    host=w.config.host,
+    client_id=dbutils.secrets.get(
+        catalog=cfg.catalog, schema=cfg.schema, key="databricks_client_id"
+    ),
+    client_secret=dbutils.secrets.get(
+        catalog=cfg.catalog, schema=cfg.schema, key="databricks_client_secret"
+    ),
+    auth_type="oauth-m2m",
 )
-token_response.raise_for_status()
-oauth_token = token_response.json()["access_token"]
+oauth_token = app_client.config.oauth_token().access_token
 
 client = OpenAI(
     api_key=oauth_token,
-    base_url=app.url.rstrip("/"),
+    base_url=app.url,
 )
 response = client.responses.create(
     model=f"apps/{app_name}",
@@ -182,3 +152,16 @@ if response.output:
     logger.info(response.output_text)
 else:
     logger.warning("The App returned no output items")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Stop the App
+# MAGIC
+# MAGIC Run this cell when finished to stop the App and wait until it has stopped.
+# MAGIC The App remains available to start again later.
+
+# COMMAND ----------
+
+w.apps.stop_and_wait(name=app_name)
+logger.info(f"Stopped App: {app_name}")

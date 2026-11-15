@@ -1,8 +1,8 @@
 """Start the MLflow AgentServer used by Databricks Apps."""
 
-from mlflow.genai.agent_server import AgentServer, setup_mlflow_git_based_version_tracking
+import agent_server.agent  # noqa: F401 - configures credentials and registers handlers
 
-import agent_server.agent  # noqa: E402, F401 - registers invoke/stream handlers
+from mlflow.genai.agent_server import AgentServer, setup_mlflow_git_based_version_tracking
 
 
 agent_server = AgentServer("ResponsesAgent", enable_chat_proxy=True)

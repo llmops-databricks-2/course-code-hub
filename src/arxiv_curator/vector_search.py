@@ -9,10 +9,8 @@ from typing import Any
 import psycopg
 from databricks.sdk import WorkspaceClient
 from loguru import logger
-from openai import OpenAI
 
 from arxiv_curator.config import ProjectConfig
-from arxiv_curator.auth import get_gateway_token
 
 
 class LakebasePgVectorManager:
@@ -137,11 +135,7 @@ class LakebasePgVectorManager:
     def embed_query(self, query: str) -> list[float]:
         """Generate a query embedding with the same model used for documents."""
         workspace = self.workspace or WorkspaceClient()
-        gateway_token = get_gateway_token(workspace)
-        client = OpenAI(
-            api_key=gateway_token,
-            base_url=f"{workspace.config.host.rstrip('/')}/ai-gateway/mlflow/v1",
-        )
+        client = workspace.serving_endpoints.get_open_ai_client()
         response = client.embeddings.create(model=self.embedding_model, input=query)
         if not response.data or not response.data[0].embedding:
             raise ValueError("The embedding endpoint returned no vector")

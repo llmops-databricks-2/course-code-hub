@@ -39,7 +39,7 @@ class ArxivAgent(ResponsesAgent):
         schema: str,
         genie_space_id: str | None = None,
         lakebase_project_id: str | None = None,
-        embedding_endpoint: str = "course_ops.gateway.embed",
+        embedding_endpoint: str = "databricks-gte-large-en",
         lakebase_user: str | None = None,
     ):
         """Initializes the Arxiv Agent."""
@@ -375,7 +375,6 @@ def log_register_agent(
         "llm_endpoint": cfg.llm_endpoint,
         "embedding_endpoint": cfg.embedding_endpoint,
         "lakebase_project_id": cfg.lakebase_project_id,
-        "lakebase_user": cfg.lakebase_user,
     }
 
     test_request = {

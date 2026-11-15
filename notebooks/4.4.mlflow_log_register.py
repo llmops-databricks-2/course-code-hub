@@ -2,9 +2,7 @@
 import os
 import random
 from datetime import datetime
-from pathlib import Path
 
-import arxiv_curator
 import mlflow
 from arxiv_curator.agent import ArxivAgent
 from pyspark.sql import SparkSession
@@ -30,31 +28,12 @@ agent = ArxivAgent(
     schema=cfg.schema,
     genie_space_id=genie_space_id,
     lakebase_project_id=cfg.lakebase_project_id,
-    lakebase_user=cfg.lakebase_user,
     embedding_endpoint=cfg.embedding_endpoint,
 )
 
 # COMMAND ----------
-# Load evaluation inputs from the bundle workspace root.
-try:
-    notebook_path = (
-        dbutils.notebook.entry_point.getDbutils()
-        .notebook()
-        .getContext()
-        .notebookPath()
-        .get()
-    )
-    bundle_root = notebook_path.rsplit("/notebooks/", 1)[0]
-    workspace_root = (
-        bundle_root
-        if bundle_root.startswith("/Workspace/")
-        else f"/Workspace{bundle_root}"
-    )
-    eval_inputs_path = f"{workspace_root}/eval_inputs.txt"
-except Exception:
-    eval_inputs_path = os.path.join(os.getcwd(), "../eval_inputs.txt")
-
-with open(eval_inputs_path) as f:
+# Load evaluation inputs.
+with open("../eval_inputs.txt") as f:
     eval_data = [{"inputs": {
         "question": line.strip()}} for line in f if line.strip()]
 
@@ -99,14 +78,12 @@ model_config = {
         "system_prompt": cfg.system_prompt,
         "llm_endpoint": cfg.llm_endpoint,
         "lakebase_project_id": cfg.lakebase_project_id,
-        "lakebase_user": cfg.lakebase_user,
         "embedding_endpoint": cfg.embedding_endpoint,
     }
 
 git_sha = "abc"
 run_id = "unset"
 
-package_path = Path(arxiv_curator.__file__).parent
 ts = datetime.now().strftime('%Y-%m-%d')
 with mlflow.start_run(
     run_name=f"arxiv-agent-{ts}",
@@ -116,8 +93,7 @@ with mlflow.start_run(
     # Notebook 4.0 grants access to the UC trace tables.
     model_info = mlflow.pyfunc.log_model(
         name="agent",
-        python_model=str(package_path / "agent_model.py"),
-        code_paths=[str(package_path)],
+        python_model="../agent_model.py",
         input_example=test_request,
         model_config=model_config,
     )

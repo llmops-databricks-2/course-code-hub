@@ -4,17 +4,19 @@
 bundle:
   engine: direct
   name: course-code-hub
-  # 1.20.0 is the first CLI that knows a model provider service's secret reference
-  # (resources/gateway_demo.yml); an older one skips the gateway resources with a warning.
-  databricks_cli_version: ">= 1.20.0"
+  # 1.23.0 adds lifecycle.depends_on for explicit resource deployment ordering.
+  databricks_cli_version: ">= 1.23.0"
 
 artifacts:
   default:
     type: whl
-    build: uv build --system-certs
+    build: uv build --native-tls
     path: .
 
 variables:
+  agent_service_principal_id:
+    description: Existing agent runtime service principal granted access to Genie
+    default: 180dc237-d53d-4e39-bf7f-86ad2533ed88
   git_sha:
     description: git_sha
     default: abcd
@@ -42,9 +44,10 @@ include:
   - resources/process_data.yml
   - resources/initialize_data.yml
   # - resources/testing_jobs/*.yml
+  - resources/testing_jobs/lecture5_validation.yml
   - resources/genie_space.yml
   - resources/agent_app.yml
-  - resources/lecture5_app_deployment.yml
+  - resources/evaluate_grant_permissions.yml
 
 sync:
   include:
