@@ -29,8 +29,7 @@ def get_gateway_token(workspace: WorkspaceClient) -> str:
             f"{host}/oidc/v1/token",
             data=payload,
             headers={
-                "Authorization": "Basic "
-                + base64.b64encode(credentials).decode(),
+                "Authorization": "Basic " + base64.b64encode(credentials).decode(),
                 "Content-Type": "application/x-www-form-urlencoded",
             },
         )
@@ -41,14 +40,7 @@ def get_gateway_token(workspace: WorkspaceClient) -> str:
     try:
         from databricks.sdk.runtime import dbutils
 
-        token = (
-            dbutils.notebook.entry_point
-            .getDbutils()
-            .notebook()
-            .getContext()
-            .apiToken()
-            .get()
-        )
+        token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
         if token:
             return token
     except Exception:

@@ -37,8 +37,7 @@ from uuid import uuid4
 
 import psycopg
 from databricks.sdk import WorkspaceClient
-from databricks.sdk.service.postgres import (
-    PostgresAPI)
+from databricks.sdk.service.postgres import PostgresAPI
 from loguru import logger
 from pyspark.sql import SparkSession
 
@@ -74,8 +73,7 @@ user = w.current_user.me()
 pg_credential = pg_api.generate_database_credential(endpoint=endpoint.name)
 username = urllib.parse.quote(cfg.lakebase_user or user.user_name, safe="")
 conn_string = (
-    f"postgresql://{username}:{pg_credential.token}@{host}:5432/"
-    "databricks_postgres?sslmode=require"
+    f"postgresql://{username}:{pg_credential.token}@{host}:5432/databricks_postgres?sslmode=require"
 )
 
 
@@ -122,8 +120,7 @@ test_messages = [
 with psycopg.connect(conn_string) as conn:
     for msg in test_messages:
         conn.execute(
-            "INSERT INTO session_messages (session_id, message_data) "
-            "VALUES (%s, %s)",
+            "INSERT INTO session_messages (session_id, message_data) VALUES (%s, %s)",
             (test_session_id, json.dumps(msg)),
         )
 

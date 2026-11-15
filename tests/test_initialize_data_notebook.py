@@ -75,8 +75,8 @@ def test_table_types_match_actual_processor_schema(statements):
 def test_genie_depends_on_initialization_and_not_ingestion():
     init = yaml.safe_load((ROOT / "resources/initialize_data.yml").read_text())["resources"]
     genie = yaml.safe_load((ROOT / "resources/genie_space.yml").read_text())
-    description = genie["resources"]["genie_spaces"]["arxiv-curator-space"]["description"]
-    assert "${resources.job_runs.initialize-tables.state.result_state}" in description
+    space = genie["resources"]["genie_spaces"]["arxiv-curator-space"]
+    assert space["lifecycle"]["depends_on"] == [{"resource": "job_runs.initialize-tables"}]
     assert init["job_runs"]["initialize-tables"]["job_id"] == "${resources.jobs.initialize-data.id}"
     assert (
         init["jobs"]["initialize-data"]["tasks"][0]["notebook_task"]["notebook_path"]

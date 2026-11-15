@@ -59,9 +59,7 @@ else:
 logger.info(f"Trace table: {experiment.trace_location.full_otel_spans_table_name}")
 
 # Grant access after the experiment and its UC trace objects exist.
-principal = dbutils.secrets.get(
-    catalog=cfg.catalog, schema=cfg.schema, key="databricks_client_id"
-)
+principal = dbutils.secrets.get(catalog=cfg.catalog, schema=cfg.schema, key="databricks_client_id")
 workspace = WorkspaceClient()
 for table in workspace.tables.list(catalog_name=cfg.catalog, schema_name=cfg.schema):
     if table.name.startswith("llmops_"):

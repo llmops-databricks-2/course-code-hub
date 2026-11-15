@@ -18,10 +18,6 @@ resources:
       # Run the required notebook with bundle run --only <task_key>.
       # agent_app_invoke starts the deployed App and stops it after invocation.
       tasks:
-        - task_key: psycopg_compatibility
-          environment_key: default
-          notebook_task:
-            notebook_path: psycopg_compatibility.py
         - task_key: mlflow_log_register
           environment_key: default
           notebook_task:

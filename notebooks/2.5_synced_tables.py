@@ -21,9 +21,9 @@
 
 # COMMAND ----------
 
+from databricks.sdk import WorkspaceClient
 from loguru import logger
 from pyspark.sql import SparkSession
-from databricks.sdk import WorkspaceClient
 
 from arxiv_curator.config import get_env, load_config
 from arxiv_curator.vector_search import LakebasePgVectorManager
@@ -63,10 +63,7 @@ if "id" not in source_columns:
 if "embedding" not in source_columns:
     raise ValueError(f"{source_table} has no 'embedding' column. Run Lecture 2.4 first.")
 
-spark.sql(
-    f"ALTER TABLE {source_table} "
-    "SET TBLPROPERTIES (delta.enableChangeDataFeed = true)"
-)
+spark.sql(f"ALTER TABLE {source_table} SET TBLPROPERTIES (delta.enableChangeDataFeed = true)")
 
 logger.info(f"Validated source table and enabled Change Data Feed: {source_table}")
 

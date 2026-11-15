@@ -63,8 +63,8 @@ logger.info(f"Space config: {json.loads(space.serialized_space)}")
 # COMMAND ----------
 
 conversation = w.genie.start_conversation_and_wait(
-    space_id=space.space_id,
-    content="Find the last 10 papers published")
+    space_id=space.space_id, content="Find the last 10 papers published"
+)
 
 conversation.as_dict()
 
@@ -80,7 +80,8 @@ conversation.as_dict()
 message = w.genie.create_message_and_wait(
     space_id=space.space_id,
     conversation_id=conversation.conversation_id,
-    content="Return the list of authors of the last 10 papers published")
+    content="Return the list of authors of the last 10 papers published",
+)
 
 message.as_dict()
 

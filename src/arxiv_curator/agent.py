@@ -10,7 +10,6 @@ import backoff
 import mlflow
 import nest_asyncio
 import openai
-from openai import OpenAI
 from databricks.sdk import WorkspaceClient
 from loguru import logger
 from mlflow import MlflowClient
@@ -20,11 +19,11 @@ from mlflow.types.responses import (
     ResponsesAgentRequest,
     ResponsesAgentResponse,
     ResponsesAgentStreamEvent,
-    to_chat_completions_input,
 )
+from openai import OpenAI
 
-from arxiv_curator.config import ProjectConfig
 from arxiv_curator.auth import get_gateway_token
+from arxiv_curator.config import ProjectConfig
 from arxiv_curator.mcp import ToolInfo, create_mcp_tools
 from arxiv_curator.memory import LakebaseMemory
 from arxiv_curator.vector_search import LakebasePgVectorManager
@@ -51,10 +50,7 @@ class ArxivAgent(ResponsesAgent):
         gateway_token = get_gateway_token(self.workspace_client)
         self.model_serving_client = OpenAI(
             api_key=gateway_token,
-            base_url=(
-                f"{self.workspace_client.config.host}/"
-                "ai-gateway/mlflow/v1"
-            ),
+            base_url=(f"{self.workspace_client.config.host}/ai-gateway/mlflow/v1"),
         )
 
         # Initialize Lakebase memory if configured
@@ -88,8 +84,7 @@ class ArxivAgent(ResponsesAgent):
                 if year_filter:
                     if "-" in year_filter:
                         year_from, year_to = [
-                            int(value.strip())
-                            for value in year_filter.split("-", 1)
+                            int(value.strip()) for value in year_filter.split("-", 1)
                         ]
                         if year_from > year_to:
                             year_from, year_to = year_to, year_from

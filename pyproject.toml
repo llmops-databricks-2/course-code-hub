@@ -78,6 +78,10 @@ ignore = [
 [tool.ruff.format]
 indent-style = "space"
 
+[tool.ruff.lint.per-file-ignores]
+"notebooks/*.py" = ["F821"]
+"resources/deployment_scripts/*.py" = ["F821"]
+
 [tool.databricks.environment]
 environment_version = "5"
 
