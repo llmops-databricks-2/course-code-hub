@@ -4,70 +4,24 @@ on:
   push:
     branches:
       - main
-      - lecture5 #temp
   workflow_dispatch:
 
 concurrency:
-  group: databricks-dev-deployment
+  group: databricks-release
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    environment: dev
-    permissions:
-      contents: read
-      id-token: write
-    env:
-      DATABRICKS_AUTH_TYPE: github-oidc
-      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
-      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+  acc:
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      target: acc
 
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4.2.2
-
-      - name: Install Databricks CLI
-        uses: databricks/setup-cli@9230f12203ef173d0b901846f62a55ce997efef7 # v1.20.0
-        with:
-          version: 1.24.0
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
-        with:
-          enable-cache: true
-
-      - name: Deploy bundle resources
-        run: |
-          databricks bundle deploy \
-            --target dev \
-            --var="git_sha=${GITHUB_SHA}"
-
-      - name: Evaluate and grant App secret access
-        run: |
-          databricks bundle run evaluate_grant_permissions \
-            --target dev
-
-      - name: Start or restart App
-        run: |
-          databricks bundle run arxiv_agent_app \
-            --target dev
-
-      - name: Wait for App startup
-        env:
-          APP_NAME: agent-arxiv-curator-dev
-        run: |
-          for attempt in $(seq 1 20); do
-            state=$(databricks apps get "$APP_NAME" --output json | jq -r '.app_status.state')
-            echo "Attempt $attempt/20: App state=$state"
-            if [ "$state" = "RUNNING" ]; then
-              exit 0
-            fi
-            if [ "$state" = "CRASHED" ]; then
-              echo "App startup failed" >&2
-              exit 1
-            fi
-            sleep 15
-          done
-          echo "App did not reach RUNNING state within 5 minutes" >&2
-          exit 1
+  prd:
+    needs: acc
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      target: prd

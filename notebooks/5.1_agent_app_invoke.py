@@ -11,15 +11,15 @@
 # MAGIC - **Notebook:** deploy the bundle, run the optional secret-grant cell below,
 # MAGIC   then run the start and invocation cells.
 # MAGIC - **CD:** the workflow deploys the bundle, runs the
-# MAGIC   `evaluate_grant_permissions` job, then starts the App. Skip the grant cell.
+# MAGIC   `evaluate_deploy_app` job, which evaluates, starts, invokes, and stops
+# MAGIC   the App. Skip the grant cell; the start cell below starts it again for manual use.
 # MAGIC
-# MAGIC The equivalent CD commands, from the repository root:
+# MAGIC For manual development, from the repository root (CD uses `acc` then `prd`):
 # MAGIC
 # MAGIC ```bash
 # MAGIC databricks bundle validate -t dev --profile dev
 # MAGIC databricks bundle deploy -t dev --profile dev
-# MAGIC databricks bundle run evaluate_grant_permissions -t dev --profile dev
-# MAGIC databricks bundle run arxiv_agent_app -t dev --profile dev
+# MAGIC databricks bundle run evaluate_deploy_app -t dev --profile dev
 # MAGIC ```
 
 # COMMAND ----------

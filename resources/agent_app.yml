@@ -4,6 +4,9 @@ resources:
       name: agent-arxiv-curator-${bundle.target}
       description: Arxiv research agent with Lakebase pgvector retrieval
       source_code_path: ../
+      permissions:
+        - service_principal_name: ${var.agent_service_principal_id}
+          level: CAN_USE
       config:
         command: ["uv", "run", "start-server"]
         env:

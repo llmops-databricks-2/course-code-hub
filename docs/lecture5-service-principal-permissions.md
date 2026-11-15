@@ -34,7 +34,7 @@ Grant it only the permissions required by the pipeline:
 - Access to the Lakebase project, database, branch, and required PostgreSQL
   tables.
 - Permission to grant the App-managed SPN access to the two UC credential secrets.
-  App deployment itself runs in CD, not in the Databricks job.
+  The job also needs `CAN_MANAGE` on the App to start and stop it.
 
 Jobs use the Run-as identity's permissions while executing. Setting the CD
 SPN as the Run-as identity is optional for development, but recommended for a
@@ -121,30 +121,48 @@ agent fails, rebuild and redeploy the wheel so the job is using the latest
 
 ## CI/CD release order
 
-GitHub Actions deploys the bundle resources first, creating the App and its
-managed SPN if needed. It then runs `evaluate_grant_permissions`:
+CD deploys only to `acc` and then `prd`. Each call to the reusable deployment
+workflow passes the literal target name (`acc` or `prd`). That name selects both
+the GitHub environment and the bundle target; no GitHub target variable is needed.
+Each environment supplies its own `DATABRICKS_HOST` and `DATABRICKS_CLIENT_ID`
+variables for GitHub OIDC authentication. Configure the federation policy for
+the corresponding GitHub environment identity.
 
-1. `evaluate_agent` runs the candidate evaluation and logs its metrics.
-2. In parallel, `grant_app_secret_access` retrieves the App's
-   `service_principal_client_id` and applies additive grants through the UC permissions API: `USE CATALOG`,
-   `USE SCHEMA`, and `READ SECRET` on the two credential secrets only.
-3. After the job succeeds, a separate CD workflow step runs
-   `databricks bundle run arxiv_agent_app --target dev` to deploy/start the App.
-   App deployment is not a Databricks job task.
+For each target, GitHub deploys the bundle and runs the Databricks job
+`evaluate_deploy_app`. The job:
 
-The release job's Run-as identity must be allowed to view the App and grant
-these UC privileges (ownership, appropriate MANAGE privileges, or metastore
-administrator privileges). It also needs the evaluation runtime permissions
-described above. App deployment permission belongs to the CD identity. Grant statements do not read
-secret values and are safe to repeat.
+1. The `evaluate_deploy_app.py` notebook evaluates the agent, then grants the App
+   principal access to its UC bootstrap secrets.
+2. The same notebook calls `databricks bundle run arxiv_agent_app --target <env>`
+   through `subprocess`, reusing the bundle App configuration. The job compute
+   needs the CLI, authentication, and access to the bundle files and state.
+3. Waits for App startup, then calls its Responses API with SPN OAuth.
+   The bundle grants the caller `CAN_USE` on the App.
+4. Stops the App in `finally`, including when startup or invocation fails.
+   **Stopping avoids ongoing compute costs for the course. A normal production
+   deployment would leave the App running after validation.**
 
-Evaluation exceptions block deployment. Evaluation scores are currently logged
-without a minimum-score threshold; a completed evaluation with low scores does
-not itself fail the release.
+The job's Run-as identity needs evaluation access, permission to grant the App
+SPN's UC bootstrap secret access, read access to the caller credentials, and
+`CAN_MANAGE` on the App. Grant statements do not read secret values and are safe
+to repeat. Evaluation exceptions and invocation failures fail the job and block
+promotion; evaluation metrics currently have no minimum-score threshold.
+
+### Configure production approval in GitHub
+
+Create the `acc` and `prd` environments in repository **Settings > Environments**.
+Set their Databricks variables, then configure **Required reviewers** on `prd`.
+Optionally prevent self-review and administrator bypass. The `prd` workflow job
+requires successful completion of `acc` and approval of its environment before
+it receives a runner or deploys resources.
+
+The YAML references the protected environment; it does not create a reviewer
+rule. Without that GitHub setting, `environment: prd` alone does not require
+approval. See [GitHub deployment approvals](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/review-deployments).
 
 ## Manual notebook alternative
 
 Notebook 5.1 includes an optional UC secret grant cell using the same
 `grant_app_secret_access` helper as the CD job. After bundle creation, run that cell
-and start the App before invocation. When CD has run `evaluate_grant_permissions`,
+and start the App before invocation. When CD has run `evaluate_deploy_app`,
 skip the notebook grant cell and proceed directly to invocation.

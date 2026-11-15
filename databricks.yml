@@ -47,7 +47,7 @@ include:
   - resources/testing_jobs/lecture5_validation.yml
   - resources/genie_space.yml
   - resources/agent_app.yml
-  - resources/evaluate_grant_permissions.yml
+  - resources/evaluate_deploy_app.yml
 
 sync:
   include:

@@ -1,7 +1,7 @@
 resources:
   jobs:
-    evaluate_grant_permissions:
-      name: evaluate_grant_permissions-${bundle.target}
+    evaluate_deploy_app:
+      name: evaluate_deploy_app-${bundle.target}
       budget_policy_id: "${var.usage_policy_id}"
       max_concurrent_runs: 1
       environments:
@@ -11,16 +11,10 @@ resources:
             dependencies:
               - ../dist/*.whl
       tasks:
-        - task_key: evaluate_agent
+        - task_key: evaluate_deploy_app
           environment_key: default
           notebook_task:
-            notebook_path: deployment_scripts/evaluate_agent.py
+            notebook_path: deployment_scripts/evaluate_deploy_app.py
             base_parameters:
               env: "${bundle.target}"
               genie_space_id: "${resources.genie_spaces.arxiv-curator-space.id}"
-        - task_key: grant_app_secret_access
-          environment_key: default
-          notebook_task:
-            notebook_path: deployment_scripts/grant_app_secret_access.py
-            base_parameters:
-              env: "${bundle.target}"

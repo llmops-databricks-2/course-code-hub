@@ -134,7 +134,7 @@ This is a copy, not a live rotation link. Rerun synchronization after UC rotatio
 
 The App `secret` resource accepts workspace `scope` and `key`. It does not declare UC secrets or automatically grant `READ SECRET` on them. A top-level bundle UC secret resource is a different resource type from an App's secret dependency. [App resource types](https://docs.databricks.com/aws/en/dev-tools/databricks-apps/resources).
 
-Our Databricks job `grant_app_secret_access` discovers the App-managed SPN after bundle deployment and applies the UC grants. Notebook 5.1 provides the manual alternative. GitHub CD triggers the Databricks job; it does not perform those grants itself.
+Our `evaluate_deploy_app` deployment notebook discovers the App-managed SPN after bundle deployment and applies the UC grants. Notebook 5.1 provides the manual alternative. GitHub CD triggers the Databricks job; it does not perform those grants itself.
 
 ## UC MLflow trace permissions
 
@@ -164,9 +164,14 @@ The App selects `cfg.experiment_name` in code. Model Serving sets `MLFLOW_EXPERI
 
 ## Deployment and identity sequence
 
+CD promotes through `acc` then `prd`, using the same target for the GitHub
+environment and bundle deployment. Configure required reviewers on the GitHub
+`prd` environment to gate production deployment; the environment name alone
+does not enforce approval. See [CD setup](lecture5-service-principal-permissions.md#cicd-release-order).
+
 1. Bundle deployment creates/updates Genie and the App. Genie's `permissions` declaration grants `CAN_RUN` to `${var.agent_service_principal_id}`, the existing agent SPN.
-2. CD runs the Databricks `evaluate_grant_permissions` job: evaluation and App bootstrap secret grants.
-3. CD starts/deploys the App after that job succeeds.
+2. CD runs the Databricks `evaluate_deploy_app` job: evaluation and App bootstrap secret grants.
+3. After evaluation and grants succeed, the same Databricks job runs the App through `databricks bundle run`, invokes it using SPN OAuth, and stops it in `finally` to avoid course compute costs. A normal production deployment would leave it running.
 4. The App-managed SPN reads UC credentials, then the agent uses the existing SPN for Genie, models, Lakebase, and tracing.
 5. Notebook 5.2 independently deploys the `latest-model` alias to Model Serving, synchronizes workspace secrets, and demonstrates invocation.
 
