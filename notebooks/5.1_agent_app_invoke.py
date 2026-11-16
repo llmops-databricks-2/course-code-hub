@@ -9,10 +9,10 @@
 # MAGIC Choose a permission setup path after creating the App:
 # MAGIC
 # MAGIC - **Notebook:** deploy the bundle, run the optional secret-grant cell below,
-# MAGIC   then run the start and invocation cells.
+# MAGIC   then run the bundle-run and invocation cells.
 # MAGIC - **CD:** the workflow deploys the bundle, runs the
 # MAGIC   `evaluate_deploy_app` job, which evaluates, starts, invokes, and stops
-# MAGIC   the App. Skip the grant cell; the start cell below starts it again for manual use.
+# MAGIC   the App. Skip the grant cell; the bundle-run cell below deploys and runs it for manual use.
 # MAGIC
 # MAGIC For manual development, from the repository root (CD uses `acc` then `prd`):
 # MAGIC
@@ -24,18 +24,19 @@
 
 # COMMAND ----------
 
-import os
+import subprocess
 
+import requests
 from databricks.sdk import WorkspaceClient
-from databricks.sdk.service.apps import ComputeState
-from openai import OpenAI
 from loguru import logger
+from openai import OpenAI
 
 from arxiv_curator.app_permissions import grant_app_secret_access
 from arxiv_curator.config import ProjectConfig
 
-
-cfg = ProjectConfig.from_yaml("../project_config.yml", env=os.getenv("ARXIV_ENV", "dev"))
+dbutils.widgets.dropdown("env", "dev", ["dev", "acc", "prd"])
+env = dbutils.widgets.get("env")
+cfg = ProjectConfig.from_yaml("../project_config.yml", env=env)
 app_name = cfg.agent_app_name
 w = WorkspaceClient()
 
@@ -66,14 +67,24 @@ logger.info(f"Granted UC secret access to App SPN {app_spn_client_id}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Start the previously deployed App after applying the grants and wait for
-# MAGIC it to be ready before invoking it.
+# MAGIC Deploy and run the App with the bundle configuration after applying the grants.
+# MAGIC `bundle run` publishes the App code and waits for deployment. Starting compute
+# MAGIC alone does not deploy code. Run from the deployed bundle, which contains
+# MAGIC `databricks.yml` and uses the existing bundle deployment state.
+# MAGIC
+# MAGIC **Serverless Jobs limitation:** the bundled CLI refuses notebook subprocess
+# MAGIC execution. Run this command from local CLI/CD or the web terminal instead;
+# MAGIC then continue with the invocation cell interactively. This cell cannot run
+# MAGIC end-to-end in a serverless Job without changing the deployment mechanism.
 
 # COMMAND ----------
 
+subprocess.run(
+    ["databricks", "bundle", "run", "arxiv_agent_app", "--target", env],
+    cwd="..",
+    check=True,
+)
 app = w.apps.get(name=app_name)
-if app.compute_status.state == ComputeState.STOPPED:
-    app = w.apps.start_and_wait(name=app_name)
 logger.info(f"App state: {app.app_status.state}")
 
 # COMMAND ----------
@@ -87,57 +98,54 @@ logger.info(f"App state: {app.app_status.state}")
 # MAGIC Apps use the OpenAI Responses API with the `apps/<app-name>` model name.
 # MAGIC Use a WorkspaceClient authenticated with OAuth to invoke the App.
 # MAGIC
-# MAGIC ### Why this differs from notebook 1.1
+# MAGIC ### Call as your user
 # MAGIC
-# MAGIC Both PATs and OAuth access tokens are bearer tokens. Their issuance,
-# MAGIC lifetime, and supported destinations differ:
+# MAGIC Run this notebook as your user, who needs `CAN_USE` on the App.
+# MAGIC In a job, the caller is the job's **Run as** identity, not necessarily the
+# MAGIC person who clicks Run. Use your user as the Run as identity for this example.
 # MAGIC
-# MAGIC | | Notebook 1.1: PAT | App invocation: OAuth |
-# MAGIC |---|---|---|
-# MAGIC | SDK call | `w.tokens.create(lifetime_seconds=1200).token_value` | `app_client.config.oauth_token().access_token` |
-# MAGIC | What it does | Creates a new personal access token | Retrieves an access token from the client's OAuth provider |
-# MAGIC | Lifetime | Requested explicitly: 1,200 seconds (20 minutes) | Determined by Databricks; M2M tokens typically last one hour |
-# MAGIC | Renewal | Create a replacement PAT | SDK refreshes tokens when requested through the OAuth provider |
-# MAGIC | Model API used in 1.1 | Accepted | Accepted |
-# MAGIC | Databricks App URL | Not accepted | Accepted |
+# MAGIC Unlike notebook 1.1, Apps do not accept a PAT directly. Exchange the notebook
+# MAGIC runtime token retrieved through WorkspaceClient for an OAuth token scoped to this App, following the
+# MAGIC [Databricks notebook authentication guide](https://docs.databricks.com/aws/en/dev-tools/databricks-apps/connect-local#from-a-databricks-notebook).
+# MAGIC Verified on serverless v5: retrieving the internal runtime token through
+# MAGIC `w.config.authenticate()` and exchanging it succeeds. A PAT created with
+# MAGIC `w.tokens.create(lifetime_seconds=1200)` (as in notebook 1.1) was rejected
+# MAGIC by this App token exchange with HTTP 400: `invalid token for subject_token_type`.
+# MAGIC Use the existing runtime credential here, not a newly created PAT.
 # MAGIC
-# MAGIC In both cases OpenAI receives `api_key=token`; the destination determines
-# MAGIC which token types are accepted. The `oauth_token()` call does not accept
-# MAGIC a `lifetime_seconds` parameter. Once copied into the OpenAI client, the token
-# MAGIC is a fixed string: fetch a fresh token and update the client after expiry.
+# MAGIC The response supplies `expires_in` in seconds; rerun the cell to obtain a
+# MAGIC fresh token after expiry. Never print either token.
 # MAGIC
-# MAGIC **PATs do not work for App invocation: use an OAuth token.** This notebook
-# MAGIC obtains one with SPN OAuth M2M; the default notebook-context client cannot
-# MAGIC supply it through `oauth_token()`. OAuth is not exclusive to SPNs: user OAuth
-# MAGIC is also supported. See the
-# MAGIC [App authentication guide](https://docs.databricks.com/aws/en/dev-tools/databricks-apps/connect-local).
-# MAGIC
-# MAGIC **Production recommendation:** use different SPNs for the caller and the
-# MAGIC agent running inside the App. Grant the caller `CAN_USE` on the App, and
-# MAGIC grant data/model/trace permissions to the runtime SPN. For this course we
-# MAGIC reuse the existing SPN, which already has `CAN_MANAGE` (including `CAN_USE`).
-# MAGIC The notebook identity also needs `READ SECRET` and parent catalog/schema
-# MAGIC usage permissions to retrieve the credentials below.
+# MAGIC This changes the **caller** only. The agent still accesses resources using
+# MAGIC the existing runtime SPN. Per-user data access would additionally require
+# MAGIC user authorization scopes and request-scoped clients inside the App.
 
 # COMMAND ----------
 
-app_client = WorkspaceClient(
-    host=w.config.host,
-    client_id=dbutils.secrets.get(
-        catalog=cfg.catalog, schema=cfg.schema, key="databricks_client_id"
-    ),
-    client_secret=dbutils.secrets.get(
-        catalog=cfg.catalog, schema=cfg.schema, key="databricks_client_secret"
-    ),
-    auth_type="oauth-m2m",
+logger.info(f"Notebook caller: {w.current_user.me().user_name}")
+notebook_token = w.config.authenticate()["Authorization"].removeprefix("Bearer ")
+token_response = requests.post(
+    f"{w.config.host}/oidc/v1/token",
+    data={
+        "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+        "subject_token": notebook_token,
+        "subject_token_type": "urn:databricks:params:oauth:token-type:personal-access-token",
+        "requested_token_type": "urn:ietf:params:oauth:token-type:access_token",
+        "scope": "all-apis",
+        "audience": app.oauth2_app_client_id,
+    },
+    timeout=30,
 )
-oauth_token = app_client.config.oauth_token().access_token
+token_response.raise_for_status()
+token_data = token_response.json()
+oauth_token = token_data["access_token"]
+logger.info(f"App OAuth token valid for {token_data['expires_in']} seconds")
 
 client = OpenAI(
     api_key=oauth_token,
     base_url=app.url,
 )
-response = client.responses.create(
+raw_response = client.responses.with_raw_response.create(
     model=f"apps/{app_name}",
     input=[
         {
@@ -147,11 +155,10 @@ response = client.responses.create(
     ],
 )
 
+logger.info(f"App HTTP status: {raw_response.status_code}")
+response = raw_response.parse()
 logger.info(f"Response ID: {response.id}")
-if response.output:
-    logger.info(response.output_text)
-else:
-    logger.warning("The App returned no output items")
+logger.info(response.output_text)
 
 # COMMAND ----------
 

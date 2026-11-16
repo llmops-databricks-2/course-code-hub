@@ -23,5 +23,5 @@ jobs:
       - name: Run pre-commit checks
         run: uv run pre-commit run --all-files
 
-      - name: Build wheel
-        run: uv build
+      - name: Run tests
+        run: uv run pytest

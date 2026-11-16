@@ -16,7 +16,7 @@ resources:
             dependencies:
               - ../../dist/*.whl
       # Run the required notebook with bundle run --only <task_key>.
-      # agent_app_invoke starts the deployed App and stops it after invocation.
+      # agent_app_invoke uses bundle run to deploy/run the App, invokes it, then stops it.
       tasks:
         - task_key: mlflow_log_register
           environment_key: default

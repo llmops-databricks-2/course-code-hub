@@ -1,0 +1,7 @@
+{
+  "name": "lecture5-app-oauth-exchange-check",
+  "budget_policy_id": "aab31ed1-3d45-30f4-bd70-ec76d652513c",
+  "max_concurrent_runs": 1,
+  "environments": [{"environment_key": "default", "spec": {"environment_version": "5", "dependencies": ["databricks-sdk", "requests"]}}],
+  "tasks": [{"task_key": "app_oauth_exchange", "environment_key": "default", "notebook_task": {"notebook_path": "/Workspace/Users/maria@cauchy.io/testing_jobs/app_oauth_exchange"}}]
+}

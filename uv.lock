@@ -191,7 +191,7 @@ requires-dist = [
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.1.0,<5" },
     { name = "psycopg", specifier = "==3.3.2" },
     { name = "psycopg", extras = ["binary"], specifier = "==3.3.2" },
-    { name = "psycopg-pool", specifier = "==3.3.0" },
+    { name = "psycopg-pool", specifier = "==3.3.2" },
     { name = "pyarrow", specifier = "==21.0.0" },
     { name = "pydantic", specifier = "==2.10.6" },
     { name = "pytest", marker = "extra == 'ci'", specifier = ">=8.3.4,<9" },
@@ -1752,14 +1752,14 @@ wheels = [
 
 [[package]]
 name = "psycopg-pool"
-version = "3.3.0"
+version = "3.3.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/56/9a/9470d013d0d50af0da9c4251614aeb3c1823635cab3edc211e3839db0bcf/psycopg_pool-3.3.0.tar.gz", hash = "sha256:fa115eb2860bd88fce1717d75611f41490dec6135efb619611142b24da3f6db5", size = 31606, upload-time = "2025-12-01T11:34:33.11Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f9/7f/1e54512e817442017efa6f7b4c663bc769abd3ff2b62adb910190fc4731d/psycopg_pool-3.3.2.tar.gz", hash = "sha256:0c70903c7f50cd7173ef0f6364bb7c9271fa3810f5746e058449a77afe579f49", size = 31912, upload-time = "2026-09-18T13:22:59.127Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e7/c3/26b8a0908a9db249de3b4169692e1c7c19048a9bc41a4d3209cee7dbb758/psycopg_pool-3.3.0-py3-none-any.whl", hash = "sha256:2e44329155c410b5e8666372db44276a8b1ebd8c90f1c3026ebba40d4bc81063", size = 39995, upload-time = "2025-12-01T11:34:29.761Z" },
+    { url = "https://files.pythonhosted.org/packages/c4/39/7dd00f3570b8847b20da54c98c9388b166967625723bc36dd01e1ab1d64f/psycopg_pool-3.3.2-py3-none-any.whl", hash = "sha256:96971f245eee54f1632d8eaae0de5bb6e9c624c1effdd42d8d6843e534f56e07", size = 40224, upload-time = "2026-09-18T13:22:53.384Z" },
 ]
 
 [[package]]

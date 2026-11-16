@@ -26,6 +26,7 @@ def lakebase(monkeypatch):
         monkeypatch.delenv(name, raising=False)
     lakebase = SimpleNamespace()
     lakebase.workspace = MagicMock()
+    lakebase.workspace.config.client_id = None
     lakebase.workspace.current_user.me.return_value.user_name = "maria@example.com"
     lakebase.api = lakebase.workspace.postgres
     lakebase.api.list_branches.return_value = [
@@ -59,13 +60,14 @@ def test_memory_defaults_to_individual_user(lakebase):
 
 
 def test_memory_preserves_service_principal_role(lakebase):
+    lakebase.workspace.config.client_id = "sp-id"
     with (
         patch.dict(
             "os.environ",
             {
-                "LAKEBASE_SP_CLIENT_ID": "sp-id",
-                "LAKEBASE_SP_CLIENT_SECRET": "test-secret",
-                "LAKEBASE_SP_HOST": "https://workspace.example.com",
+                "DATABRICKS_CLIENT_ID": "sp-id",
+                "DATABRICKS_CLIENT_SECRET": "test-secret",
+                "DATABRICKS_HOST": "https://workspace.example.com",
             },
         ),
         patch("arxiv_curator.memory.WorkspaceClient", return_value=lakebase.workspace),
