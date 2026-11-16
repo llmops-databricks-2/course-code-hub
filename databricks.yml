@@ -44,7 +44,6 @@ include:
   - resources/process_data.yml
   - resources/initialize_data.yml
   # - resources/testing_jobs/*.yml
-  - resources/testing_jobs/lecture5_validation.yml
   - resources/genie_space.yml
   - resources/agent_app.yml
   - resources/evaluate_deploy_app.yml
