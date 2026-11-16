@@ -83,6 +83,12 @@ if not genie_space_id:
 # handled by CLI bundle run (which also resolves bundle configuration).
 if app.compute_status.state == ComputeState.STOPPED:
     w.apps.start_and_wait(name=app_name)
+# Starting compute may resume a deployment; wait before submitting new code.
+app = w.apps.get(name=app_name)
+if app.pending_deployment:
+    w.apps.wait_get_deployment_app_succeeded(
+        app_name=app_name, deployment_id=app.pending_deployment.deployment_id
+    )
 w.apps.deploy_and_wait(
     app_name=app_name,
     app_deployment=AppDeployment(

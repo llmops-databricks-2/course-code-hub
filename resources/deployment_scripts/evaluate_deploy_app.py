@@ -51,6 +51,12 @@ try:
     # Start + deploy follows the CLI bundle run lifecycle, with explicit config.
     if app.compute_status.state == ComputeState.STOPPED:
         w.apps.start_and_wait(name=cfg.agent_app_name)
+    # Starting compute may resume a deployment; wait before submitting new code.
+    app = w.apps.get(name=cfg.agent_app_name)
+    if app.pending_deployment:
+        w.apps.wait_get_deployment_app_succeeded(
+            app_name=cfg.agent_app_name, deployment_id=app.pending_deployment.deployment_id
+        )
     w.apps.deploy_and_wait(
         app_name=cfg.agent_app_name,
         app_deployment=AppDeployment(

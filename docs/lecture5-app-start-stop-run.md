@@ -50,7 +50,9 @@ The CLI supplied on tested serverless compute rejects notebook subprocess use.
 Notebook 5.1 and the CD deployment job therefore use the Python SDK:
 
 1. Start stopped compute with `w.apps.start_and_wait(...)`.
-2. Submit the uploaded source with `w.apps.deploy_and_wait(...)`.
+2. Wait for any pending deployment resumed during startup with
+   `w.apps.wait_get_deployment_app_succeeded(...)`, then submit uploaded source
+   with `w.apps.deploy_and_wait(...)`.
 3. Invoke the App with OAuth and display the response.
 4. Stop the App to avoid ongoing course compute costs.
 
