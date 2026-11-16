@@ -38,7 +38,7 @@ class ArxivAgent(ResponsesAgent):
         schema: str,
         genie_space_id: str | None = None,
         lakebase_project_id: str | None = None,
-        embedding_endpoint: str = "databricks-gte-large-en",
+        embedding_endpoint: str = "course_ops.gateway.embed",
         lakebase_user: str | None = None,
     ):
         """Initializes the Arxiv Agent."""

@@ -51,7 +51,6 @@ def evaluate_agent(cfg: ProjectConfig, eval_inputs_path: str) -> mlflow.models.E
     """
     agent = ArxivAgent(
         llm_endpoint=cfg.llm_endpoint,
-        embedding_endpoint=cfg.embedding_endpoint,
         system_prompt=cfg.system_prompt,
         catalog=cfg.catalog,
         schema=cfg.schema,
