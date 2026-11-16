@@ -69,6 +69,8 @@ targets:
       host: https://dbc-e81ca4d2-f6bd.cloud.databricks.com
       root_path: /Shared/.bundle/${bundle.target}/${bundle.name}
     variables:
+      catalog: llmops_acc
+      schema: arxiv
       schedule_pause_status: PAUSED
 
   prd:
@@ -77,4 +79,6 @@ targets:
       host: https://dbc-e81ca4d2-f6bd.cloud.databricks.com
       root_path: /Shared/.bundle/${bundle.target}/${bundle.name}
     variables:
+      catalog: llmops_prd
+      schema: arxiv
       schedule_pause_status: UNPAUSED
