@@ -9,10 +9,10 @@
 # MAGIC Choose a permission setup path after creating the App:
 # MAGIC
 # MAGIC - **Notebook:** deploy the bundle, run the optional secret-grant cell below,
-# MAGIC   then run the bundle-run and invocation cells.
+# MAGIC   then run the SDK deployment and invocation cells.
 # MAGIC - **CD:** the workflow deploys the bundle, runs the
 # MAGIC   `evaluate_deploy_app` job, which evaluates, starts, invokes, and stops
-# MAGIC   the App. Skip the grant cell; the bundle-run cell below deploys and runs it for manual use.
+# MAGIC   the App. Skip the grant cell; the SDK deployment cell below deploys and runs it for manual use.
 # MAGIC
 # MAGIC For manual development, from the repository root (CD uses `acc` then `prd`):
 # MAGIC
@@ -24,10 +24,9 @@
 
 # COMMAND ----------
 
-import subprocess
-
 import requests
 from databricks.sdk import WorkspaceClient
+from databricks.sdk.service.apps import AppDeployment, ComputeState, EnvVar
 from loguru import logger
 from openai import OpenAI
 
@@ -36,6 +35,8 @@ from arxiv_curator.config import ProjectConfig
 
 dbutils.widgets.dropdown("env", "dev", ["dev", "acc", "prd"])
 env = dbutils.widgets.get("env")
+dbutils.widgets.text("genie_space_id", "")
+genie_space_id = dbutils.widgets.get("genie_space_id")
 cfg = ProjectConfig.from_yaml("../project_config.yml", env=env)
 app_name = cfg.agent_app_name
 w = WorkspaceClient()
@@ -67,22 +68,31 @@ logger.info(f"Granted UC secret access to App SPN {app_spn_client_id}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC Deploy and run the App with the bundle configuration after applying the grants.
-# MAGIC `bundle run` publishes the App code and waits for deployment. Starting compute
-# MAGIC alone does not deploy code. Run from the deployed bundle, which contains
-# MAGIC `databricks.yml` and uses the existing bundle deployment state.
-# MAGIC
-# MAGIC **Serverless Jobs limitation:** the bundled CLI refuses notebook subprocess
-# MAGIC execution. Run this command from local CLI/CD or the web terminal instead;
-# MAGIC then continue with the invocation cell interactively. This cell cannot run
-# MAGIC end-to-end in a serverless Job without changing the deployment mechanism.
+# MAGIC Deploy the uploaded source with the Python SDK after applying the grants.
+# MAGIC The notebook CLI cannot execute `bundle run`. Starting compute alone resumes
+# MAGIC the previous deployment; `deploy_and_wait` activates the source below.
+# MAGIC Set the `genie_space_id` widget to the deployed Genie space ID (the validation
+# MAGIC job supplies it). The command and environment match `resources/agent_app.yml`.
 
 # COMMAND ----------
 
-subprocess.run(
-    ["databricks", "bundle", "run", "arxiv_agent_app", "--target", env],
-    cwd="..",
-    check=True,
+if not genie_space_id:
+    raise ValueError("Set the genie_space_id widget to the deployed Genie space ID")
+# deploy_and_wait requires running compute: a stopped App returns
+# "Please start the app first." Start + deploy is the lifecycle sequence
+# handled by CLI bundle run (which also resolves bundle configuration).
+if app.compute_status.state == ComputeState.STOPPED:
+    w.apps.start_and_wait(name=app_name)
+w.apps.deploy_and_wait(
+    app_name=app_name,
+    app_deployment=AppDeployment(
+        source_code_path=app.default_source_code_path,
+        command=["uv", "run", "start-server"],
+        env_vars=[
+            EnvVar(name="ARXIV_ENV", value=env),
+            EnvVar(name="GENIE_SPACE_ID", value=genie_space_id),
+        ],
+    ),
 )
 app = w.apps.get(name=app_name)
 logger.info(f"App state: {app.app_status.state}")

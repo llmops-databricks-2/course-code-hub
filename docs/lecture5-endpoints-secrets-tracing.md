@@ -171,7 +171,7 @@ does not enforce approval. See [CD setup](lecture5-service-principal-permissions
 
 1. Bundle deployment creates/updates Genie and the App. Genie's `permissions` declaration grants `CAN_RUN` to `${var.agent_service_principal_id}`, the existing agent SPN.
 2. CD runs the Databricks `evaluate_deploy_app` job: evaluation and App bootstrap secret grants.
-3. After evaluation and grants succeed, the same Databricks job runs the App through `databricks bundle run`, invokes it using SPN OAuth, and stops it in `finally` to avoid course compute costs. A normal production deployment would leave it running.
+3. After evaluation and grants succeed, the same Databricks job starts stopped App compute and deploys the uploaded source through the Apps SDK, invokes it using SPN OAuth, and stops it in `finally` to avoid course compute costs. A normal production deployment would leave it running.
 4. The App-managed SPN reads UC credentials, then the agent uses the existing SPN for Genie, models, Lakebase, and tracing.
 5. Notebook 5.2 independently deploys the `latest-model` alias to Model Serving, synchronizes workspace secrets, and demonstrates invocation.
 

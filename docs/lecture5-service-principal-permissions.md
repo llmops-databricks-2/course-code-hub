@@ -133,9 +133,9 @@ For each target, GitHub deploys the bundle and runs the Databricks job
 
 1. The `evaluate_deploy_app.py` notebook evaluates the agent, then grants the App
    principal access to its UC bootstrap secrets.
-2. The same notebook calls `databricks bundle run arxiv_agent_app --target <env>`
-   through `subprocess`, reusing the bundle App configuration. The job compute
-   needs the CLI, authentication, and access to the bundle files and state.
+2. The same notebook starts stopped compute with `w.apps.start_and_wait`, then
+   deploys uploaded source with `w.apps.deploy_and_wait`. It passes the command
+   and environment variables explicitly to match the bundle App configuration.
 3. Waits for App startup, then calls its Responses API with SPN OAuth.
    The bundle grants the caller `CAN_USE` on the App.
 4. Stops the App in `finally`, including when startup or invocation fails.

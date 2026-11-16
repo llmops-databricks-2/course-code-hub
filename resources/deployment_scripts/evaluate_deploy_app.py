@@ -2,18 +2,16 @@
 """Evaluate the agent, grant App secret access, start, invoke, and stop the App."""
 
 import os
-import subprocess
 
 import mlflow
-
 from databricks.sdk import WorkspaceClient
-from databricks.sdk.service.apps import ComputeState
+from databricks.sdk.service.apps import AppDeployment, ComputeState, EnvVar
 from loguru import logger
 from openai import OpenAI
 
+from arxiv_curator.app_permissions import grant_app_secret_access
 from arxiv_curator.config import ProjectConfig
 from arxiv_curator.evaluation import evaluate_agent
-from arxiv_curator.app_permissions import grant_app_secret_access
 
 env = dbutils.widgets.get("env")
 cfg = ProjectConfig.from_yaml("../../project_config.yml", env=env)
@@ -49,10 +47,20 @@ caller = WorkspaceClient(
 )
 
 try:
-    subprocess.run(
-        ["databricks", "bundle", "run", "arxiv_agent_app", "--target", env],
-        cwd="../..",
-        check=True,
+    # deploy_and_wait requires running compute; start stopped compute first.
+    # Start + deploy follows the CLI bundle run lifecycle, with explicit config.
+    if app.compute_status.state == ComputeState.STOPPED:
+        w.apps.start_and_wait(name=cfg.agent_app_name)
+    w.apps.deploy_and_wait(
+        app_name=cfg.agent_app_name,
+        app_deployment=AppDeployment(
+            source_code_path=app.default_source_code_path,
+            command=["uv", "run", "start-server"],
+            env_vars=[
+                EnvVar(name="ARXIV_ENV", value=env),
+                EnvVar(name="GENIE_SPACE_ID", value=cfg.genie_space_id),
+            ],
+        ),
     )
     app = w.apps.get(name=cfg.agent_app_name)
     client = OpenAI(api_key=caller.config.oauth_token().access_token, base_url=app.url)
