@@ -19,7 +19,7 @@ dev:
 
 # Acceptance/Staging environment
 acc:
-  catalog: llmops_dev
+  catalog: llmops_acc
   schema: arxiv
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
@@ -32,7 +32,7 @@ acc:
 
 # Production environment
 prd:
-  catalog: llmops_dev
+  catalog: llmops_prd
   schema: arxiv
   volume: arxiv_files
   llm_endpoint: course_ops.gateway.chat
