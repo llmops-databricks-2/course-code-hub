@@ -24,6 +24,8 @@
 
 # COMMAND ----------
 
+import os
+
 import requests
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.apps import AppDeployment, ComputeState, EnvVar
@@ -92,7 +94,8 @@ if app.pending_deployment:
 w.apps.deploy_and_wait(
     app_name=app_name,
     app_deployment=AppDeployment(
-        source_code_path=app.default_source_code_path,
+        # This notebook lives in notebooks/; deploy the repository root.
+        source_code_path=os.path.abspath(".."),
         command=["uv", "run", "start-server"],
         env_vars=[
             EnvVar(name="ARXIV_ENV", value=env),

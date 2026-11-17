@@ -59,8 +59,12 @@ Notebook 5.1 and the CD deployment job therefore use the Python SDK:
 The SDK does not resolve bundle configuration. Both notebooks explicitly pass the
 source directory, `uv run start-server` command, and `ARXIV_ENV` / `GENIE_SPACE_ID`
 environment variables matching `resources/agent_app.yml`. Keep these in sync.
-The source directory comes from `app.default_source_code_path`, set by the bundle. The validation job supplies the Genie ID; for interactive use,
-set notebook 5.1's `genie_space_id` widget.
+The deployment job receives `${workspace.file_path}` as its `source_code_path`
+notebook parameter. Notebook 5.1 uses its parent directory (the repository root).
+Do not rely on `app.default_source_code_path`: it can be empty for a new App,
+and the first deployment requires an explicit source path.
+The validation job supplies the Genie ID; for interactive use, set notebook
+5.1's `genie_space_id` widget.
 
 CD still uses `databricks bundle run evaluate_deploy_app` from GitHub Actions to
 launch the Databricks job after deploying the bundle. The job evaluates and grants
