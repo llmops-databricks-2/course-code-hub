@@ -9,7 +9,7 @@ dependencies = [
     "numpy==2.1.3",
     "pandas==2.2.3",
     "pyarrow==21.0.0",
-    "databricks-sdk==0.118.0",
+    "databricks-sdk==0.166.0",
     "pydantic==2.10.6",
     "loguru==0.7.3",
     "python-dotenv==1.2.1",
@@ -24,8 +24,7 @@ dependencies = [
     "fastapi==0.128.0",
     "uvicorn==0.40.0",
     "psycopg==3.3.2",
-    "psycopg-pool==3.3.0",
-    "psycopg[binary]==3.3.2"
+    "psycopg-pool==3.3.2"
 ]
 
 [project.optional-dependencies]
@@ -37,6 +36,9 @@ dev = [
 ci = ["pre-commit>=4.1.0, <5",
       "pytest>=8.3.4, <9"]
 
+[project.scripts]
+start-server = "agent_server.start_server:main"
+
 [build-system]
 requires = [
   "setuptools>=72.0"]
@@ -44,7 +46,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where =["src"]
-include = ["arxiv_curator*"]
+include = ["arxiv_curator*", "agent_server*"]
 
 [tool.setuptools.dynamic]
 version = { file = "version.txt" }
@@ -74,6 +76,10 @@ ignore = [
 
 [tool.ruff.format]
 indent-style = "space"
+
+[tool.ruff.lint.per-file-ignores]
+"notebooks/*.py" = ["F821"]
+"resources/deployment_scripts/*.py" = ["F821"]
 
 [tool.databricks.environment]
 environment_version = "5"

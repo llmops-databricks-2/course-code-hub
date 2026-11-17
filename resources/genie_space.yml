@@ -2,10 +2,14 @@ resources:
   genie_spaces:
     arxiv-curator-space:
       title: arxiv-curator-space
-      # Referencing the run outcome establishes a deployment dependency.
+      permissions:
+        - service_principal_name: ${var.agent_service_principal_id}
+          level: CAN_RUN
       description: >-
         Ask questions about the arXiv papers ingested for the course.
-        Table initialization: ${resources.job_runs.initialize-tables.state.result_state}.
+      lifecycle:
+        depends_on:
+          - resource: job_runs.initialize-tables
       warehouse_id: "${var.warehouse_id}"
       # Genie validates this strictly: every id is 32 lowercase hex characters, id-keyed
       # lists are sorted by id, and column_configs are sorted by column_name.

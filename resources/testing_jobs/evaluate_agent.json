@@ -1,0 +1,35 @@
+{
+  "name": "lecture5-agent-evaluation",
+  "budget_policy_id": "aab31ed1-3d45-30f4-bd70-ec76d652513c",
+  "max_concurrent_runs": 1,
+  "parameters": [
+    {
+      "name": "env",
+      "default": "dev"
+    },
+    {
+      "name": "genie_space_id",
+      "default": "01f1d83f2d50171ba997624e02af7270"
+    }
+  ],
+  "environments": [
+    {
+      "environment_key": "default",
+      "spec": {
+        "environment_version": "5",
+        "dependencies": [
+          "/Workspace/Users/maria@cauchy.io/testing_jobs/agent_evaluation/packages/iterations15/arxiv_curator-0.0.0-py3-none-any.whl"
+        ]
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "task_key": "evaluate_agent",
+      "environment_key": "default",
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/maria@cauchy.io/testing_jobs/agent_evaluation/resources/testing_jobs/evaluate_agent"
+      }
+    }
+  ]
+}

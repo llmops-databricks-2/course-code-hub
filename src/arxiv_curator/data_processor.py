@@ -310,9 +310,7 @@ class DataProcessor:
 
         # Write to table (mergeSchema adds the embedding column to existing tables)
         arxiv_chunks_table = f"{self.catalog}.{self.schema}.arxiv_chunks_table"
-        chunks_df.write.mode("append").option("mergeSchema", "true").saveAsTable(
-            arxiv_chunks_table
-        )
+        chunks_df.write.mode("append").option("mergeSchema", "true").saveAsTable(arxiv_chunks_table)
         logger.info(f"Saved chunks to {arxiv_chunks_table}")
 
         # Enable Change Data Feed

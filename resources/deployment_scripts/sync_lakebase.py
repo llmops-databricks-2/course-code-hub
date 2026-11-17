@@ -99,14 +99,20 @@ while time.monotonic() < deadline:
             break
         if update and update.state in {UpdateInfoState.FAILED, UpdateInfoState.CANCELED}:
             raise RuntimeError(f"Lakebase sync {update_id} ended in state {update.state}.")
-        logger.info(f"Waiting for Lakebase sync {update_id}: {update.state if update else 'pending'}")
+        logger.info(
+            f"Waiting for Lakebase sync {update_id}: {update.state if update else 'pending'}"
+        )
     else:
         status = workspace.postgres.get_synced_table(name=synced_table_name).status
         if status and status.detailed_state in online_states:
             break
         if status and status.detailed_state in failed_states:
-            raise RuntimeError(f"Initial Lakebase sync failed: {status.detailed_state} | {status.message}")
-        logger.info(f"Waiting for initial Lakebase sync: {status.detailed_state if status else 'pending'}")
+            raise RuntimeError(
+                f"Initial Lakebase sync failed: {status.detailed_state} | {status.message}"
+            )
+        logger.info(
+            f"Waiting for initial Lakebase sync: {status.detailed_state if status else 'pending'}"
+        )
     time.sleep(30)
 else:
     raise TimeoutError(f"Lakebase sync for {synced_table_name} did not complete within 30 minutes.")

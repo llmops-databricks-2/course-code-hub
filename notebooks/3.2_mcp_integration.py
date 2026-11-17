@@ -52,15 +52,14 @@ pgvector = LakebasePgVectorManager(config=cfg, workspace=w)
 
 # COMMAND ----------
 
+
 def search_papers(query: str, num_results: int = 5, year_filter: str | None = None) -> str:
     """Search Lakebase pgvector using hybrid vector and keyword ranking."""
     year = None
     year_from = year_to = None
     if year_filter:
         if "-" in year_filter:
-            year_from, year_to = [
-                int(value.strip()) for value in year_filter.split("-", 1)
-            ]
+            year_from, year_to = [int(value.strip()) for value in year_filter.split("-", 1)]
             if year_from > year_to:
                 year_from, year_to = year_to, year_from
         else:
@@ -224,6 +223,7 @@ class SimpleAgent:
                 )
         return "Max iterations reached."
 
+
 # COMMAND ----------
 
 agent = SimpleAgent(
@@ -246,15 +246,10 @@ logger.info(agent.chat("Find recent papers about transformer attention mechanism
 # Call the add_numbers function created in Notebook 3.1c through managed MCP.
 # The agent discovers the governed UC function as a tool instead of importing
 # or reimplementing the function locally.
-uc_function_url = (
-    f"{w.config.host}/api/2.0/mcp/functions/"
-    f"{cfg.catalog}/{cfg.schema}/add_numbers"
-)
+uc_function_url = f"{w.config.host}/api/2.0/mcp/functions/{cfg.catalog}/{cfg.schema}/add_numbers"
 uc_function_tools = asyncio.run(create_mcp_tools(w, [uc_function_url]))
 
 logger.info(f"Discovered UC MCP tools: {[tool.name for tool in uc_function_tools]}")
-uc_add_numbers = next(
-    tool for tool in uc_function_tools if tool.name.endswith("add_numbers")
-)
+uc_add_numbers = next(tool for tool in uc_function_tools if tool.name.endswith("add_numbers"))
 uc_result = uc_add_numbers.exec_fn(a=10, b=3)
 logger.info(f"MCP call result: {uc_result}")

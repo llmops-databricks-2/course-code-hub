@@ -10,7 +10,6 @@ import backoff
 import mlflow
 import nest_asyncio
 import openai
-from openai import OpenAI
 from databricks.sdk import WorkspaceClient
 from loguru import logger
 from mlflow import MlflowClient
@@ -20,9 +19,10 @@ from mlflow.types.responses import (
     ResponsesAgentRequest,
     ResponsesAgentResponse,
     ResponsesAgentStreamEvent,
-    to_chat_completions_input,
 )
+from openai import OpenAI
 
+from arxiv_curator.auth import get_gateway_token
 from arxiv_curator.config import ProjectConfig
 from arxiv_curator.mcp import ToolInfo, create_mcp_tools
 from arxiv_curator.memory import LakebaseMemory
@@ -38,7 +38,7 @@ class ArxivAgent(ResponsesAgent):
         schema: str,
         genie_space_id: str | None = None,
         lakebase_project_id: str | None = None,
-        embedding_endpoint: str = "course_ops.gateway.embed",
+        embedding_endpoint: str = "databricks-gte-large-en",
         lakebase_user: str | None = None,
     ):
         """Initializes the Arxiv Agent."""
@@ -47,14 +47,10 @@ class ArxivAgent(ResponsesAgent):
         self.system_prompt = system_prompt
         self.llm_endpoint = llm_endpoint
         self.workspace_client = WorkspaceClient()
+        gateway_token = get_gateway_token(self.workspace_client)
         self.model_serving_client = OpenAI(
-            api_key=self.workspace_client.tokens.create(
-                lifetime_seconds=1200
-            ).token_value,
-            base_url=(
-                f"{self.workspace_client.config.host}/"
-                "ai-gateway/mlflow/v1"
-            ),
+            api_key=gateway_token,
+            base_url=(f"{self.workspace_client.config.host}/ai-gateway/mlflow/v1"),
         )
 
         # Initialize Lakebase memory if configured
@@ -88,8 +84,7 @@ class ArxivAgent(ResponsesAgent):
                 if year_filter:
                     if "-" in year_filter:
                         year_from, year_to = [
-                            int(value.strip())
-                            for value in year_filter.split("-", 1)
+                            int(value.strip()) for value in year_filter.split("-", 1)
                         ]
                         if year_from > year_to:
                             year_from, year_to = year_to, year_from
@@ -248,7 +243,7 @@ class ArxivAgent(ResponsesAgent):
     def _run_tool_loop(
         self,
         messages: list[dict[str, Any]],
-        max_iter: int = 10,
+        max_iter: int = 15,
     ) -> list[ResponsesAgentStreamEvent]:
         """Run the LLM ↔ tool loop until the model stops or max_iter."""
         events: list[ResponsesAgentStreamEvent] = []
@@ -375,7 +370,6 @@ def log_register_agent(
         "llm_endpoint": cfg.llm_endpoint,
         "embedding_endpoint": cfg.embedding_endpoint,
         "lakebase_project_id": cfg.lakebase_project_id,
-        "lakebase_user": cfg.lakebase_user,
     }
 
     test_request = {

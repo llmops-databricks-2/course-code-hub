@@ -4,17 +4,19 @@
 bundle:
   engine: direct
   name: course-code-hub
-  # 1.20.0 is the first CLI that knows a model provider service's secret reference
-  # (resources/gateway_demo.yml); an older one skips the gateway resources with a warning.
-  databricks_cli_version: ">= 1.20.0"
+  # 1.23.0 adds lifecycle.depends_on for explicit resource deployment ordering.
+  databricks_cli_version: ">= 1.23.0"
 
 artifacts:
   default:
     type: whl
-    build: uv build
+    build: uv build --native-tls
     path: .
 
 variables:
+  agent_service_principal_id:
+    description: Existing agent runtime service principal granted access to Genie
+    default: 180dc237-d53d-4e39-bf7f-86ad2533ed88
   git_sha:
     description: git_sha
     default: abcd
@@ -25,7 +27,7 @@ variables:
     description: schedule pause status
     default: PAUSED
   usage_policy_id:
-    description: usage policy id for serverless jobs (usage_policy_id in project_config.yml)
+    description: usage policy id for serverless jobs and Apps (usage_policy_id in project_config.yml)
     default: aab31ed1-3d45-30f4-bd70-ec76d652513c
   # Keep these in sync with the per-environment values in project_config.yml.
   warehouse_id:
@@ -41,8 +43,10 @@ variables:
 include:
   - resources/process_data.yml
   - resources/initialize_data.yml
-  - resources/testing_jobs/*.yml
+  # - resources/testing_jobs/*.yml
   - resources/genie_space.yml
+  - resources/agent_app.yml
+  - resources/evaluate_deploy_app.yml
 
 sync:
   include:
@@ -64,6 +68,8 @@ targets:
       host: https://dbc-e81ca4d2-f6bd.cloud.databricks.com
       root_path: /Shared/.bundle/${bundle.target}/${bundle.name}
     variables:
+      catalog: llmops_acc
+      schema: arxiv
       schedule_pause_status: PAUSED
 
   prd:
@@ -72,4 +78,6 @@ targets:
       host: https://dbc-e81ca4d2-f6bd.cloud.databricks.com
       root_path: /Shared/.bundle/${bundle.target}/${bundle.name}
     variables:
+      catalog: llmops_prd
+      schema: arxiv
       schedule_pause_status: UNPAUSED

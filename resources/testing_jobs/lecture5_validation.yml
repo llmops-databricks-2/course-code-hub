@@ -1,0 +1,36 @@
+resources:
+  jobs:
+    lecture5-validation:
+      name: lecture5-validation-${bundle.target}
+      budget_policy_id: "${var.usage_policy_id}"
+      max_concurrent_runs: 1
+      parameters:
+        - name: env
+          default: "${bundle.target}"
+        - name: genie_space_id
+          default: "${resources.genie_spaces.arxiv-curator-space.id}"
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "5"
+            dependencies:
+              - ../../dist/*.whl
+      # Run the required notebook with bundle run --only <task_key>.
+      # agent_app_invoke uses the SDK to deploy/run the App, invokes it, then stops it.
+      tasks:
+        - task_key: mlflow_log_register
+          environment_key: default
+          notebook_task:
+            notebook_path: ../../notebooks/4.4.mlflow_log_register.py
+        - task_key: agent_app_invoke
+          depends_on:
+            - task_key: mlflow_log_register
+          environment_key: default
+          notebook_task:
+            notebook_path: ../../notebooks/5.1_agent_app_invoke.py
+        - task_key: model_serving_deployment
+          depends_on:
+            - task_key: mlflow_log_register
+          environment_key: default
+          notebook_task:
+            notebook_path: ../../notebooks/5.2_model_serving_deployment.py

@@ -25,21 +25,10 @@ class LakebaseMemory:
         self._pool: ConnectionPool | None = None
 
     def _get_connection_string(self) -> str:
-        """Build connection string for Lakebase.
-
-        Supports two authentication modes:
-        - SPN (production): Needs LAKEBASE_SP_CLIENT_ID, LAKEBASE_SP_CLIENT_SECRET, LAKEBASE_SP_HOST
-        - User (local testing): Uses default WorkspaceClient auth
-        """
-        # Use dedicated Lakebase SPN env vars to avoid overriding
-        # the default WorkspaceClient auth used by MCP tools
-        client_id = os.environ.get("LAKEBASE_SP_CLIENT_ID") or os.environ.get(
-            "DATABRICKS_CLIENT_ID"
-        )
-        client_secret = os.environ.get("LAKEBASE_SP_CLIENT_SECRET") or os.environ.get(
-            "DATABRICKS_CLIENT_SECRET"
-        )
-        host = os.environ.get("LAKEBASE_SP_HOST") or os.environ.get("DATABRICKS_HOST")
+        """Build a Lakebase connection string using Databricks credentials."""
+        client_id = os.environ.get("DATABRICKS_CLIENT_ID")
+        client_secret = os.environ.get("DATABRICKS_CLIENT_SECRET")
+        host = os.environ.get("DATABRICKS_HOST")
 
         if client_id and client_secret and host:
             w = WorkspaceClient(
@@ -53,29 +42,21 @@ class LakebaseMemory:
         pg_api = PostgresAPI(w.api_client)
 
         # Determine username based on auth type
-        if client_id:
-            username = client_id
+        if w.config.client_id:
+            username = w.config.client_id
         else:
             username = self.database_user or w.current_user.me().user_name
         username = urllib.parse.quote(username, safe="")
-
-        # Apps expose the selected Lakebase endpoint and host as resources.
-        endpoint_name = os.environ.get("LAKEBASE_ENDPOINT")
-        if endpoint_name:
-            host = os.environ.get("PGHOST")
-            database = os.environ.get("PGDATABASE", "databricks_postgres")
-        else:
-            project_parent = f"projects/{self.project_id}"
-            default_branch = next(iter(pg_api.list_branches(parent=project_parent)))
-            endpoint = next(iter(pg_api.list_endpoints(parent=default_branch.name)))
-            endpoint_name = endpoint.name
-            host = endpoint.status.hosts.host
-            database = "databricks_postgres"
+        project_parent = f"projects/{self.project_id}"
+        default_branch = next(iter(pg_api.list_branches(parent=project_parent)))
+        endpoint = next(iter(pg_api.list_endpoints(parent=default_branch.name)))
+        endpoint_name = endpoint.name
+        host = endpoint.status.hosts.host
+        database = "databricks_postgres"
         pg_credential = pg_api.generate_database_credential(endpoint=endpoint_name)
 
         return (
-            f"postgresql://{username}:{pg_credential.token}@{host}:5432/"
-            f"{database}?sslmode=require"
+            f"postgresql://{username}:{pg_credential.token}@{host}:5432/{database}?sslmode=require"
         )
 
     def ensure_schema(self) -> None:
@@ -137,8 +118,7 @@ class LakebaseMemory:
             with self._get_pool().connection() as conn:
                 for msg in messages:
                     conn.execute(
-                        "INSERT INTO session_messages (session_id, message_data) "
-                        "VALUES (%s, %s)",
+                        "INSERT INTO session_messages (session_id, message_data) VALUES (%s, %s)",
                         (session_id, json.dumps(msg)),
                     )
         except psycopg.OperationalError:
