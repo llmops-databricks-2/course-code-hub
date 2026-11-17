@@ -27,7 +27,7 @@ variables:
     description: schedule pause status
     default: PAUSED
   usage_policy_id:
-    description: usage policy id for serverless jobs (usage_policy_id in project_config.yml)
+    description: usage policy id for serverless jobs and Apps (usage_policy_id in project_config.yml)
     default: aab31ed1-3d45-30f4-bd70-ec76d652513c
   # Keep these in sync with the per-environment values in project_config.yml.
   warehouse_id:

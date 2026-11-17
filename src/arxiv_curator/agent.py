@@ -243,7 +243,7 @@ class ArxivAgent(ResponsesAgent):
     def _run_tool_loop(
         self,
         messages: list[dict[str, Any]],
-        max_iter: int = 10,
+        max_iter: int = 15,
     ) -> list[ResponsesAgentStreamEvent]:
         """Run the LLM ↔ tool loop until the model stops or max_iter."""
         events: list[ResponsesAgentStreamEvent] = []
