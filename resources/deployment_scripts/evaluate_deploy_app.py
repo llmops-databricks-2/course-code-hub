@@ -60,7 +60,8 @@ try:
     w.apps.deploy_and_wait(
         app_name=cfg.agent_app_name,
         app_deployment=AppDeployment(
-            source_code_path=app.default_source_code_path,
+            # A new App has no default source path; use the bundle's uploaded files.
+            source_code_path=dbutils.widgets.get("source_code_path"),
             command=["uv", "run", "start-server"],
             env_vars=[
                 EnvVar(name="ARXIV_ENV", value=env),
