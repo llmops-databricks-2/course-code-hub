@@ -33,7 +33,11 @@ def test_release_orders_deployment_and_stops_app(failure, capsys):
         warehouse_id="warehouse",
     )
     dbutils = MagicMock()
-    dbutils.widgets.get.side_effect = {"env": "acc", "genie_space_id": "genie-id"}.__getitem__
+    dbutils.widgets.get.side_effect = {
+        "env": "acc",
+        "genie_space_id": "genie-id",
+        "source_code_path": "/Workspace/test/files",
+    }.__getitem__
     with (
         patch("databricks.sdk.WorkspaceClient", side_effect=[workspace, caller]),
         patch("openai.OpenAI", return_value=client),
