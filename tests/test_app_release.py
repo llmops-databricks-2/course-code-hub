@@ -14,12 +14,12 @@ ROOT = Path(__file__).resolve().parents[1]
     "failure", [None, "evaluation", "grants", "invocation", "status", "deployment"]
 )
 def test_release_orders_deployment_and_stops_app(failure, capsys):
-    workspace, caller, client = MagicMock(), MagicMock(), MagicMock()
+    workspace, client = MagicMock(), MagicMock()
     workspace.apps.get.return_value.compute_status.state = (
         ComputeState.STOPPED if failure == "deployment" else ComputeState.ACTIVE
     )
     workspace.apps.get.return_value.url = "https://example.databricksapps.com"
-    caller.config.oauth_token.return_value.access_token = "test-oauth-token"
+    workspace.config.authenticate.return_value = {"Authorization": "Bearer runtime-token"}
     raw_response = client.responses.with_raw_response.create.return_value
     raw_response.status_code = 202 if failure == "status" else 200
     raw_response.parse.return_value.output_text = "Papers about reasoning."
@@ -39,13 +39,18 @@ def test_release_orders_deployment_and_stops_app(failure, capsys):
         "source_code_path": "/Workspace/test/files",
     }.__getitem__
     with (
-        patch("databricks.sdk.WorkspaceClient", side_effect=[workspace, caller]),
+        patch("databricks.sdk.WorkspaceClient", return_value=workspace),
+        patch("requests.post") as token_exchange,
         patch("openai.OpenAI", return_value=client),
         patch("arxiv_curator.config.ProjectConfig.from_yaml", return_value=cfg),
         patch("mlflow.set_experiment"),
         patch("arxiv_curator.evaluation.evaluate_agent") as evaluate,
         patch("arxiv_curator.app_permissions.grant_app_secret_access") as grant,
     ):
+        token_exchange.return_value.json.return_value = {
+            "access_token": "test-oauth-token",
+            "expires_in": 3600,
+        }
         if failure == "deployment":
             workspace.apps.deploy_and_wait.side_effect = RuntimeError("deployment failed")
         if failure == "evaluation":
