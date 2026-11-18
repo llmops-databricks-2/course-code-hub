@@ -4,12 +4,13 @@
 import os
 
 import mlflow
+import requests
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.apps import AppDeployment, ComputeState, EnvVar
 from loguru import logger
 from openai import OpenAI
 
-from arxiv_curator.app_permissions import grant_app_secret_access
+from arxiv_curator.app_permissions import grant_app_secret_access, grant_runtime_trace_access
 from arxiv_curator.config import ProjectConfig
 from arxiv_curator.evaluation import evaluate_agent
 
@@ -34,17 +35,11 @@ if not principal:
 grant_app_secret_access(w, cfg.catalog, cfg.schema, principal)
 
 # COMMAND ----------
-# Start and verify the App using an OAuth caller.
-caller = WorkspaceClient(
-    host=w.config.host,
-    client_id=dbutils.secrets.get(
-        catalog=cfg.catalog, schema=cfg.schema, key="databricks_client_id"
-    ),
-    client_secret=dbutils.secrets.get(
-        catalog=cfg.catalog, schema=cfg.schema, key="databricks_client_secret"
-    ),
-    auth_type="oauth-m2m",
+# Use the job identity to grant trace access and invoke the App.
+runtime_spn_client_id = dbutils.secrets.get(
+    catalog=cfg.catalog, schema=cfg.schema, key="databricks_client_id"
 )
+grant_runtime_trace_access(w, cfg.catalog, cfg.schema, runtime_spn_client_id)
 
 try:
     # deploy_and_wait requires running compute; start stopped compute first.
@@ -70,7 +65,25 @@ try:
         ),
     )
     app = w.apps.get(name=cfg.agent_app_name)
-    client = OpenAI(api_key=caller.config.oauth_token().access_token, base_url=app.url)
+    # Exchange the job runtime token for App OAuth, as in notebook 5.1.
+    notebook_token = w.config.authenticate()["Authorization"].removeprefix("Bearer ")
+    token_response = requests.post(
+        f"{w.config.host}/oidc/v1/token",
+        data={
+            "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+            "subject_token": notebook_token,
+            "subject_token_type": "urn:databricks:params:oauth:token-type:personal-access-token",
+            "requested_token_type": "urn:ietf:params:oauth:token-type:access_token",
+            "scope": "all-apis",
+            "audience": app.oauth2_app_client_id,
+        },
+        timeout=30,
+    )
+    token_response.raise_for_status()
+    token_data = token_response.json()
+    oauth_token = token_data["access_token"]
+    logger.info(f"App OAuth token valid for {token_data['expires_in']} seconds")
+    client = OpenAI(api_key=oauth_token, base_url=app.url)
     response = client.responses.with_raw_response.create(
         model=f"apps/{cfg.agent_app_name}",
         input=[{"role": "user", "content": "What are recent papers about LLMs and reasoning?"}],

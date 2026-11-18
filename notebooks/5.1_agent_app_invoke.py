@@ -32,7 +32,7 @@ from databricks.sdk.service.apps import AppDeployment, ComputeState, EnvVar
 from loguru import logger
 from openai import OpenAI
 
-from arxiv_curator.app_permissions import grant_app_secret_access
+from arxiv_curator.app_permissions import grant_app_secret_access, grant_runtime_trace_access
 from arxiv_curator.config import ProjectConfig
 
 dbutils.widgets.dropdown("env", "dev", ["dev", "acc", "prd"])
@@ -66,6 +66,13 @@ if not app_spn_client_id:
 
 grant_app_secret_access(w, cfg.catalog, cfg.schema, app_spn_client_id)
 logger.info(f"Granted UC secret access to App SPN {app_spn_client_id}")
+
+# Use the notebook identity (your user or the pipeline SPN) to grant access.
+runtime_spn_client_id = dbutils.secrets.get(
+    catalog=cfg.catalog, schema=cfg.schema, key="databricks_client_id"
+)
+grant_runtime_trace_access(w, cfg.catalog, cfg.schema, runtime_spn_client_id)
+
 
 # COMMAND ----------
 
