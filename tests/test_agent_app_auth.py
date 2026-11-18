@@ -13,13 +13,17 @@ CFG = SimpleNamespace(catalog="llmops_dev", schema="arxiv")
 
 @pytest.fixture
 def workspace(monkeypatch):
-    monkeypatch.setattr(os, "environ", {
-        "DATABRICKS_CLIENT_ID": "app-spn",
-        "DATABRICKS_CLIENT_SECRET": "app-secret",
-        "DATABRICKS_TOKEN": "competing-token",
-        "MLFLOW_TRACKING_TOKEN": "competing-token",
-        "LAKEBASE_SP_CLIENT_ID": "other-spn",
-    })
+    monkeypatch.setattr(
+        os,
+        "environ",
+        {
+            "DATABRICKS_CLIENT_ID": "app-spn",
+            "DATABRICKS_CLIENT_SECRET": "app-secret",
+            "DATABRICKS_TOKEN": "competing-token",
+            "MLFLOW_TRACKING_TOKEN": "competing-token",
+            "LAKEBASE_SP_CLIENT_ID": "other-spn",
+        },
+    )
     client = MagicMock()
     client.config.host = "https://workspace.example"
     client.secrets_uc.get_secret.side_effect = [
@@ -35,10 +39,12 @@ def test_reads_uc_secrets_then_sets_credentials_and_workspace_host(workspace):
     calls = workspace.secrets_uc.get_secret.call_args_list
     assert len(calls) == 2
     assert calls[0].kwargs == {
-        "full_name": "llmops_dev.arxiv.databricks_client_id", "include_value": True,
+        "full_name": "llmops_dev.arxiv.databricks_client_id",
+        "include_value": True,
     }
     assert calls[1].kwargs == {
-        "full_name": "llmops_dev.arxiv.databricks_client_secret", "include_value": True,
+        "full_name": "llmops_dev.arxiv.databricks_client_secret",
+        "include_value": True,
     }
     assert os.environ["DATABRICKS_CLIENT_ID"] == "existing-spn"
     assert os.environ["DATABRICKS_CLIENT_SECRET"] == "existing-secret"

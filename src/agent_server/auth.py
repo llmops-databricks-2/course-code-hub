@@ -6,6 +6,7 @@ from databricks.sdk import WorkspaceClient
 
 from arxiv_curator.config import ProjectConfig
 
+
 def setup_auth(cfg: ProjectConfig) -> None:
     """Read SPN credentials from UC secrets and configure the agent environment."""
     workspace = WorkspaceClient()

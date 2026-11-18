@@ -17,7 +17,6 @@ from mlflow import MlflowClient
 
 from arxiv_curator.config import load_config
 
-
 dbutils.widgets.text("env", "dev")
 env = dbutils.widgets.get("env")
 cfg = load_config("../project_config.yml", env)
@@ -57,9 +56,7 @@ dbutils.widgets.text("serving_secret_scope", f"arxiv-curator-serving-{env}")
 secret_scope = dbutils.widgets.get("serving_secret_scope")
 
 # Read both current UC values before updating the serving copies.
-client_id = dbutils.secrets.get(
-    catalog=cfg.catalog, schema=cfg.schema, key="databricks_client_id"
-)
+client_id = dbutils.secrets.get(catalog=cfg.catalog, schema=cfg.schema, key="databricks_client_id")
 client_secret = dbutils.secrets.get(
     catalog=cfg.catalog, schema=cfg.schema, key="databricks_client_secret"
 )
@@ -140,7 +137,6 @@ import random
 from datetime import datetime
 
 from openai import OpenAI
-
 
 host = w.config.host
 token = w.tokens.create(lifetime_seconds=2000).token_value
