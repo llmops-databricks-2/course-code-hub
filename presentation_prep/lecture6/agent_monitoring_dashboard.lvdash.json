@@ -1,0 +1,175 @@
+{
+  "datasets": [
+    {
+      "name": "monitoring",
+      "displayName": "Agent Monitoring",
+      "queryLines": [
+        "SELECT * FROM llmops_dev.arxiv.arxiv_agent_monitoring"
+      ],
+      "columns": [
+        {
+          "displayName": "Request Date",
+          "description": "Date on which the trace request was received",
+          "expression": "DATE(request_time)"
+        },
+        {
+          "displayName": "Latency Seconds",
+          "description": "Execution latency in seconds",
+          "expression": "latency_seconds"
+        }
+      ]
+    },
+    {
+      "name": "evaluations",
+      "displayName": "Agent Evaluations",
+      "queryLines": [
+        "SELECT * FROM llmops_dev.arxiv.arxiv_agent_evaluations"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "overview",
+      "displayName": "Overview",
+      "layout": [
+        {
+          "widget": {
+            "name": "trace_count",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "monitoring",
+                  "fields": [
+                    {
+                      "name": "count(trace_id)",
+                      "expression": "COUNT(`trace_id`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {"title": "Total Traces", "showTitle": true},
+              "widgetType": "counter",
+              "encodings": {
+                "value": {"fieldName": "count(trace_id)", "displayName": "Traces"}
+              }
+            }
+          },
+          "position": {"x": 0, "y": 0, "width": 4, "height": 3}
+        },
+        {
+          "widget": {
+            "name": "evaluated_traces",
+            "queries": [{
+              "name": "main_query",
+              "query": {
+                "datasetName": "evaluations",
+                "fields": [{"name": "count(trace_id)", "expression": "COUNT(`trace_id`)"}],
+                "disaggregated": false
+              }
+            }],
+            "spec": {
+              "version": 2,
+              "frame": {"title": "Evaluated Traces", "showTitle": true},
+              "widgetType": "counter",
+              "encodings": {"value": {"fieldName": "count(trace_id)", "displayName": "Evaluated"}}
+            }
+          },
+          "position": {"x": 4, "y": 0, "width": 4, "height": 3}
+        },
+        {
+          "widget": {
+            "name": "polite_tone_score",
+            "queries": [{
+              "name": "main_query",
+              "query": {
+                "datasetName": "evaluations",
+                "fields": [{"name": "avg(polite_tone)", "expression": "AVG(`polite_tone`)"}],
+                "disaggregated": false
+              }
+            }],
+            "spec": {
+              "version": 2,
+              "frame": {"title": "Average Polite Tone", "showTitle": true},
+              "widgetType": "counter",
+              "encodings": {"value": {"fieldName": "avg(polite_tone)", "displayName": "Polite Tone"}}
+            }
+          },
+          "position": {"x": 8, "y": 0, "width": 4, "height": 3}
+        },
+        {
+          "widget": {
+            "name": "evaluation_scores",
+            "queries": [{
+              "name": "main_query",
+              "query": {
+                "datasetName": "evaluations",
+                "fields": [
+                  {"name": "avg(word_count_check)", "expression": "AVG(`word_count_check`)"},
+                  {"name": "avg(hook_in_post)", "expression": "AVG(`hook_in_post`)"}
+                ],
+                "disaggregated": false
+              }
+            }],
+            "spec": {
+              "version": 2,
+              "frame": {"title": "Evaluation Scores", "showTitle": true},
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {"fieldName": "avg(word_count_check)", "displayName": "Word Count"},
+                  {"fieldName": "avg(hook_in_post)", "displayName": "Hook In Post"}
+                ]
+              }
+            }
+          },
+          "position": {"x": 0, "y": 3, "width": 12, "height": 4}
+        },
+        {
+          "widget": {
+            "name": "average_latency",
+            "queries": [{"name": "main_query", "query": {"datasetName": "monitoring", "fields": [{"name": "avg(latency_seconds)", "expression": "AVG(`latency_seconds`)"}], "disaggregated": false}}],
+            "spec": {"version": 2, "frame": {"title": "Average Latency (seconds)", "showTitle": true}, "widgetType": "counter", "encodings": {"value": {"fieldName": "avg(latency_seconds)", "displayName": "Latency"}}}
+          },
+          "position": {"x": 0, "y": 7, "width": 3, "height": 3}
+        },
+        {
+          "widget": {
+            "name": "error_count",
+            "queries": [{"name": "main_query", "query": {"datasetName": "monitoring", "fields": [{"name": "sum(has_error)", "expression": "SUM(`has_error`)"}], "disaggregated": false}}],
+            "spec": {"version": 2, "frame": {"title": "Traces With Errors", "showTitle": true}, "widgetType": "counter", "encodings": {"value": {"fieldName": "sum(has_error)", "displayName": "Errors"}}}
+          },
+          "position": {"x": 3, "y": 7, "width": 3, "height": 3}
+        },
+        {
+          "widget": {
+            "name": "llm_calls",
+            "queries": [{"name": "main_query", "query": {"datasetName": "monitoring", "fields": [{"name": "sum(llm_call_count)", "expression": "SUM(`llm_call_count`)"}], "disaggregated": false}}],
+            "spec": {"version": 2, "frame": {"title": "LLM Calls", "showTitle": true}, "widgetType": "counter", "encodings": {"value": {"fieldName": "sum(llm_call_count)", "displayName": "LLM Calls"}}}
+          },
+          "position": {"x": 6, "y": 7, "width": 3, "height": 3}
+        },
+        {
+          "widget": {
+            "name": "tool_calls",
+            "queries": [{"name": "main_query", "query": {"datasetName": "monitoring", "fields": [{"name": "sum(tool_call_count)", "expression": "SUM(`tool_call_count`)"}], "disaggregated": false}}],
+            "spec": {"version": 2, "frame": {"title": "Tool Calls", "showTitle": true}, "widgetType": "counter", "encodings": {"value": {"fieldName": "sum(tool_call_count)", "displayName": "Tool Calls"}}}
+          },
+          "position": {"x": 9, "y": 7, "width": 3, "height": 3}
+        },
+        {
+          "widget": {
+            "name": "recent_requests",
+            "queries": [{"name": "main_query", "query": {"datasetName": "monitoring", "fields": [{"name": "trace_id", "expression": "`trace_id`"}, {"name": "request_time", "expression": "`request_time`"}, {"name": "latency_seconds", "expression": "`latency_seconds`"}, {"name": "span_count", "expression": "`span_count`"}, {"name": "has_error", "expression": "`has_error`"}], "disaggregated": true}}],
+            "spec": {"version": 2, "frame": {"title": "Recent Requests", "showTitle": true}, "widgetType": "table", "encodings": {"columns": [{"fieldName": "trace_id", "displayName": "Trace ID"}, {"fieldName": "request_time", "displayName": "Request Time"}, {"fieldName": "latency_seconds", "displayName": "Latency (s)"}, {"fieldName": "span_count", "displayName": "Spans"}, {"fieldName": "has_error", "displayName": "Error"}]}}
+          },
+          "position": {"x": 0, "y": 10, "width": 12, "height": 6}
+        }
+      ]
+    }
+  ]
+}

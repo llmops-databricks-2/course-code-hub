@@ -47,6 +47,8 @@ include:
   - resources/genie_space.yml
   - resources/agent_app.yml
   - resources/evaluate_deploy_app.yml
+  - resources/lecture6_monitoring.yml
+  - resources/lecture6_monitoring_dashboard.yml
 
 sync:
   include:
