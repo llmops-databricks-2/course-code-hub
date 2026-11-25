@@ -1,0 +1,33 @@
+# Make a volume with a Declarative Automation Bundle (formerly Databricks Asset Bundles).
+#
+#   cd notebooks/platform/four_ways/bundle
+#   databricks bundle validate --var schema=<your schema> --profile <profile>
+#   databricks bundle deploy --var schema=<your schema> --profile <profile>
+#   databricks bundle destroy --var schema=<your schema> --profile <profile>
+#
+# Declarative: you describe the end state, the CLI works out create, update or nothing,
+# and keeps a state file in the workspace so the next deploy knows what it made.
+bundle:
+  name: platform-demo
+  # The direct engine calls the APIs itself. The Terraform engine was removed in CLI 1.20.0.
+  engine: direct
+
+variables:
+  catalog:
+    default: llmops_dev
+  schema:
+    description: your schema in the dev catalog
+
+resources:
+  volumes:
+    platform_demo_bundle:
+      catalog_name: ${var.catalog}
+      schema_name: ${var.schema}
+      name: platform_demo_bundle
+      volume_type: MANAGED
+      comment: "Platform lecture: made with a bundle"
+
+targets:
+  dev:
+    mode: development
+    default: true

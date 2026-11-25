@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Platform infrastructure · the lecture deck</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 422 422%22%3E%3Cpath fill=%22%23f24b37%22 d=%22M 211,0 A 211,211 0 0 0 0,211 a 211,211 0 0 0 211,211 211,211 0 0 0 211,-211 211,211 0 0 0 -13.275,-73.662 l -106.328,61.391 a 87.5,87.5 0 0 1 0.586,10.109 87.5,87.5 0 0 1 -87.5,87.5 87.5,87.5 0 0 1 -87.5,-87.5 87.5,87.5 0 0 1 87.5,-87.5 87.5,87.5 0 0 1 50.463,16.018 L 372.853,75.633 A 211,211 0 0 0 211,0 Z%22/%3E%3C/svg%3E">
+<!--FONTS-->
+<style>
+:root{--still:/*STILL*/}
+/*CSS*/
+</style>
+</head>
+<body>
+<!--SPRITES-->
+<header class="bar" id="bar">
+  <div class="brand" title="LLMOps course · Platform infrastructure">
+    <svg viewBox="0 0 422 422" aria-hidden="true"><path fill="#f24b37" d="M 211,0 A 211,211 0 0 0 0,211 a 211,211 0 0 0 211,211 211,211 0 0 0 211,-211 211,211 0 0 0 -13.275,-73.662 l -106.328,61.391 a 87.5,87.5 0 0 1 0.586,10.109 87.5,87.5 0 0 1 -87.5,87.5 87.5,87.5 0 0 1 -87.5,-87.5 87.5,87.5 0 0 1 87.5,-87.5 87.5,87.5 0 0 1 50.463,16.018 L 372.853,75.633 A 211,211 0 0 0 211,0 Z"/></svg>
+    <span class="brand-t">Platform infrastructure</span>
+  </div>
+  <nav class="parts" id="parts" aria-label="The five parts"></nav>
+  <button class="keys-chip" id="keysChip" hidden></button>
+  <div class="bar-r">
+    <span class="count" id="count" aria-live="polite">1 / 1</span>
+    <button id="bPrev" aria-label="Back" title="Back (←)">‹</button>
+    <button id="bNext" aria-label="Next" title="Next (→ or Space)">›</button>
+    <button id="bSkip" title="Leave this step now (Shift →)" hidden>Skip ›</button>
+    <button id="bOver" title="Overview of all steps (Esc)" aria-pressed="false">Overview</button>
+    <button id="bNotes" title="Speaker notes (N)" aria-pressed="false">Notes</button>
+    <button id="bFull" title="Full screen (F)" aria-pressed="false">Full screen</button>
+  </div>
+</header>
+
+<main class="stage" id="stage" aria-live="polite"></main>
+
+<aside class="notes" id="notes" hidden aria-label="Speaker notes">
+  <header><b id="notesT"></b><span id="notesNext"></span><button id="notesX" aria-label="Close the notes">Close</button></header>
+  <div id="notesB"></div>
+</aside>
+
+<div class="over" id="over" hidden role="dialog" aria-label="Overview of all steps">
+  <header><h2>All steps</h2><p>Click a step, or move with the arrow keys and press Enter. Esc closes.</p></header>
+  <div class="over-g" id="overG"></div>
+</div>
+
+<div class="fatal" id="fatal" hidden></div>
+<!--LIBS-->
+<script>
+/*JS*/
+</script>
+</body>
+</html>

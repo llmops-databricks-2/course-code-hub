@@ -1,0 +1,128 @@
+"""Assemble lecture_materials/day-on-the-platform/index.html from the parts in src/.
+
+    python3 lecture_materials/day-on-the-platform/src/build.py            # loads GSAP from the CDN
+    python3 lecture_materials/day-on-the-platform/src/build.py --bundle   # also writes index.bundled.html
+
+page.html is the skeleton, scene.css the styles, js/*.js the scene (concatenated in name order into
+one function scope) and assets/*.svg the sanitized sprites written by prepare_assets.py.
+The default page loads the pinned GSAP files from cdnjs with subresource integrity, and the fonts
+from Google Fonts, so it needs the network when it opens. --bundle writes a second page for a room
+without internet: it downloads the same pinned GSAP files (checked against the same hashes) and the
+two fonts once, into src/vendor/, and inlines them. Never edit a built page by hand.
+"""
+
+from __future__ import annotations
+
+import base64
+import hashlib
+import re
+import sys
+import urllib.request
+from pathlib import Path
+
+SRC = Path(__file__).resolve().parent
+OUT = SRC.parent / "index.html"
+BUNDLED = SRC.parent / "index.bundled.html"
+VENDOR = SRC / "vendor"
+
+GSAP_VERSION = "3.15.1"
+CDN = f"https://cdnjs.cloudflare.com/ajax/libs/gsap/{GSAP_VERSION}/"
+LIBS = {  # file -> the sha512 cdnjs publishes for it (api.cdnjs.com/libraries/gsap/3.15.1?fields=sri)
+    "gsap.min.js": "sha512-VMHB/Dy1/3d+djJPdMhxbplbZgbfPNHy+yWCxB1MSrwUEcNE+gnviL/DwlGsh9wwobnRTiQc6ChK2ZoJamshXA==",
+    "MotionPathPlugin.min.js": "sha512-UY+C2Ml/WmSOCNGlHkf8Lxir2mqkiwsOOOw5p3Wnl6nXSiZZBDqu+xgWvCbhTn5wC7m3YIU9mXhWt9lYDV/EDA==",
+}
+FONTS_CSS = "https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap"
+FONT_LINKS = (
+    '<link rel="preconnect" href="https://fonts.googleapis.com">\n'
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
+    f'<link rel="stylesheet" href="{FONTS_CSS}">'
+)
+UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+
+
+def fetch(url: str) -> bytes:
+    request = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(request, timeout=60) as response:  # noqa: S310 (fixed https URLs)
+        return response.read()
+
+
+def vendored_lib(name: str) -> str:
+    """The pinned library file, downloaded once and checked against its published hash."""
+    VENDOR.mkdir(exist_ok=True)
+    path = VENDOR / f"{name[:-3]}-{GSAP_VERSION}.js"
+    if not path.exists():
+        path.write_bytes(fetch(CDN + name))
+    data = path.read_bytes()
+    digest = "sha512-" + base64.b64encode(hashlib.sha512(data).digest()).decode()
+    if digest != LIBS[name]:
+        path.unlink()
+        raise SystemExit(f"build: {name} does not match its pinned hash; nothing was bundled")
+    return data.decode("utf-8")
+
+
+def vendored_fonts() -> str:
+    """Google's stylesheet with the latin woff2 files inlined as data URIs."""
+    VENDOR.mkdir(exist_ok=True)
+    css_path = VENDOR / "fonts.css"
+    if not css_path.exists():
+        css = fetch(FONTS_CSS).decode("utf-8")
+        blocks = re.findall(r"/\* ([a-z-]+) \*/\s*(@font-face\s*{[^}]*})", css)
+        kept = []
+        for subset, block in blocks:
+            if subset != "latin":
+                continue
+            url = re.search(r"url\((https://fonts\.gstatic\.com/[^)]+\.woff2)\)", block)
+            if not url:
+                raise SystemExit("build: a font block has no woff2 url")
+            data = base64.b64encode(fetch(url.group(1))).decode()
+            kept.append(block.replace(url.group(1), f"data:font/woff2;base64,{data}"))
+        if not kept:
+            raise SystemExit("build: no latin font blocks found")
+        css_path.write_text("\n".join(kept))
+    return css_path.read_text()
+
+
+def assemble(bundle: bool) -> str:
+    read = lambda rel: (SRC / rel).read_text(encoding="utf-8")  # noqa: E731
+    sprites = "".join(read(f"assets/{name}.svg") for name in ("dbx-icons", "marks"))
+    js = "\n".join(p.read_text(encoding="utf-8") for p in sorted((SRC / "js").glob("*.js")))
+    js = '(() => {\n"use strict";\n' + js + "\n})();"
+    if "</script" in js.lower():
+        raise SystemExit("build: the scene's JavaScript contains a closing script tag")
+    if bundle:
+        libs = "\n".join(
+            "<script>\n" + vendored_lib(n).replace("</script", "<\\/script") + "\n</script>"
+            for n in LIBS
+        )
+        fonts = f"<style>\n{vendored_fonts()}\n</style>"
+    else:
+        libs = "\n".join(
+            f'<script src="{CDN}{n}" integrity="{sri}" crossorigin="anonymous" referrerpolicy="no-referrer"></script>'
+            for n, sri in LIBS.items()
+        )
+        fonts = FONT_LINKS
+    page = read("page.html")
+    for mark, value in (
+        ("<!--FONTS-->", fonts),
+        ("/*CSS*/", read("scene.css")),
+        ("<!--SPRITES-->", sprites),
+        ("<!--LIBS-->", libs),
+        ("<!--GSAPV-->", GSAP_VERSION),
+        ("/*JS*/", js),
+    ):
+        if mark not in page:
+            raise SystemExit(f"build: page.html lost its {mark} mark")
+        page = page.replace(mark, value, 1)
+    return page
+
+
+def main() -> None:
+    OUT.write_text(assemble(bundle=False), encoding="utf-8")
+    print(f"wrote {OUT.name}: {OUT.stat().st_size} bytes (GSAP {GSAP_VERSION} from cdnjs)")
+    if "--bundle" in sys.argv[1:]:
+        BUNDLED.write_text(assemble(bundle=True), encoding="utf-8")
+        print(f"wrote {BUNDLED.name}: {BUNDLED.stat().st_size} bytes (GSAP and fonts inlined)")
+
+
+if __name__ == "__main__":
+    main()

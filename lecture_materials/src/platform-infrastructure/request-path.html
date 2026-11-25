@@ -1,0 +1,118 @@
+<div class="dg dg-request-path">
+<style>.dg-request-path{margin:0}.dg-request-path svg.rp-diagram{display:block;width:100%;max-width:1239px;height:auto;font-family:Nunito, system-ui, sans-serif}.dg-request-path .rp-edge{fill:none;stroke:#b5b3b0;stroke-width:1.4;stroke-linejoin:round;stroke-linecap:butt}.dg-request-path .rp-dot{fill:#b5b3b0}.dg-request-path .rp-node{cursor:pointer}.dg-request-path .rp-frame{fill:none;stroke:#e0dfdd;stroke-width:1}.dg-request-path .rp-frame-classic{stroke-dasharray:4 4}.dg-request-path .rp-hair{stroke:#e0dfdd;stroke-width:1}</style>
+<svg class="diagram rp-diagram" viewBox="0 0 1239 654" role="group" aria-label="An action you take runs in three places that are not your machine: the control plane and the serverless compute plane, both in Databricks&#x27; cloud account, and storage. Data is read where it lives, in parallel; the result comes back through the control plane or, when large, as files downloaded straight from storage." font-family="Nunito, system-ui, sans-serif" xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="rp-arrow" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 L2.2 4 Z" fill="#b5b3b0"/></marker><marker id="rp-arrow-hot" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 L2.2 4 Z" fill="#337FF9"/></marker></defs>
+<rect class="rp-frame" data-frame="databricks" x="371" y="8" width="862" height="516.5" rx="12"/>
+<rect class="rp-frame rp-frame-classic" data-frame="classic" x="721" y="544.5" width="512" height="101" rx="12"/>
+<text class="rp-ftitle" x="22" y="26" font-size="12" font-weight="600" fill="#6b6b6b" dominant-baseline="central">Your machine and GitHub</text>
+<text class="rp-ftitle" x="385" y="26" font-size="12" font-weight="600" fill="#6b6b6b" dominant-baseline="central">Your Databricks account · run by Databricks, on AWS us-west-2</text>
+<text class="rp-ftitle rp-ftitle-muted" x="735" y="561.5" font-size="11" font-weight="600" fill="#9a9a9a" dominant-baseline="central">Your cloud account (classic workspaces only; not used in the course)</text>
+<text class="rp-lane" x="22" y="56" font-size="11" font-weight="600" fill="#6b6b6b" letter-spacing="0.06em" dominant-baseline="central">YOUR SIDE</text>
+<text class="rp-lane" x="399" y="56" font-size="11" font-weight="600" fill="#6b6b6b" letter-spacing="0.06em" dominant-baseline="central">CONTROL PLANE</text>
+<text class="rp-lane" x="737" y="56" font-size="11" font-weight="600" fill="#6b6b6b" letter-spacing="0.06em" dominant-baseline="central">SERVERLESS COMPUTE PLANE</text>
+<text class="rp-lane" x="1035" y="56" font-size="11" font-weight="600" fill="#6b6b6b" letter-spacing="0.06em" dominant-baseline="central">STORAGE</text>
+<line class="rp-hair" x1="22" y1="67" x2="228" y2="67"/>
+<line class="rp-hair" x1="399" y1="67" x2="560" y2="67"/>
+<line class="rp-hair" x1="737" y1="67" x2="921" y2="67"/>
+<line class="rp-hair" x1="1035" y1="67" x2="1205" y2="67"/>
+<path class="rp-edge" data-edge="e_ui" data-from="browser" data-to="webapp" d="M228 102.5 L399 102.5" marker-end="url(#rp-arrow)"/>
+<path class="rp-edge" data-edge="e_sql" data-from="client" data-to="webapp" d="M228 173.5 L399 173.5" marker-end="url(#rp-arrow)"/>
+<path class="rp-edge" data-edge="e_cd" data-from="github" data-to="webapp" d="M228 251.5 L352 251.5 A7 7 0 0 0 359 244.5 L359 208.5 A7 7 0 0 1 366 201.5 L399 201.5" marker-end="url(#rp-arrow)"/>
+<path class="rp-edge" data-edge="e_sched" data-from="webapp" data-to="scheduler" d="M479.5 229.5 L479.5 253.5" marker-end="url(#rp-arrow)"/>
+<path class="rp-edge" data-edge="e_run" data-from="scheduler" data-to="driver" d="M560 281 L690 281 A7 7 0 0 0 697 274 L697 136.5 A7 7 0 0 1 704 129.5 L737 129.5" marker-end="url(#rp-arrow)"/>
+<path class="rp-edge" data-edge="e_cmd" data-from="webapp" data-to="driver" d="M560 94 L817 94 A7 7 0 0 1 824 101 L824 116" marker-end="url(#rp-arrow)"/>
+<path class="rp-edge" data-edge="e_auth" data-from="driver" data-to="uc" d="M737 143.5 L716 143.5 A7 7 0 0 0 709 150.5 L709 353 A7 7 0 0 1 702 360 L560 360" marker-end="url(#rp-arrow)"/>
+<path class="rp-edge" data-edge="e_tasks" data-from="driver" data-to="exec" d="M824 171 L824 199" marker-end="url(#rp-arrow)"/>
+<path class="rp-edge" data-edge="e_read" data-from="exec" data-to="data" d="M921 236.5 L1035 236.5" marker-end="url(#rp-arrow)"/>
+<path class="rp-edge" data-edge="e_small" data-from="driver" data-to="cpresults" d="M737 157.5 L728 157.5 A7 7 0 0 0 721 164.5 L721 432 A7 7 0 0 1 714 439 L560 439" marker-end="url(#rp-arrow)"/>
+<path class="rp-edge" data-edge="e_back" data-from="cpresults" data-to="webapp" d="M399 439 L383 439 L383 222.5 A7 7 0 0 1 390 215.5 L399 215.5" marker-end="url(#rp-arrow)"/>
+<path class="rp-edge" data-edge="e_reply_ui" data-from="webapp" data-to="browser" d="M399 116.5 L228 116.5" marker-end="url(#rp-arrow)"/>
+<path class="rp-edge" data-edge="e_reply_cli" data-from="webapp" data-to="client" d="M399 187.5 L228 187.5" marker-end="url(#rp-arrow)"/>
+<path class="rp-edge" data-edge="e_large" data-from="driver" data-to="wsstore" d="M911 143.5 L1214 143.5 A7 7 0 0 1 1221 150.5 L1221 300.5 A7 7 0 0 1 1214 307.5 L1205 307.5" marker-end="url(#rp-arrow)"/>
+<path class="rp-edge" data-edge="e_fetch" data-from="wsstore" data-to="client" d="M1127 335 L1127 501.5 A7 7 0 0 1 1120 508.5 L13 508.5 A7 7 0 0 1 6 501.5 L6 187.5 A7 7 0 0 1 13 180.5 L22 180.5" marker-end="url(#rp-arrow)"/>
+<path class="rp-edge" data-edge="e_large_ui" data-from="wsstore" data-to="webapp" d="M1113 335 L1113 487.5 A7 7 0 0 1 1106 494.5 L390 494.5 A7 7 0 0 1 383 487.5 L383 222.5 A7 7 0 0 1 390 215.5 L399 215.5" marker-end="url(#rp-arrow)"/>
+<circle class="rp-dot" cx="383" cy="439" r="2.5"/>
+<text class="rp-elabel" data-edge="e_ui" data-from="browser" data-to="webapp" x="236" y="92.5" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">HTTPS: UI and REST</text>
+<text class="rp-elabel" data-edge="e_reply_ui" data-from="webapp" data-to="browser" x="236" y="126.5" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">result in the page</text>
+<text class="rp-elabel" data-edge="e_sql" data-from="client" data-to="webapp" x="236" y="163.5" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">HTTPS: host + http_path</text>
+<text class="rp-elabel" data-edge="e_reply_cli" data-from="webapp" data-to="client" x="236" y="197.5" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">result rows</text>
+<text class="rp-elabel" data-edge="e_cd" data-from="github" data-to="webapp" x="236" y="241.5" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">REST call as a principal</text>
+<text class="rp-elabel" data-edge="e_sched" data-from="webapp" data-to="scheduler" x="487.5" y="241.5" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">create a run</text>
+<text class="rp-elabel" data-edge="e_cmd" data-from="webapp" data-to="driver" x="568" y="84" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">command or query (cloud backbone)</text>
+<text class="rp-elabel" data-edge="e_run" data-from="scheduler" data-to="driver" x="568" y="271" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">start the job&#x27;s compute</text>
+<text class="rp-elabel" data-edge="e_auth" data-from="driver" data-to="uc" x="568" y="350" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">may this identity read it?</text>
+<text class="rp-elabel" data-edge="e_small" data-from="driver" data-to="cpresults" x="568" y="429" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">small result</text>
+<text class="rp-elabel" data-edge="e_tasks" data-from="driver" data-to="exec" x="832" y="185" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">split into tasks</text>
+<text class="rp-elabel" data-edge="e_read" data-from="exec" data-to="data" x="929" y="226.5" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">read files in parallel</text>
+<text class="rp-elabel" data-edge="e_large" data-from="driver" data-to="wsstore" x="919" y="133.5" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">large result as files</text>
+<text class="rp-elabel" data-edge="e_large_ui" data-from="wsstore" data-to="webapp" x="393" y="484.5" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">read back for the page</text>
+<text class="rp-elabel" data-edge="e_fetch" data-from="wsstore" data-to="client" x="22" y="498.5" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">presigned URL download (Cloud Fetch)</text>
+<g class="rp-node rp-k-person" data-node="browser" tabindex="0" role="button" aria-label="Your browser">
+<rect class="rp-box" x="22" y="82" width="206" height="55" rx="8" fill="#ffffff" stroke="#e0dfdd" stroke-width="1"/>
+<text class="rp-title" x="34" y="102" font-size="13" font-weight="600" fill="#1a1a1a" dominant-baseline="central">Your browser</text>
+<text class="rp-line" x="34" y="118.5" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">workspace UI, notebooks, SQL editor</text>
+</g>
+<g class="rp-node rp-k-person" data-node="client" tabindex="0" role="button" aria-label="Your laptop">
+<rect class="rp-box" x="22" y="153" width="206" height="55" rx="8" fill="#ffffff" stroke="#e0dfdd" stroke-width="1"/>
+<text class="rp-title" x="34" y="173" font-size="13" font-weight="600" fill="#1a1a1a" dominant-baseline="central">Your laptop</text>
+<text class="rp-line" x="34" y="189.5" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">SQL connector, CLI, SDK</text>
+</g>
+<g class="rp-node rp-k-person" data-node="github" tabindex="0" role="button" aria-label="GitHub Actions">
+<rect class="rp-box" x="22" y="224" width="206" height="55" rx="8" fill="#ffffff" stroke="#e0dfdd" stroke-width="1"/>
+<text class="rp-title" x="34" y="244" font-size="13" font-weight="600" fill="#1a1a1a" dominant-baseline="central">GitHub Actions</text>
+<text class="rp-line" x="34" y="260.5" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">your CD workflow</text>
+</g>
+<g class="rp-node rp-k-service" data-node="webapp" tabindex="0" role="button" aria-label="Web application and REST APIs">
+<rect class="rp-box" x="399" y="82" width="161" height="147.5" rx="8" fill="#f0f4fb" stroke="#cdd8ed" stroke-width="1"/>
+<text class="rp-title" x="411" y="139.25" font-size="13" font-weight="600" fill="#1a1a1a" dominant-baseline="central">Web application and</text>
+<text class="rp-title" x="411" y="157.25" font-size="13" font-weight="600" fill="#1a1a1a" dominant-baseline="central">REST APIs</text>
+<text class="rp-line" x="411" y="173.75" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">sign-in, workspace objects</text>
+</g>
+<g class="rp-node rp-k-service" data-node="scheduler" tabindex="0" role="button" aria-label="Jobs service">
+<rect class="rp-box" x="399" y="253.5" width="161" height="55" rx="8" fill="#f0f4fb" stroke="#cdd8ed" stroke-width="1"/>
+<text class="rp-title" x="411" y="273.5" font-size="13" font-weight="600" fill="#1a1a1a" dominant-baseline="central">Jobs service</text>
+<text class="rp-line" x="411" y="290" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">triggers and schedules runs</text>
+</g>
+<g class="rp-node rp-k-service" data-node="uc" tabindex="0" role="button" aria-label="Unity Catalog">
+<rect class="rp-box" x="399" y="332.5" width="161" height="55" rx="8" fill="#f0f4fb" stroke="#cdd8ed" stroke-width="1"/>
+<text class="rp-title" x="411" y="352.5" font-size="13" font-weight="600" fill="#1a1a1a" dominant-baseline="central">Unity Catalog</text>
+<text class="rp-line" x="411" y="369" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">privileges, lineage, audit</text>
+</g>
+<g class="rp-node rp-k-data" data-node="cpresults" tabindex="0" role="button" aria-label="Small results">
+<rect class="rp-box" x="399" y="411.5" width="161" height="55" rx="8" fill="#f0f5f2" stroke="#c8dad2" stroke-width="1"/>
+<text class="rp-title" x="411" y="431.5" font-size="13" font-weight="600" fill="#1a1a1a" dominant-baseline="central">Small results</text>
+<text class="rp-line" x="411" y="448" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">kept in the control plane</text>
+</g>
+<g class="rp-node rp-k-compute" data-node="driver" tabindex="0" role="button" aria-label="Driver or SQL warehouse">
+<rect class="rp-box" x="737" y="116" width="174" height="55" rx="8" fill="#f0f4fb" stroke="#506fa0" stroke-width="1.4"/>
+<text class="rp-title" x="749" y="136" font-size="13" font-weight="600" fill="#1a1a1a" dominant-baseline="central">Driver or SQL warehouse</text>
+<text class="rp-line" x="749" y="152.5" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">plans the work, Photon</text>
+</g>
+<g class="rp-node rp-k-compute" data-node="exec" tabindex="0" role="button" aria-label="Executors">
+<rect class="rp-box" x="747" y="209" width="174" height="55" rx="8" fill="#f0f4fb" stroke="#506fa0" stroke-width="1.4"/>
+<rect class="rp-box" x="742" y="204" width="174" height="55" rx="8" fill="#f0f4fb" stroke="#506fa0" stroke-width="1.4"/>
+<rect class="rp-box" x="737" y="199" width="174" height="55" rx="8" fill="#f0f4fb" stroke="#506fa0" stroke-width="1.4"/>
+<text class="rp-title" x="749" y="219" font-size="13" font-weight="600" fill="#1a1a1a" dominant-baseline="central">Executors</text>
+<text class="rp-line" x="749" y="235.5" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">tasks run in parallel</text>
+</g>
+<g class="rp-node rp-k-data" data-node="data" tabindex="0" role="button" aria-label="Your tables and volumes">
+<rect class="rp-box" x="1035" y="209" width="170" height="55" rx="8" fill="#f0f5f2" stroke="#c8dad2" stroke-width="1"/>
+<text class="rp-title" x="1047" y="229" font-size="13" font-weight="600" fill="#1a1a1a" dominant-baseline="central">Your tables and volumes</text>
+<text class="rp-line" x="1047" y="245.5" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">Delta and Parquet files</text>
+</g>
+<g class="rp-node rp-k-data" data-node="wsstore" tabindex="0" role="button" aria-label="Workspace storage">
+<rect class="rp-box" x="1035" y="280" width="170" height="55" rx="8" fill="#f0f5f2" stroke="#c8dad2" stroke-width="1"/>
+<text class="rp-title" x="1047" y="300" font-size="13" font-weight="600" fill="#1a1a1a" dominant-baseline="central">Workspace storage</text>
+<text class="rp-line" x="1047" y="316.5" font-size="11" font-weight="400" fill="#6b6b6b" dominant-baseline="central">job results, large results</text>
+</g>
+<g class="rp-node rp-k-ghost" data-node="classic" tabindex="0" role="button" aria-label="Classic compute">
+<rect class="rp-box" x="737" y="576.5" width="174" height="55" rx="8" fill="#ffffff" stroke="#e0dfdd" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text class="rp-title" x="749" y="596.5" font-size="13" font-weight="600" fill="#9a9a9a" dominant-baseline="central">Classic compute</text>
+<text class="rp-line" x="749" y="613" font-size="11" font-weight="400" fill="#9a9a9a" dominant-baseline="central">clusters in your VPC</text>
+</g>
+<g class="rp-node rp-k-ghost" data-node="bucket" tabindex="0" role="button" aria-label="Your S3 bucket">
+<rect class="rp-box" x="1035" y="576.5" width="170" height="55" rx="8" fill="#ffffff" stroke="#e0dfdd" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text class="rp-title" x="1047" y="596.5" font-size="13" font-weight="600" fill="#9a9a9a" dominant-baseline="central">Your S3 bucket</text>
+<text class="rp-line" x="1047" y="613" font-size="11" font-weight="400" fill="#9a9a9a" dominant-baseline="central">workspace storage, classic</text>
+</g>
+</svg></div>

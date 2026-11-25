@@ -1,0 +1,1222 @@
+[
+  {
+    "label": "CLAUDE.md working rules",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/CLAUDE.md#L86-L92",
+    "part": 3
+  },
+  {
+    "label": "CODEOWNERS",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/CODEOWNERS#L1-L9",
+    "part": 3
+  },
+  {
+    "label": "bundle targets",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/databricks.yml#L69-L80",
+    "part": 3
+  },
+  {
+    "label": "R41",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L89",
+    "part": 3
+  },
+  {
+    "label": "A10",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L113",
+    "part": 3
+  },
+  {
+    "label": "ensure_principals",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L643-L674",
+    "part": 3
+  },
+  {
+    "label": "ensure_account_admin",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L791-L815",
+    "part": 3
+  },
+  {
+    "label": "ACCOUNT_ADMIN_ROLE",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L265",
+    "part": 3
+  },
+  {
+    "label": "ensure_billing_admin",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L818-L858",
+    "part": 3
+  },
+  {
+    "label": "BILLING_ADMIN_ROLE",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L268",
+    "part": 3
+  },
+  {
+    "label": "ensure_federation_policy",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L685-L742",
+    "part": 3
+  },
+  {
+    "label": "GITHUB_ISSUER",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L234",
+    "part": 3
+  },
+  {
+    "label": "oidc_subject",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/adapters/github.py#L492-L500",
+    "part": 3
+  },
+  {
+    "label": "this_repo_subject",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L3357-L3372",
+    "part": 3
+  },
+  {
+    "label": "PARTS",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L3273-L3297",
+    "part": 3
+  },
+  {
+    "label": "--apply flag",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L3378",
+    "part": 3
+  },
+  {
+    "label": "RUNBOOK example for part evals",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/RUNBOOK.md#L112-L113",
+    "part": 3
+  },
+  {
+    "label": "\u00a7 Identities and permissions, summary and who-holds-what table",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L1480-L1500",
+    "part": 3
+  },
+  {
+    "label": "\u00a7 Identities and permissions, every grant and how the workflows sign in",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L1504-L1535",
+    "part": 3
+  },
+  {
+    "label": "\u00a7 Decisions \u203a Identities and permissions",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L432-L466",
+    "part": 3
+  },
+  {
+    "label": "line 454",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L454",
+    "part": 3
+  },
+  {
+    "label": "line 448",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L448",
+    "part": 3
+  },
+  {
+    "label": "line 460",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L460",
+    "part": 3
+  },
+  {
+    "label": "onboarding env",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/onboarding.yml#L69-L71",
+    "part": 3
+  },
+  {
+    "label": "deploy env",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/deploy.yml#L34-L36",
+    "part": 3
+  },
+  {
+    "label": "evals env",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/evals.yml#L48-L51",
+    "part": 3
+  },
+  {
+    "label": "ci bundle env",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/ci.yml#L71-L74",
+    "part": 3
+  },
+  {
+    "label": "publish-template env",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/publish-template.yml#L47-L51",
+    "part": 3
+  },
+  {
+    "label": "account_client",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/adapters/databricks.py#L139-L160",
+    "part": 3
+  },
+  {
+    "label": "workspace_client",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/adapters/databricks.py#L124-L136",
+    "part": 3
+  },
+  {
+    "label": "deploy header",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/deploy.yml#L1-L5",
+    "part": 3
+  },
+  {
+    "label": "ensure_evals_principal",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L3091-L3143",
+    "part": 3
+  },
+  {
+    "label": "is_pull_request_of_this_repo",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L774-L777",
+    "part": 3
+  },
+  {
+    "label": "evals header",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/evals.yml#L9-L14",
+    "part": 3
+  },
+  {
+    "label": "ensure_principal",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/principals.py#L184-L238",
+    "part": 3
+  },
+  {
+    "label": "subject",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/principals.py#L350-L364",
+    "part": 3
+  },
+  {
+    "label": "client_id_variable",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/principals.py#L119-L130",
+    "part": 3
+  },
+  {
+    "label": "Three deploy principals per student and Evals principal rows",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L459-L460",
+    "part": 3
+  },
+  {
+    "label": "who-holds-what",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L1488-L1500",
+    "part": 3
+  },
+  {
+    "label": "guard job comment",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/resources/guard.job.yml#L7-L10",
+    "part": 3
+  },
+  {
+    "label": "run_as",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/resources/guard.job.yml#L24-L25",
+    "part": 3
+  },
+  {
+    "label": "\u00a7 Repository layout",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L667-L700",
+    "part": 3
+  },
+  {
+    "label": "src/course_assistant/contract/",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/contract/cohort.py#L1-L60",
+    "part": 3
+  },
+  {
+    "label": "src/course_assistant/adapters/",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/adapters/databricks.py#L1-L60",
+    "part": 3
+  },
+  {
+    "label": "src/course_assistant/onboarding/",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L1-L75",
+    "part": 3
+  },
+  {
+    "label": "src/course_assistant/monitoring/",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/monitoring/guard.py#L1-L40",
+    "part": 3
+  },
+  {
+    "label": "src/tasks/",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/tasks/onboard.py#L1-L60",
+    "part": 3
+  },
+  {
+    "label": "scripts/",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L1-L60",
+    "part": 3
+  },
+  {
+    "label": "tests/",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/tests/conftest.py#L1-L60",
+    "part": 3
+  },
+  {
+    "label": "databricks.yml, resources/, dashboards/, genie/",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/databricks.yml#L1-L30",
+    "part": 3
+  },
+  {
+    "label": ".github/workflows/",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/ci.yml#L1-L12",
+    "part": 3
+  },
+  {
+    "label": "template/",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/template/cookiecutter.json#L1-L5",
+    "part": 3
+  },
+  {
+    "label": "CLAUDE.md repo layout and working rules",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/CLAUDE.md#L1-L60",
+    "part": 3
+  },
+  {
+    "label": "\u00a7 Steps, every lookup, create and grant",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L1659-L1684",
+    "part": 3
+  },
+  {
+    "label": "ensure_user",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/identity.py#L33",
+    "part": 3
+  },
+  {
+    "label": "ensure_policy",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/policies.py#L59",
+    "part": 3
+  },
+  {
+    "label": "ensure_catalog",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/catalogs.py#L78",
+    "part": 3
+  },
+  {
+    "label": "ensure_warehouse",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/warehouses.py#L65",
+    "part": 3
+  },
+  {
+    "label": "ensure_experiments",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/experiments.py#L336",
+    "part": 3
+  },
+  {
+    "label": "ensure_repo",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/repos.py#L282",
+    "part": 3
+  },
+  {
+    "label": "ensure_principal",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/principals.py#L184",
+    "part": 3
+  },
+  {
+    "label": "ensure_membership",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/repos.py#L432",
+    "part": 3
+  },
+  {
+    "label": "ensure_first_deploy",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/repos.py#L569",
+    "part": 3
+  },
+  {
+    "label": "ensure_lakebase",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/lakebase.py#L112",
+    "part": 3
+  },
+  {
+    "label": "ensure_student_credentials",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/credentials.py#L240",
+    "part": 3
+  },
+  {
+    "label": "ensure_materials",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/materials.py#L53",
+    "part": 3
+  },
+  {
+    "label": "ensure_discord",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/discord.py#L27",
+    "part": 3
+  },
+  {
+    "label": "ensure_cohort",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/cohort_setup.py#L161",
+    "part": 3
+  },
+  {
+    "label": "clients",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/adapters/databricks.py#L124-L160",
+    "part": 3
+  },
+  {
+    "label": "scim_filter and scim_list",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/adapters/databricks.py#L162-L186",
+    "part": 3
+  },
+  {
+    "label": "merge_statement",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/adapters/databricks.py#L292-L360",
+    "part": 3
+  },
+  {
+    "label": "Warehouse",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/adapters/databricks.py#L370",
+    "part": 3
+  },
+  {
+    "label": "ensure_environment",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/adapters/github.py#L688",
+    "part": 3
+  },
+  {
+    "label": "protect_branch",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/adapters/github.py#L729-L738",
+    "part": 3
+  },
+  {
+    "label": "scripts/setup_cohort.py docstring",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L1-L130",
+    "part": 3
+  },
+  {
+    "label": "run",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L3300-L3311",
+    "part": 3
+  },
+  {
+    "label": "Setup.write",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L445-L452",
+    "part": 3
+  },
+  {
+    "label": "Setup docstring",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L384-L389",
+    "part": 3
+  },
+  {
+    "label": "The account-level identity and the account setup script",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L434-L436",
+    "part": 3
+  },
+  {
+    "label": "onboarding.yml",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/onboarding.yml#L1-L100",
+    "part": 3
+  },
+  {
+    "label": "schedule",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/onboarding.yml#L26-L28",
+    "part": 3
+  },
+  {
+    "label": "if",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/onboarding.yml#L60",
+    "part": 3
+  },
+  {
+    "label": "dispatch inputs",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/onboarding.yml#L29-L47",
+    "part": 3
+  },
+  {
+    "label": "concurrency and timeout",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/onboarding.yml#L53-L62",
+    "part": 3
+  },
+  {
+    "label": "onboard step",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/onboarding.yml#L82-L90",
+    "part": 3
+  },
+  {
+    "label": "listings",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/onboarding.yml#L94-L100",
+    "part": 3
+  },
+  {
+    "label": "deploy.yml",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/deploy.yml#L1-L88",
+    "part": 3
+  },
+  {
+    "label": "triggers",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/deploy.yml#L8-L19",
+    "part": 3
+  },
+  {
+    "label": "validate and deploy",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/deploy.yml#L67-L71",
+    "part": 3
+  },
+  {
+    "label": "run and stop app",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/deploy.yml#L85-L88",
+    "part": 3
+  },
+  {
+    "label": "ci.yml",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/ci.yml#L1-L80",
+    "part": 3
+  },
+  {
+    "label": "test steps",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/ci.yml#L41-L55",
+    "part": 3
+  },
+  {
+    "label": "bundle job",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/ci.yml#L64-L80",
+    "part": 3
+  },
+  {
+    "label": "evals.yml",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/evals.yml#L1-L63",
+    "part": 3
+  },
+  {
+    "label": "paths",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/evals.yml#L17-L32",
+    "part": 3
+  },
+  {
+    "label": "gate step",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/evals.yml#L59-L63",
+    "part": 3
+  },
+  {
+    "label": "publish-template.yml",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/publish-template.yml#L1-L94",
+    "part": 3
+  },
+  {
+    "label": "triggers",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/publish-template.yml#L14-L31",
+    "part": 3
+  },
+  {
+    "label": "template steps",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/publish-template.yml#L63-L94",
+    "part": 3
+  },
+  {
+    "label": "onboard.py",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/tasks/onboard.py#L28-L60",
+    "part": 3
+  },
+  {
+    "label": "monitoring.job.yml",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/resources/monitoring.job.yml#L1-L20",
+    "part": 3
+  },
+  {
+    "label": "guard.job.yml",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/resources/guard.job.yml#L19-L74",
+    "part": 3
+  },
+  {
+    "label": "Decision: The repository in the cohort org",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L392",
+    "part": 4
+  },
+  {
+    "label": "RUNBOOK \u00a7 The switch, step 2",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/RUNBOOK.md#L728",
+    "part": 4
+  },
+  {
+    "label": "CLAUDE.md rule",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/CLAUDE.md#L86-L92",
+    "part": 4
+  },
+  {
+    "label": "CODEOWNERS",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/CODEOWNERS#L1-L9",
+    "part": 4
+  },
+  {
+    "label": "protect_repo",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/repos.py#L336-L360",
+    "part": 4
+  },
+  {
+    "label": "ensure_environment",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/adapters/github.py#L688",
+    "part": 4
+  },
+  {
+    "label": "protect_branch",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/adapters/github.py#L729-L738",
+    "part": 4
+  },
+  {
+    "label": "CODEOWNERS comment",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/CODEOWNERS#L1-L5",
+    "part": 4
+  },
+  {
+    "label": "targets: dev only, mode: production, one host",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/databricks.yml#L69-L80",
+    "part": 4
+  },
+  {
+    "label": "decision row A second workspace",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L499",
+    "part": 4
+  },
+  {
+    "label": "R41",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L89",
+    "part": 4
+  },
+  {
+    "label": "Three cohort catalogs",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L427",
+    "part": 4
+  },
+  {
+    "label": "Three deploy principals per student",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L459",
+    "part": 4
+  },
+  {
+    "label": "validate dev acc prd",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/publish-template.yml#L87-L94",
+    "part": 4
+  },
+  {
+    "label": "pytest config and markers",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/pyproject.toml#L49-L59",
+    "part": 4
+  },
+  {
+    "label": "fakes and scratch helpers",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/tests/conftest.py#L1-L60",
+    "part": 4
+  },
+  {
+    "label": "\u00a7 Testing, rehearsal and operations",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L607-L627",
+    "part": 4
+  },
+  {
+    "label": "verify_warehouse skip rule",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/tests/conftest.py#L790-L800",
+    "part": 4
+  },
+  {
+    "label": "scratch catalogs",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/tests/conftest.py#L858-L880",
+    "part": 4
+  },
+  {
+    "label": "Test warehouse decision",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L621",
+    "part": 4
+  },
+  {
+    "label": "pre-commit config",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.pre-commit-config.yaml#L12-L101",
+    "part": 4
+  },
+  {
+    "label": "no-commit-to-branch",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.pre-commit-config.yaml#L14-L17",
+    "part": 4
+  },
+  {
+    "label": "ci test",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/ci.yml#L20-L55",
+    "part": 4
+  },
+  {
+    "label": "evals paths",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/evals.yml#L17-L32",
+    "part": 4
+  },
+  {
+    "label": "template paths",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/publish-template.yml#L14-L22",
+    "part": 4
+  },
+  {
+    "label": "evals header",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/evals.yml#L1-L14",
+    "part": 4
+  },
+  {
+    "label": "gate step",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/evals.yml#L59-L63",
+    "part": 4
+  },
+  {
+    "label": "--apply",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L3378",
+    "part": 4
+  },
+  {
+    "label": "mode line",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L3460",
+    "part": 4
+  },
+  {
+    "label": "Setup.write",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L445-L452",
+    "part": 4
+  },
+  {
+    "label": "dry_run input",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/onboarding.yml#L36-L39",
+    "part": 4
+  },
+  {
+    "label": "DRY_RUN env",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/onboarding.yml#L66",
+    "part": 4
+  },
+  {
+    "label": "run",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L1219-L1256",
+    "part": 4
+  },
+  {
+    "label": "dry-run branch in onboard",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L908-L916",
+    "part": 4
+  },
+  {
+    "label": "header",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/onboarding.yml#L20-L23",
+    "part": 4
+  },
+  {
+    "label": "inputs",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/onboarding.yml#L40-L47",
+    "part": 4
+  },
+  {
+    "label": "only_names and select_students",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L749-L790",
+    "part": 4
+  },
+  {
+    "label": "run guards",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L1236-L1246",
+    "part": 4
+  },
+  {
+    "label": "reconcile.filtered",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/reconcile.py#L495",
+    "part": 4
+  },
+  {
+    "label": "task docstring",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/tasks/onboard.py#L10-L16",
+    "part": 4
+  },
+  {
+    "label": "workspace_client",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/adapters/databricks.py#L124-L136",
+    "part": 4
+  },
+  {
+    "label": "reconcile: report",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/cohorts/llmops-2/cohort.yml#L86-L88",
+    "part": 4
+  },
+  {
+    "label": "Decision: Reconcile: report then apply",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L497",
+    "part": 4
+  },
+  {
+    "label": "plan_removals",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/reconcile.py#L199",
+    "part": 4
+  },
+  {
+    "label": "apply_removals",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/reconcile.py#L412",
+    "part": 4
+  },
+  {
+    "label": "reconcile",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/reconcile.py#L467",
+    "part": 4
+  },
+  {
+    "label": "scratch_catalog and scratch_cohort_catalogs",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/tests/conftest.py#L806-L880",
+    "part": 4
+  },
+  {
+    "label": "probe_workspace docstring",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/probe_workspace.py#L1-L40",
+    "part": 4
+  },
+  {
+    "label": "--probe-policy",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/setup_cohort.py#L3379-L3381",
+    "part": 4
+  },
+  {
+    "label": "student_bot.py",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/scripts/student_bot.py#L1-L60",
+    "part": 4
+  },
+  {
+    "label": "STUDENT-BOT.md",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/STUDENT-BOT.md#L1-L30",
+    "part": 4
+  },
+  {
+    "label": "Decision: Student bot",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L623",
+    "part": 4
+  },
+  {
+    "label": "student agent",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.claude/agents/student.md#L1-L20",
+    "part": 4
+  },
+  {
+    "label": "header",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/publish-template.yml#L1-L12",
+    "part": 4
+  },
+  {
+    "label": "steps",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/publish-template.yml#L63-L94",
+    "part": 4
+  },
+  {
+    "label": "\u00a7 This repo's template check",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L1802-L1816",
+    "part": 4
+  },
+  {
+    "label": "unit tests",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/tests/contract/test_template.py#L1-L40",
+    "part": 4
+  },
+  {
+    "label": "story-reviewer agent",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.claude/agents/story-reviewer.md#L1-L15",
+    "part": 4
+  },
+  {
+    "label": "working rules: slice, review loop",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/CLAUDE.md#L94-L106",
+    "part": 4
+  },
+  {
+    "label": "Review trace",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/memory-bank/ACTIVE-CONTEXT.md#L31",
+    "part": 4
+  },
+  {
+    "label": "slice template",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/stories/TEMPLATE.md#L1-L30",
+    "part": 4
+  },
+  {
+    "label": "guard.job.yml",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/resources/guard.job.yml#L1-L74",
+    "part": 4
+  },
+  {
+    "label": "apps_stop.job.yml",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/resources/apps_stop.job.yml#L1-L20",
+    "part": 4
+  },
+  {
+    "label": "sweep and guard",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/monitoring/guard.py#L404-L490",
+    "part": 4
+  },
+  {
+    "label": "Decision: Paid-resource guard",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L548",
+    "part": 4
+  },
+  {
+    "label": "Workflow hardening row",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L458",
+    "part": 4
+  },
+  {
+    "label": "permissions and concurrency",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/onboarding.yml#L49-L62",
+    "part": 4
+  },
+  {
+    "label": "ci comment",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/ci.yml#L57-L63",
+    "part": 4
+  },
+  {
+    "label": "\u00a7 Onboarding \u203a Workflow and One run, in order",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L1537-L1600",
+    "part": 5
+  },
+  {
+    "label": "\u00a7 Steps",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L1636-L1684",
+    "part": 5
+  },
+  {
+    "label": "\u00a7 Idempotency and failure",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L1686-L1698",
+    "part": 5
+  },
+  {
+    "label": "onboarding.yml",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/.github/workflows/onboarding.yml#L1-L100",
+    "part": 5
+  },
+  {
+    "label": "src/tasks/onboard.py",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/tasks/onboard.py#L28-L60",
+    "part": 5
+  },
+  {
+    "label": "run.run",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L1219-L1292",
+    "part": 5
+  },
+  {
+    "label": "run.onboard",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L831-L950",
+    "part": 5
+  },
+  {
+    "label": "finally",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L975-L978",
+    "part": 5
+  },
+  {
+    "label": "ensure_cohort",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/cohort_setup.py#L161",
+    "part": 5
+  },
+  {
+    "label": "onboard start",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L871-L875",
+    "part": 5
+  },
+  {
+    "label": "_start_run call",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L875",
+    "part": 5
+  },
+  {
+    "label": "ensure_projects",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/projects.py#L176",
+    "part": 5
+  },
+  {
+    "label": "read_students",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/intake.py#L198-L208",
+    "part": 5
+  },
+  {
+    "label": "_read_rows",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/intake.py#L418-L435",
+    "part": 5
+  },
+  {
+    "label": "sheets.read_rows",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/adapters/sheets.py#L45",
+    "part": 5
+  },
+  {
+    "label": "take_in",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/intake.py#L210",
+    "part": 5
+  },
+  {
+    "label": "read_registry",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/state.py#L327",
+    "part": 5
+  },
+  {
+    "label": "merge_students",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/state.py#L291",
+    "part": 5
+  },
+  {
+    "label": "merge call",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L913-L916",
+    "part": 5
+  },
+  {
+    "label": "take_steps",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L658",
+    "part": 5
+  },
+  {
+    "label": "take_step",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L486",
+    "part": 5
+  },
+  {
+    "label": "STEP_CALLS",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L462-L483",
+    "part": 5
+  },
+  {
+    "label": "write_step",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/state.py#L412",
+    "part": 5
+  },
+  {
+    "label": "STEP_PREREQUISITES",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L174-L243",
+    "part": 5
+  },
+  {
+    "label": "write_identities",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L981-L1012",
+    "part": 5
+  },
+  {
+    "label": "ensure_identities",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/cohort_setup.py#L354",
+    "part": 5
+  },
+  {
+    "label": "reconcile",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/reconcile.py#L467",
+    "part": 5
+  },
+  {
+    "label": "plan_removals",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/reconcile.py#L199",
+    "part": 5
+  },
+  {
+    "label": "REMOVALS",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/reconcile.py#L335",
+    "part": 5
+  },
+  {
+    "label": "apply_removals",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/reconcile.py#L412",
+    "part": 5
+  },
+  {
+    "label": "call site",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L934-L948",
+    "part": 5
+  },
+  {
+    "label": "filtered",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/reconcile.py#L495",
+    "part": 5
+  },
+  {
+    "label": "_report",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L1072",
+    "part": 5
+  },
+  {
+    "label": "report.summary",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/report.py#L310",
+    "part": 5
+  },
+  {
+    "label": "write_summary",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/report.py#L416",
+    "part": 5
+  },
+  {
+    "label": "notify_teams",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/report.py#L456",
+    "part": 5
+  },
+  {
+    "label": "dry_run_card",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/report.py#L489",
+    "part": 5
+  },
+  {
+    "label": "list_apps.py",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/tasks/list_apps.py#L1-L20",
+    "part": 5
+  },
+  {
+    "label": "list_experiments.py",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/tasks/list_experiments.py#L1-L20",
+    "part": 5
+  },
+  {
+    "label": "STEPS",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/contract/cohort.py#L128-L149",
+    "part": 5
+  },
+  {
+    "label": "STEP_NEEDS",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/contract/cohort.py#L166-L183",
+    "part": 5
+  },
+  {
+    "label": "PLANS",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/contract/cohort.py#L189-L192",
+    "part": 5
+  },
+  {
+    "label": "CohortConfig.steps",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/contract/cohort.py#L750-L762",
+    "part": 5
+  },
+  {
+    "label": "_user",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L340",
+    "part": 5
+  },
+  {
+    "label": "identity.ensure_user",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/identity.py#L33",
+    "part": 5
+  },
+  {
+    "label": "_policy",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L344",
+    "part": 5
+  },
+  {
+    "label": "policies.ensure_policy",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/policies.py#L59",
+    "part": 5
+  },
+  {
+    "label": "_catalog",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L348",
+    "part": 5
+  },
+  {
+    "label": "catalogs.ensure_catalog",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/catalogs.py#L78",
+    "part": 5
+  },
+  {
+    "label": "_warehouse",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L352",
+    "part": 5
+  },
+  {
+    "label": "warehouses.ensure_warehouse",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/warehouses.py#L65",
+    "part": 5
+  },
+  {
+    "label": "_experiment",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L356",
+    "part": 5
+  },
+  {
+    "label": "experiments.ensure_experiments",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/experiments.py#L336",
+    "part": 5
+  },
+  {
+    "label": "_repo",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L360",
+    "part": 5
+  },
+  {
+    "label": "repos.ensure_repo",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/repos.py#L282",
+    "part": 5
+  },
+  {
+    "label": "_principal",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L370-L390",
+    "part": 5
+  },
+  {
+    "label": "principals.ensure_principal",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/principals.py#L184",
+    "part": 5
+  },
+  {
+    "label": "_membership",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L393",
+    "part": 5
+  },
+  {
+    "label": "repos.ensure_membership",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/repos.py#L432",
+    "part": 5
+  },
+  {
+    "label": "_first_deploy",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L400-L414",
+    "part": 5
+  },
+  {
+    "label": "repos.ensure_first_deploy",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/repos.py#L569",
+    "part": 5
+  },
+  {
+    "label": "_lakebase",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L417-L433",
+    "part": 5
+  },
+  {
+    "label": "lakebase.ensure_lakebase",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/lakebase.py#L112",
+    "part": 5
+  },
+  {
+    "label": "_credentials",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L436-L454",
+    "part": 5
+  },
+  {
+    "label": "credentials.ensure_student_credentials",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/credentials.py#L240",
+    "part": 5
+  },
+  {
+    "label": "_materials",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L457",
+    "part": 5
+  },
+  {
+    "label": "materials.ensure_materials",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/materials.py#L53",
+    "part": 5
+  },
+  {
+    "label": "discord lambda",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/run.py#L482",
+    "part": 5
+  },
+  {
+    "label": "discord.ensure_discord",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/onboarding/discord.py#L27",
+    "part": 5
+  },
+  {
+    "label": "kebab_name and uc_name",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/contract/naming.py#L343-L362",
+    "part": 5
+  },
+  {
+    "label": "assign_names",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/contract/naming.py#L384",
+    "part": 5
+  },
+  {
+    "label": "shared_principal",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/src/course_assistant/contract/naming.py#L519",
+    "part": 5
+  },
+  {
+    "label": "\u00a7 Cohort tables",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L1308-L1406",
+    "part": 5
+  },
+  {
+    "label": "line 1638",
+    "url": "https://github.com/llmops-databricks-2/course-assistant/blob/main/docs/TECHNICAL-DESIGN.md#L1638",
+    "part": 5
+  }
+]

@@ -1,0 +1,229 @@
+<div class="wrap">
+
+<header style="display:flex;flex-direction:column;gap:12px">
+  <!--lockup-->
+  <span class="eyebrow">LLMOps course · Platform lecture · Infrastructure</span>
+  <h1>What happens between your click and the answer, and who built the road it travels?</h1>
+  <p class="lede">Every lecture so far started inside a workspace that was already there: your user, your schemas, your warehouse, your repository and three deploy service principals. This page goes underneath. It follows one action from your browser through Databricks and back, then walks the platform top to bottom: the account and its identities, Unity Catalog, GitHub and the trust between them, the tools that manage it all, and why the course can rebuild the whole workspace from code.</p>
+  <p class="note">The names, grants and steps are the course's own, from the <code>course-assistant</code> repository (setup script, onboarding and runbook) as of November 2026. Every simulator runs in your browser and changes nothing in Databricks or GitHub.</p>
+</header>
+
+<section class="card" id="day">
+  <span class="eyebrow">The big picture</span>
+  <h2>A day on the platform</h2>
+  <p class="day-intro">Code comes in from the left, through GitHub; people's work comes in from the right. Both meet at the platform's front door, and every request is authenticated, then authorized, before compute reads storage in parallel. Ten short chapters, then the whole day at once. Drag to look around, click any part to zoom in and read what it does.</p>
+  <div class="day-bar">
+    <button id="dayBack" aria-label="Previous chapter">← Back</button>
+    <button class="primary" id="dayNext" aria-label="Next chapter">Next →</button>
+    <button id="dayReplay">Replay</button>
+    <button id="dayResume" hidden>Resume tour</button>
+    <button id="dayWhole">The whole day</button>
+    <label class="day-jump">Jump to
+      <select id="dayJump" aria-label="Jump to a scenario">
+        <optgroup label="Developers">
+          <option value="0">1 · Local development: Python through Databricks Connect</option>
+          <option value="1">2 · Pull request: CI fails, fixed, merged</option>
+          <option value="2">3 · CD signs in with OIDC</option>
+          <option value="3">4 · Deploy a bundle to acc, then prd</option>
+        </optgroup>
+        <optgroup label="Platform users">
+          <option value="4">5 · Python in a notebook, with traces</option>
+          <option value="5">6 · AI question to Genie</option>
+          <option value="6">7 · Dashboard: Unity Catalog allows and refuses</option>
+          <option value="7">8 · SQL query in the SQL editor</option>
+          <option value="8">9 · AI chat with the agent app</option>
+        </optgroup>
+        <optgroup label="Platform">
+          <option value="9">10 · Scheduled job: audit and monitoring</option>
+        </optgroup>
+        <optgroup label="Everything">
+          <option value="10">The whole day</option>
+        </optgroup>
+      </select>
+    </label>
+    <span class="day-sep"></span>
+    <button class="day-pp" id="dayPlay" title="Pause or play the traffic (Space)"><span aria-hidden="true">❚❚</span> Pause</button>
+    <label class="day-speed" title="Traffic speed ([ slower, ] faster)">Speed
+      <input type="range" id="daySpeed" min="0.25" max="3" step="0.25" value="1" aria-label="Traffic speed">
+      <output id="daySpeedOut">1×</output>
+    </label>
+    <label class="chk day-free"><input type="checkbox" id="dayDevs" checked><span>Developers</span></label>
+    <label class="chk day-free"><input type="checkbox" id="dayUsers" checked><span>Users</span></label>
+    <label class="chk day-free"><input type="checkbox" id="daySched" checked><span>Schedules</span></label>
+    <span class="day-clock" id="dayClock">09:00</span>
+    <button id="dayPresent" title="Present full screen (F)">Present</button>
+  </div>
+  <div class="day-stage" id="dayStage">
+    <svg id="daySvg" viewBox="0 0 2700 1560" role="img" aria-label="Developers on the left push code through GitHub into the platform; platform users on the right send requests to its front door. Each request is authenticated by identity and auth, then authorized by the workspace's ACLs or by Unity Catalog, before compute reads or writes storage, all inside your Databricks account. Beside it, dashed and unused in the course, stand your cloud account and your resources."></svg>
+    <div class="day-hud">
+      <div class="day-left">
+        <div class="day-cap"><span class="day-num" id="dayNum">1 / 10</span><b id="dayCapTitle"></b><p id="dayCapText"></p></div>
+        <div class="day-logbox"><ul class="day-log" id="dayLog"></ul></div>
+      </div>
+      <div class="day-info" id="dayInfo" hidden></div>
+      <div class="day-nav">
+        <svg id="dayMini" viewBox="0 0 2700 1560" aria-label="Minimap: click to move the view"></svg>
+        <div class="day-zoom"><button id="dayZoomIn" aria-label="Zoom in">+</button><button id="dayZoomOut" aria-label="Zoom out">−</button><button id="dayFit">Fit all</button></div>
+      </div>
+      <div class="day-hint" id="dayHint">Drag to pan · click the drawing, then scroll or pinch to zoom · ← → chapters · Space pause · [ ] speed · F present</div>
+    </div>
+  </div>
+</section>
+
+<section class="card" id="pipeline">
+  <span class="eyebrow">Top to bottom</span>
+  <h2>Seven views of the same platform</h2>
+  <p>Click a step to jump to it. The first is the path of a single action; the rest are the layers that path depends on, in the order they have to be built.</p>
+  <div class="pipe" id="pipe"></div>
+</section>
+
+<section class="card" id="path">
+  <span class="eyebrow"><span class="step-no">1</span>The path of an action</span>
+  <h2>From your browser to the compute plane, the storage, and back</h2>
+  <p>Pick an action and press <strong>Next hop</strong>. Each hop lights up in the drawing and is explained below it, with the docs it rests on. Switch the result size to see the two ways a result comes home.</p>
+  <div class="row">
+    <div class="tabs" id="pathActions"></div>
+  </div>
+  <div class="row">
+    <span class="note">Result size</span>
+    <div class="tabs" id="pathSize"></div>
+    <span style="flex:1"></span>
+    <button id="pathPrev">Back</button>
+    <button class="primary" id="pathNext">Next hop</button>
+    <button id="pathReset">Start over</button>
+  </div>
+  <div class="mapbox" id="pathMap"><!--request-path:start--><!--request-path:end--></div>
+  <div class="map-detail" id="pathDetail"></div>
+</section>
+
+<section class="card" id="layers">
+  <span class="eyebrow"><span class="step-no">2</span>Account, identities and roles</span>
+  <h2>Who is allowed to do what, and why</h2>
+  <p>Pick an identity and an action. The answer names the role or the grant that decides it. Rights come from three places: an <strong>account role</strong> (account admin, billing admin), a <strong>workspace role and entitlements</strong> (workspace admin, <code>workspace-access</code>), and <strong>Unity Catalog privileges</strong>, given to account groups and inherited downwards.</p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Identity</h3>
+      <div class="actions" id="whoList"></div>
+    </div>
+    <div class="panel">
+      <h3>Action</h3>
+      <div class="actions" id="whatList"></div>
+    </div>
+  </div>
+  <div class="map-detail" id="verdict"></div>
+</section>
+
+<section class="card" id="uc">
+  <span class="eyebrow"><span class="step-no">3</span>Unity Catalog</span>
+  <h2>One metastore, three environment catalogs, your schema in each</h2>
+  <p>Click a level of the tree. A privilege granted on a level is inherited by everything below it; to reach an object you also need <code>USE CATALOG</code> and <code>USE SCHEMA</code> on the way down. Your name below fills every path on this page.</p>
+  <div class="row"><label class="ctl" style="max-width:280px">Your schema name, as in your project_config.yml<input type="text" id="ucName" value="jane_doe" maxlength="40"></label></div>
+  <div class="grid2">
+    <div class="panel"><div class="uctree" id="ucTree"></div></div>
+    <div class="map-detail" id="ucDetail"></div>
+  </div>
+</section>
+
+<section class="card" id="oidc">
+  <span class="eyebrow"><span class="step-no">4</span>GitHub and Databricks</span>
+  <h2>How a workflow becomes a service principal without a secret</h2>
+  <p>GitHub signs a short-lived token about each job. Each of your three deploy principals has one federation policy that accepts exactly one subject. Change where the job runs and see which principal, if any, the token becomes.</p>
+  <div class="grid2">
+    <div class="panel">
+      <h3>The job</h3>
+      <label class="ctl">Repository<select id="oRepo">
+        <option value="own">llmops-databricks-2/llmops-&lt;you&gt;</option>
+        <option value="other">llmops-databricks-2/llmops-someone-else</option>
+        <option value="fork">your-account/llmops-&lt;you&gt; (a fork)</option>
+      </select></label>
+      <label class="ctl">Runs in<select id="oCtx">
+        <option value="environment:dev">environment dev</option>
+        <option value="environment:acc">environment acc</option>
+        <option value="environment:prd" selected>environment prd</option>
+        <option value="ref:refs/heads/main">branch main, no environment</option>
+        <option value="pull_request">a pull request</option>
+      </select></label>
+      <label class="ctl">Audience requested<select id="oAud">
+        <option value="ws">the workspace's /oidc/v1/token</option>
+        <option value="other">something else</option>
+      </select></label>
+      <h3>Claims GitHub signs</h3>
+      <pre class="code" id="oClaims"></pre>
+    </div>
+    <div class="panel">
+      <h3>Federation policies in the account</h3>
+      <div id="oPolicies" class="actions"></div>
+      <div id="oResult"></div>
+    </div>
+  </div>
+  <pre class="code"><span class="c"># the deploy job in your repository's .github/workflows/deploy.yml</span>
+permissions:
+  id-token: write                       <span class="c"># lets the job ask GitHub for the token</span>
+environment: prd                        <span class="c"># becomes ":environment:prd" in the subject</span>
+env:
+  DATABRICKS_AUTH_TYPE: github-oidc
+  DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+  DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}   <span class="c"># names the principal; not a secret</span></pre>
+</section>
+
+<section class="card" id="tools">
+  <span class="eyebrow"><span class="step-no">5</span>Managing resources</span>
+  <h2>The same volume, five ways</h2>
+  <p>Every tool ends in the same REST API. What differs is what it does for you, and what happens the second time you run it. Pick a tool, then run it, run it again, and remove what it made.</p>
+  <div class="tabs" id="toolTabs"></div>
+  <div class="grid2">
+    <pre class="code" id="toolCode"></pre>
+    <div class="panel">
+      <div class="row"><button class="primary" id="toolRun">Run</button><button id="toolAgain">Run again</button><button id="toolRemove">Remove</button></div>
+      <div class="tblwrap"><table class="t" id="toolLog"><thead><tr><th>Run</th><th>What it answers</th></tr></thead><tbody></tbody></table></div>
+      <dl class="kv" id="toolFacts"></dl>
+    </div>
+  </div>
+</section>
+
+<section class="card" id="rebuild">
+  <span class="eyebrow"><span class="step-no">6</span>Everything as code</span>
+  <h2>Lose the workspace, and see what comes back</h2>
+  <p>On 2 November 2026, during lecture 4's week, compute in the course's first workspace stopped after a payment-method update, and a few hours later the API answered <em>"Workspace … has been banned"</em>. The cohort moved to a new workspace in a second account the same day, rebuilt by the code that had built the first one. Below is a student's corner of a workspace. Move what you made by hand into code if you like, then ban the workspace and rebuild.</p>
+  <div class="row"><button class="primary" id="banBtn">Ban the workspace</button><button id="rebuildBtn" disabled>Rebuild from code</button><button id="banReset">Start over</button></div>
+  <div class="tblwrap"><table class="t" id="assets"><thead><tr><th>Object</th><th>Made by</th><th>State</th></tr></thead><tbody></tbody></table></div>
+  <div id="rebuildSummary"></div>
+</section>
+
+<section class="card" id="onboard">
+  <span class="eyebrow"><span class="step-no">7</span>Student onboarding</span>
+  <h2>One daily run, many students, every step idempotent</h2>
+  <p>The onboarding runs once a day as <code>sp-onboarding-llmops</code>. For every student on the list it takes each step that is not done yet; a step looks up by name before it creates, and a failed step holds only the steps that need its result. Set what goes wrong, then run a few days.</p>
+  <div class="row">
+    <label class="chk"><input type="checkbox" id="fQuota" checked><span>Bo's warehouse hits a quota on day 1</span></label>
+    <label class="chk"><input type="checkbox" id="fInvite" checked><span>Chen accepts the GitHub invitation only on day 3</span></label>
+    <label class="chk"><input type="checkbox" id="fRepo"><span>Ada's repository already exists, as after the workspace move</span></label>
+  </div>
+  <div class="row"><button class="primary" id="dayBtn">Run day 1</button><button id="dayReset">Start over</button><span class="note" id="dayNote"></span></div>
+  <div class="tblwrap"><table class="t" id="steps"></table></div>
+  <div class="legend" id="stepLegend"></div>
+</section>
+
+<section class="card" id="where">
+  <span class="eyebrow">Where it lives</span>
+  <h2>The demos and the code behind this page</h2>
+  <table class="m">
+    <thead><tr><th>File</th><th>What it shows</th></tr></thead>
+    <tbody>
+      <tr><td><code>notebooks/platform/p1_identity_and_auth.py</code></td><td>Your auth type, entitlements and groups, from the identity that runs it.</td></tr>
+      <tr><td><code>notebooks/platform/p2_unity_catalog_tour.py</code></td><td>The metastore, the environment catalogs, your effective privileges in each.</td></tr>
+      <tr><td><code>notebooks/platform/p3_ensure_pattern.py</code></td><td>An idempotent step: created, then adopted, then updated after a hand edit.</td></tr>
+      <tr><td><code>notebooks/platform/four_ways/</code></td><td>The volume of view 5, by REST, SDK, CLI, bundle and Terraform.</td></tr>
+      <tr><td><code>notebooks/platform/inventory.py</code></td><td>What you own in the workspace, and which of it your bundle declares.</td></tr>
+      <tr><td><code>.github/workflows/whoami.yml</code></td><td>The claims GitHub signs, and the principal Databricks maps them to.</td></tr>
+      <tr><td><code>course-assistant</code>: <code>scripts/setup_cohort.py</code>, <code>src/course_assistant/onboarding/</code>, <code>docs/RUNBOOK.md</code> § A new workspace</td><td>The one-time setup, the daily onboarding steps, and the migration runbook.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<footer>
+  <span>LLMOps course, Cauchy. Identities, grants, steps and the migration timeline: the <code>course-assistant</code> repository (technical design § Identities and permissions, § Onboarding, § Decisions "A second workspace"; runbook § A new workspace), November 2026. The students in the simulators are made up.</span>
+  <span id="docsLine">Docs: <!--docs--></span>
+  <span>Databricks product icons: official Databricks artwork, via the community set oieduardorabelo/databricks-architecture-icons (MIT). Databricks and its product names are trademarks of Databricks, Inc.</span>
+</footer>
+</div>

@@ -1,0 +1,27 @@
+/* Part 4, both pages. Palette and type: the Cauchy tokens of the course pages
+   (lecture_materials/src/platform-infrastructure/head.html), plus the traffic families of the
+   "day on the platform" scene. The root size follows the window, so a 1920-wide screen shows the
+   same picture as a 1280-wide one, larger: 16px at 1280 and below, 24px at 1920. */
+:root{
+  --bg:#f6f5f3; --panel:#ffffff; --alt:#f0efed; --ink:#1a1a1a; --body:#5d5d5d; --muted:#8a8a8a;
+  --line:#e0dfdd; --line-soft:#ebeae8; --flame:#f24b37; --link:#2466d9;
+  --sage-bg:#f0f5f2; --sage-bd:#c8dad2; --sage:#4e7566;
+  --blue-bg:#f0f4fb; --blue-bd:#cdd8ed; --blue:#506fa0;
+  --warm-bg:#faf6f0; --warm-bd:#e3d9ca; --warm:#8a7556;
+  --dev:#c9705f; --token:#d9a441; --user:#6b5fb0; --plat:#506fa0; --data:#4e7566; --ok:#3f9b6b; --no:#d64545;
+  --ink-ok:#1f6b46; --ink-no:#a12b2b; --ink-warn:#7a5a12;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{font-size:max(16px,1.25vw)}
+html,body{margin:0;height:100%}
+body{background:#f7f3ec;color:var(--body);font:1rem/1.45 "Nunito",system-ui,sans-serif;overflow:hidden}
+button,select,input{font:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:.3rem .95rem;font-size:1rem;font-weight:500;white-space:nowrap;line-height:1.3}
+button:hover{background:var(--alt)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--ink);border-color:var(--ink);color:var(--panel)}
+button.primary:hover{background:#333}
+button:focus-visible,a:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+code,.mono{font-family:"Fira Code",ui-monospace,monospace;font-size:.94em;font-variant-ligatures:none}
+a{color:var(--link)}

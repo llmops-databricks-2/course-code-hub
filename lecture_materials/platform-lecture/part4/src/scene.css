@@ -1,0 +1,138 @@
+/* The animation page: a caption strip, the stage, a transport bar. The page is the height of its
+   iframe; the stage takes what the two strips leave. */
+body{display:flex;flex-direction:column}
+.cap{flex:none;display:flex;align-items:stretch;gap:1rem;padding:.4rem .75rem;background:var(--panel);border-bottom:1px solid var(--line);height:4rem}
+.tabs{flex:none;display:flex;flex-direction:column;justify-content:center;gap:.2rem}
+.tabs button{border-radius:.5rem;padding:.02rem .7rem;text-align:left;font-size:1rem;line-height:1.35;color:var(--body);background:none;border-color:transparent}
+.tabs button:hover{background:var(--alt)}
+.tabs button[aria-selected=true]{background:var(--ink);border-color:var(--ink);color:var(--panel);font-weight:600}
+.tabs button b{font-family:"Fira Code",ui-monospace,monospace;font-weight:500;margin-right:.45rem}
+.cap-b{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:.75rem;border-left:1px solid var(--line-soft);padding-left:1rem}
+.cap-n{flex:none;font:500 1rem "Fira Code",ui-monospace,monospace;color:var(--ink);border:1px solid var(--ink);border-radius:999px;padding:.1rem .7rem;white-space:nowrap}
+.cap-b p{margin:0;font-size:1rem;line-height:1.38;color:var(--body);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cap-b p b{color:var(--ink);font-weight:600;font-size:1.06rem;margin-right:.3rem}
+
+.stage{position:relative;flex:1 1 0;min-height:0;overflow:hidden;background:#f7f3ec;outline-offset:-2px}
+#sv{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
+.hud-err{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border:1px solid var(--no);color:var(--ink);border-radius:12px;padding:1.1rem 1.4rem;max-width:32rem;font-size:1rem}
+.bigplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:1.25rem;font-weight:600;padding:.7rem 1.7rem;background:var(--ink);color:#fff;border-color:var(--ink);box-shadow:0 10px 30px rgba(26,26,26,.25)}
+.bigplay:hover{background:#333}
+.bigplay[hidden]{display:none}
+
+.bar{flex:none;display:flex;align-items:center;gap:.5rem;padding:0 .75rem;background:var(--panel);border-top:1px solid var(--line);height:3rem}
+.bar .sep{width:1px;height:1.4rem;background:var(--line);margin:0 .25rem}
+.bar .grow{flex:1 1 0}
+#bPlay{min-width:6.6rem}
+.dots{display:flex;gap:.3rem;align-items:center}
+.dots button{width:1.75rem;height:1.75rem;padding:0;border-radius:50%;font:500 1rem "Fira Code",ui-monospace,monospace;color:var(--body);display:grid;place-items:center}
+.dots button.past{background:#e7e4de;border-color:#d5d1c9;color:var(--ink)}
+.dots button.now{background:var(--flame);border-color:var(--flame);color:#fff}
+.speed{display:inline-flex;align-items:center;gap:.4rem;font-size:1rem;color:var(--body);white-space:nowrap}
+.speed input{width:6.5rem;accent-color:var(--ink);margin:0}
+.speed output{font:500 1rem "Fira Code",ui-monospace,monospace;color:var(--ink);min-width:3.2em}
+.hint{font-size:1rem;color:var(--muted);white-space:nowrap}
+kbd{font:500 .9rem "Fira Code",ui-monospace,monospace;color:var(--ink);background:var(--alt);border:1px solid var(--line);border-radius:5px;padding:0 .3rem}
+@media (max-width:1180px){.hint{display:none}}
+
+/* ---------- the drawing ---------- */
+#sv text{font-family:"Nunito",system-ui,sans-serif;fill:var(--ink);font-size:17px}
+#sv .mono{font-family:"Fira Code",ui-monospace,monospace;font-size:16px;font-weight:500;font-variant-ligatures:none}
+#sv .b{font-weight:600}
+#sv .sans{font-family:"Nunito",system-ui,sans-serif;font-weight:500}
+#sv .zl{font-size:16.5px;font-weight:600;letter-spacing:.08em;fill:#3a4a66}
+#sv .zs{font-size:16px;font-weight:500;fill:#5b6a85}
+#sv .tt{font-size:17px;font-weight:600}
+#sv .tt.big{font-size:19px}
+#sv .ts{font-size:16.5px;fill:#5d5d5d}
+#sv .ink{fill:var(--ink)}
+#sv .ok{fill:var(--ink-ok)} #sv .no{fill:var(--ink-no)} #sv .dev{fill:#a8503f} #sv .user{fill:#54489a}
+#sv .pn{font-size:18px;font-weight:600}
+
+.zone .zr{stroke-width:1.5}
+.z-dbx .zr{fill:rgba(80,111,160,.16);stroke:rgba(80,111,160,.62);stroke-width:2.2}
+.z-plane .zr{fill:rgba(80,111,160,.10);stroke:rgba(80,111,160,.34)}
+.z-store .zr{fill:rgba(78,117,102,.17);stroke:rgba(78,117,102,.45)}
+#sv .z-store .zl{fill:#3c5c50} #sv .z-store .zs{fill:#4e7566}
+.z-ghost .zr{fill:rgba(255,255,255,.2);stroke:rgba(80,111,160,.62);stroke-width:2;stroke-dasharray:9 7}
+.z-res .zr{stroke:rgba(78,117,102,.7)}
+#sv .gh-t{font-size:16.5px;font-weight:600;letter-spacing:.08em;fill:#3a4a66}
+#sv .z-res .gh-t{fill:#3c5c50}
+.z-devs .zr{fill:rgba(255,255,255,.5);stroke:rgba(138,117,86,.34)}
+#sv .z-devs .zl,#sv .z-gh .zl{fill:#6a5a40}
+#sv .z-gh .zs{fill:#8a7556}
+.gh-out{fill:none;stroke:#b9b4ab;stroke-width:3.5}
+.gh-in{fill:#eef0f4}
+.cell{fill:rgba(255,255,255,.46);stroke:rgba(80,111,160,.3);stroke-width:1.2}
+.lh{fill:#fff;stroke:#c9d2e2;stroke-width:1.2}
+#sv .lh-t{font-size:17px}
+.vtag{fill:#eeece8;stroke:#d5d1c9}
+.vtag.v-new{fill:#e3f3ea;stroke:var(--ok)}
+#sv .vt{fill:#6b6b6b} #sv .vt.v-new{fill:var(--ink-ok);font-weight:600}
+
+.sh1{fill:#1a1a1a;opacity:.08}
+.face{fill:url(#gTile);stroke:#d9d6d1;stroke-width:1.5}
+.face-no{fill:#fbe9e7;stroke:var(--no);stroke-width:2.5}
+.plate{fill:#f4f2ee;stroke:#e6e3de}
+.stepb circle{fill:var(--ink)}
+#sv .stepb text{fill:#fff;font-size:16px;font-weight:600;text-anchor:middle}
+
+/* rails */
+.rail{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.r-lane{stroke:#c9c3b8;stroke-width:6}
+.r-lane-c{stroke:#fbfaf7;stroke-width:1.8}
+.r-stub{stroke:#b9bdc9;stroke-width:3}
+
+/* what an environment holds */
+.dbar{fill:#6b5fb0;opacity:.78}
+.axis{stroke:#9aa3b5;stroke-width:1.5}
+.trend{fill:none;stroke:var(--ok);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+.crack{fill:none;stroke:var(--no);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.ui-l{stroke:#d5d2cc;stroke-width:5;stroke-linecap:round}
+.gr{fill:#fff;stroke:#e0cf9f;stroke-width:1.5}
+.gr-no{fill:#fbe9e7;stroke:var(--no);stroke-dasharray:6 4}
+.cab{fill:url(#gCab)}
+.blade{fill:#4a5369;stroke:#5c6781}
+.led{fill:#77819a}
+.vent{stroke:#333a4b;stroke-width:2;stroke-linecap:round}
+.cyl{fill:url(#gCyl);stroke:#7fa091;stroke-width:1.5}
+.cyl-top{fill:#eef5f1;stroke:#7fa091;stroke-width:1.5}
+.cyl-row{fill:none;stroke:#9fb8ad;stroke-width:1.2}
+.cyl-ghost{fill:none;stroke:var(--no);stroke-width:1.5;stroke-dasharray:5 4;opacity:.75}
+.would{fill:rgba(214,69,69,.08);stroke:var(--no);stroke-width:2.5;stroke-dasharray:8 5}
+
+/* GitHub */
+.g-main{stroke:#3d4350;stroke-width:4;stroke-linecap:round}
+.g-dot{stroke:#fff;stroke-width:2.5}
+.skip{fill:rgba(255,255,255,.6);stroke:#b9b4ab;stroke-width:1.5;stroke-dasharray:6 4}
+.skip-x{fill:none;stroke:#9a958c;stroke-width:2.6;stroke-linecap:round}
+.chip{fill:#f4f2ee;stroke:#d9d6d1;stroke-width:1.5}
+.arrow{fill:none;stroke:#9a9a9a;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.plan{fill:#fff;stroke:#3d4350;stroke-width:2}
+.plan-seam{stroke:#fff;stroke-width:3}
+.plan-bad{fill:#fbe9e7}
+
+/* people */
+.desk-top{fill:url(#gDesk)} .desk-front{fill:#d9c9ad} .desk-leg{fill:#c9b896} .desk-panel{fill:#e6d9bf}
+.arm{fill:none;stroke-width:11.5;stroke-linecap:round;stroke-linejoin:round}
+.arm-sh{stroke:#1a1a1a;stroke-width:13.5;opacity:.13}
+.specs{fill:rgba(255,255,255,.4);stroke:#3a3f4a;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.mug{fill:#fff;stroke:#c9c3b8;stroke-width:1.2} .mug-h{fill:none;stroke:#c9c3b8;stroke-width:2.2;stroke-linecap:round}
+.lead{stroke:#b9bdc9;stroke-width:3;stroke-linecap:round}
+.lap-base{fill:#dfe3ea;stroke:#aab1bf;stroke-width:1} .lap-side{fill:#b6bdca} .lap-key{fill:#b9c0cd}
+.lap-lid{fill:#2f333c} .lap-edge{fill:#1f2228}
+.lap-scr{fill:url(#gScr)}
+.glow{opacity:.5}
+
+/* packets, verdicts, bubbles */
+.pk-disc{stroke:#fff;stroke-width:2.2}
+.vd-disc{stroke:#fff;stroke-width:2.5}
+.vd-mark{fill:none;stroke:#fff;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+.vd-tag{fill:#fff;stroke-width:2}
+#sv .vd-t{font-size:17px;font-weight:600}
+.bub{fill:#fff;stroke:#3d4350;stroke-width:2}
+.bub.good{stroke:var(--ok)} .bub.bad{stroke:var(--no);fill:#fff6f5}
+.bub-seam{stroke:#fff;stroke-width:3;stroke-linecap:butt}
+.bub-seam.bad{stroke:#fff6f5}
+#sv .bub-t{font-size:17px;font-weight:600}
+#sv .bub-t.bad{fill:var(--ink-no)}
+#sv .stamp-t{font-size:30px;font-weight:600;letter-spacing:.06em}

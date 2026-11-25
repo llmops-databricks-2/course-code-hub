@@ -1,6 +1,22 @@
 # course-code-hub
 Full code for LLMOps with Datarbricks Course
 
+## Platform lecture (draft)
+
+- [Browser presentation](presentation_prep/platform/platform.html): press **F** to present, **N** for notes and sources.
+- [Lecture notes in HTML](lecture_materials/platform-infrastructure.html), A4 pages, printable to PDF.
+- [Interactive page](lecture_materials/PLATFORM-UNDER-THE-WORKSPACE.html): the path of an action through
+  Databricks, who may do what, the OIDC sign-in, five ways to manage a resource, a lost workspace,
+  and an onboarding run.
+- Demos: `notebooks/platform/` (`p1` identity, `p2` Unity Catalog, `p3` the ensure pattern, `p4`
+  secrets, `four_ways/`, `inventory.py`) and `.github/workflows/whoami.yml`.
+- The live onboarding demo: [`notebooks/platform/onboard_by_hand/README.md`](notebooks/platform/onboard_by_hand/README.md),
+  one mock student by Terraform, the SDK and REST, then by the onboarding pipeline.
+
+The study guide is built by `python3 lecture_materials/src/platform_infrastructure_pages.py`, the
+interactive page by `python3 lecture_materials/src/platform-infrastructure/build.py`, and the deck by
+`node presentation_prep/platform/build.mjs`; edit the sources, never the built files.
+
 ## Lecture 5 presentation
 
 - [Browser presentation](presentation_prep/lecture5/lecture5.html)

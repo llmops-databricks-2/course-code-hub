@@ -19,3 +19,9 @@ dist/
 .vscode/*.json
 
 .DS_Store
+
+# The platform lecture's hand-made onboarding: its id files and Terraform's local state
+notebooks/platform/onboard_by_hand/.state-*.json
+notebooks/platform/**/.terraform/
+notebooks/platform/**/terraform.tfstate*
+notebooks/platform/**/.terraform.lock.hcl
