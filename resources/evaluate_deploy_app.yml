@@ -19,6 +19,5 @@ resources:
               env: "${bundle.target}"
               source_code_path: "${workspace.file_path}"
               genie_space_id: "${resources.genie_spaces.arxiv-curator-space.id}"
-              experiment_id: "${var.experiment_id}"
               git_sha: "${var.git_sha}"
               git_branch: "${var.branch}"

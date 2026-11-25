@@ -10,6 +10,21 @@ from databricks.sdk.service.apps import ComputeState
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_app_telemetry_uses_separate_environment_scoped_tables():
+    app = yaml.safe_load((ROOT / "resources/agent_app.yml").read_text())["resources"]["apps"][
+        "arxiv_agent_app"
+    ]
+    assert app["telemetry_export_destinations"] == [
+        {
+            "unity_catalog": {
+                "logs_table": "${var.catalog}.${var.schema}.app_otel_logs",
+                "metrics_table": "${var.catalog}.${var.schema}.app_otel_metrics",
+                "traces_table": "${var.catalog}.${var.schema}.app_otel_spans",
+            }
+        }
+    ]
+
+
 @pytest.mark.parametrize(
     "failure", [None, "evaluation", "grants", "invocation", "status", "deployment"]
 )
@@ -37,7 +52,6 @@ def test_release_orders_deployment_and_stops_app(failure, capsys):
         "env": "acc",
         "genie_space_id": "genie-id",
         "source_code_path": "/Workspace/test/files",
-        "experiment_id": "experiment-id",
         "git_sha": "commit-sha",
         "git_branch": "main",
     }.__getitem__
@@ -98,7 +112,6 @@ def test_release_orders_deployment_and_stops_app(failure, capsys):
         "ARXIV_ENV": "acc",
         "GENIE_SPACE_ID": "genie-id",
         "MLFLOW_TRACKING_URI": "databricks",
-        "MLFLOW_EXPERIMENT_ID": "experiment-id",
         "ENABLE_MLFLOW_TRACING": "true",
         "GIT_SHA": "commit-sha",
         "GIT_BRANCH": "main",

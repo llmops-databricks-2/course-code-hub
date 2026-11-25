@@ -17,3 +17,5 @@ resources:
             notebook_path: ../../notebooks/6.1_monitoring_traces_and_tables.py
             base_parameters:
               env: "${bundle.target}"
+              llm_sample_rate: "0.1"
+              lookback_days: "7"

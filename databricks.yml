@@ -23,9 +23,6 @@ variables:
   branch:
     description: branch
     default: main
-  experiment_id:
-    description: MLflow experiment ID for the target environment
-    default: "265038258403436"
   schedule_pause_status:
     description: schedule pause status
     default: PAUSED
@@ -73,7 +70,6 @@ targets:
       host: https://dbc-e81ca4d2-f6bd.cloud.databricks.com
       root_path: /Shared/.bundle/${bundle.target}/${bundle.name}
     variables:
-      experiment_id: "265038258403437"
       catalog: llmops_acc
       schema: arxiv
       schedule_pause_status: PAUSED
@@ -84,7 +80,6 @@ targets:
       host: https://dbc-e81ca4d2-f6bd.cloud.databricks.com
       root_path: /Shared/.bundle/${bundle.target}/${bundle.name}
     variables:
-      experiment_id: "265038258403438"
       catalog: llmops_prd
       schema: arxiv
       schedule_pause_status: UNPAUSED

@@ -79,6 +79,15 @@ lecture 6 monitoring test job evaluates existing traces. It is defined in
 test jobs; enable the testing-jobs include in `databricks.yml` to deploy it.
 The dashboard definition is in `resources/dashboards/`.
 
+Databricks App telemetry is configured in `resources/agent_app.yml` for each
+target's catalog and schema. It writes app logs to `app_otel_logs`, separate
+from the MLflow trace tables. Databricks also requires destinations for app
+metrics and spans, named `app_otel_metrics` and `app_otel_spans`. The App must
+be redeployed for telemetry changes to take effect. The deploying identity and
+App service principal must meet the documented privileges for creating or using
+the target tables; see [App telemetry requirements](https://docs.databricks.com/aws/en/dev-tools/databricks-apps/observability).
+App telemetry ingestion is billed separately through Zerobus Ingest.
+
 The `lecture4-tracing-evaluation` testing job runs notebooks 4.0 through 4.4
 sequentially. It has no schedule or deployment-triggered run. Notebook 4.0 grants
 trace permissions; notebook 4.4 evaluates and registers a model version and updates

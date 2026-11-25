@@ -62,7 +62,6 @@ try:
                 EnvVar(name="ARXIV_ENV", value=env),
                 EnvVar(name="GENIE_SPACE_ID", value=cfg.genie_space_id),
                 EnvVar(name="MLFLOW_TRACKING_URI", value="databricks"),
-                EnvVar(name="MLFLOW_EXPERIMENT_ID", value=dbutils.widgets.get("experiment_id")),
                 EnvVar(name="ENABLE_MLFLOW_TRACING", value="true"),
                 EnvVar(name="GIT_SHA", value=dbutils.widgets.get("git_sha")),
                 EnvVar(name="GIT_BRANCH", value=dbutils.widgets.get("git_branch")),

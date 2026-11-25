@@ -46,7 +46,9 @@ def test_evaluates_original_traces():
     trace = object()
     spark = MagicMock()
     spark.sql.side_effect = [
-        SimpleNamespace(collect=lambda: [SimpleNamespace(trace_id="original-id")]),
+        SimpleNamespace(
+            collect=lambda: [SimpleNamespace(trace_id="original-id", llm_sample=False)]
+        ),
         SimpleNamespace(collect=lambda: []),
         SimpleNamespace(collect=lambda: []),
     ]
@@ -58,7 +60,7 @@ def test_evaluates_original_traces():
         patch("pyspark.sql.SparkSession") as session,
         patch("arxiv_curator.config.ProjectConfig.from_yaml", return_value=cfg),
         patch("arxiv_curator.config.get_env", return_value="dev"),
-        patch("arxiv_curator.config.get_widget", return_value="100"),
+        patch("arxiv_curator.config.get_widget", side_effect=lambda spark, name, default: default),
         patch("arxiv_curator.evaluation.word_count_check", scorer("word_count_check")),
         patch("arxiv_curator.evaluation.polite_tone_guideline", scorer("polite_tone")),
         patch("arxiv_curator.evaluation.hook_in_post_guideline", scorer("hook_in_post")),
@@ -77,7 +79,15 @@ def test_evaluates_original_traces():
     get_trace.assert_called_once_with("original-id")
     selection = spark.sql.call_args_list[0]
     assert "NOT EXISTS" in selection.args[0]
-    assert selection.kwargs["args"] == {"app_name": "app-dev", "scorer_name": "word_count_check"}
+    assert "root.time >= current_timestamp()" in selection.args[0]
+    assert selection.kwargs["args"] == {
+        "app_name": "app-dev",
+        "scorer_name": "word_count_check",
+        "sample_threshold": 1000,
+        "lookback_days": 7,
+    }
+    assert "pmod(xxhash64(root.trace_id), 10000)" in selection.args[0]
+    assert spark.sql.call_count == 1
 
 
 def test_view_notebook_creates_live_view():
