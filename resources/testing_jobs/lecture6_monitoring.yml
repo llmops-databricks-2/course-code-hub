@@ -9,11 +9,11 @@ resources:
           spec:
             environment_version: "5"
             dependencies:
-              - ../dist/*.whl
+              - ../../dist/*.whl
       tasks:
-        - task_key: generate_and_process_monitoring
+        - task_key: evaluate_traces
           environment_key: default
           notebook_task:
-            notebook_path: ../notebooks/6.1_monitoring_traces_and_tables.py
+            notebook_path: ../../notebooks/6.1_monitoring_traces_and_tables.py
             base_parameters:
               env: "${bundle.target}"

@@ -4,7 +4,7 @@
       "name": "monitoring",
       "displayName": "Agent Monitoring",
       "queryLines": [
-        "SELECT * FROM llmops_dev.arxiv.arxiv_agent_monitoring"
+        "SELECT * FROM arxiv_agent_monitoring_live"
       ],
       "columns": [
         {
@@ -23,7 +23,7 @@
       "name": "evaluations",
       "displayName": "Agent Evaluations",
       "queryLines": [
-        "SELECT * FROM llmops_dev.arxiv.arxiv_agent_evaluations"
+        "SELECT * FROM arxiv_agent_monitoring_live WHERE word_count_check IS NOT NULL OR polite_tone IS NOT NULL OR hook_in_post IS NOT NULL"
       ]
     }
   ],

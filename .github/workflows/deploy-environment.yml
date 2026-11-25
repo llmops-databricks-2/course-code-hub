@@ -39,7 +39,8 @@ jobs:
         run: |
           databricks bundle deploy \
             --target "${{ inputs.target }}" \
-            --var="git_sha=${GITHUB_SHA}"
+            --var="git_sha=${GITHUB_SHA}" \
+            --var="branch=${GITHUB_REF_NAME}"
 
       - name: Evaluate and test App
         run: |

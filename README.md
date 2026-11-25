@@ -72,6 +72,13 @@ notebooks remain in `notebooks/`. These jobs run only when explicitly triggered.
 The ingestion notebook test overwrites `arxiv_papers`, so use an isolated test
 schema when running it against existing data.
 
+Bundle deployment runs the `monitoring-view` job to create or update the live
+view; the target environment's UC trace tables must already exist. The separate
+lecture 6 monitoring test job evaluates existing traces. It is defined in
+`resources/testing_jobs/lecture6_monitoring.yml`, alongside the other optional
+test jobs; enable the testing-jobs include in `databricks.yml` to deploy it.
+The dashboard definition is in `resources/dashboards/`.
+
 The `lecture4-tracing-evaluation` testing job runs notebooks 4.0 through 4.4
 sequentially. It has no schedule or deployment-triggered run. Notebook 4.0 grants
 trace permissions; notebook 4.4 evaluates and registers a model version and updates

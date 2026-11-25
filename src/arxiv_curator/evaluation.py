@@ -1,9 +1,9 @@
+import json
 import os
 
 import mlflow
 from mlflow.genai.scorers import Guidelines
 
-from arxiv_curator.agent import ArxivAgent
 from arxiv_curator.config import ProjectConfig
 
 JUDGE_MODEL = os.getenv("JUDGE_MODEL", "databricks:/course_ops.gateway.chat")
@@ -49,6 +49,8 @@ def evaluate_agent(cfg: ProjectConfig, eval_inputs_path: str) -> mlflow.models.E
     Returns:
         MLflow EvaluationResult with metrics.
     """
+    from arxiv_curator.agent import ArxivAgent
+
     agent = ArxivAgent(
         llm_endpoint=cfg.llm_endpoint,
         embedding_endpoint=cfg.embedding_endpoint,
@@ -85,14 +87,22 @@ def word_count_check(outputs: list) -> bool:
     Returns:
         True if word count is under 350, False otherwise
     """
-    # Handle different output formats
-    if isinstance(outputs, list) and len(outputs) > 0:
-        if isinstance(outputs[0], dict) and "text" in outputs[0]:
-            text = outputs[0]["text"]
-        elif isinstance(outputs[0], str):
-            text = outputs[0]
-        else:
-            text = str(outputs[0])
+    if isinstance(outputs, str):
+        try:
+            outputs = json.loads(outputs)
+        except json.JSONDecodeError:
+            pass
+    if isinstance(outputs, dict) and "output" in outputs:
+        outputs = outputs["output"]
+    if isinstance(outputs, list):
+        messages = [
+            item for item in outputs if isinstance(item, dict) and item.get("type") == "message"
+        ]
+        if messages:
+            outputs = messages[-1].get("content", [])
+        text = " ".join(
+            str(item.get("text", "")) if isinstance(item, dict) else str(item) for item in outputs
+        )
     else:
         text = str(outputs)
 

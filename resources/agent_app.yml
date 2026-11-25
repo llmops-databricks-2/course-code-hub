@@ -15,3 +15,13 @@ resources:
             value: ${bundle.target}
           - name: GENIE_SPACE_ID
             value: ${resources.genie_spaces.arxiv-curator-space.id}
+          - name: MLFLOW_TRACKING_URI
+            value: databricks
+          - name: MLFLOW_EXPERIMENT_ID
+            value: ${var.experiment_id}
+          - name: ENABLE_MLFLOW_TRACING
+            value: "true"
+          - name: GIT_SHA
+            value: ${var.git_sha}
+          - name: GIT_BRANCH
+            value: ${var.branch}

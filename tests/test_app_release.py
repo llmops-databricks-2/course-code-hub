@@ -37,6 +37,9 @@ def test_release_orders_deployment_and_stops_app(failure, capsys):
         "env": "acc",
         "genie_space_id": "genie-id",
         "source_code_path": "/Workspace/test/files",
+        "experiment_id": "experiment-id",
+        "git_sha": "commit-sha",
+        "git_branch": "main",
     }.__getitem__
     with (
         patch("databricks.sdk.WorkspaceClient", return_value=workspace),
@@ -94,6 +97,11 @@ def test_release_orders_deployment_and_stops_app(failure, capsys):
     assert {item.name: item.value for item in deployment.env_vars} == {
         "ARXIV_ENV": "acc",
         "GENIE_SPACE_ID": "genie-id",
+        "MLFLOW_TRACKING_URI": "databricks",
+        "MLFLOW_EXPERIMENT_ID": "experiment-id",
+        "ENABLE_MLFLOW_TRACING": "true",
+        "GIT_SHA": "commit-sha",
+        "GIT_BRANCH": "main",
     }
     if failure == "deployment":
         workspace.apps.stop_and_wait.assert_not_called()
