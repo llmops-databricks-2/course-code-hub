@@ -234,7 +234,7 @@ Lakebase, credentials, materials), the report, and the reconcile.
   express setup, so it has no cloud account of its own.
 - **Request order:** every request is authenticated at identity and auth, then authorized by
   workspace ACLs (workspace objects) or Unity Catalog (data and AI assets), before compute touches
-  storage. See `lecture_materials/src/platform-infrastructure/SCENE-BRIEF.md` § 6.
+  storage. See `lecture_materials/day-on-the-platform/SCENE-BRIEF.md` § 6.
 
 ## 5. Facts to build on
 - **UI as code:** `/private/tmp/claude-501/-Users-victorkuznetsov-Repos-course-assistant/036fd855-da71-4ba3-bdaa-6637af4af5e1/scratchpad/lecture-facts/ui-as-code.json` and `ui-as-code.md`.

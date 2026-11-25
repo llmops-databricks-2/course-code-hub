@@ -1,3 +1,2 @@
 src/vendor/
-*.bundled.html
 __pycache__/

@@ -2,7 +2,7 @@
 
 The standalone, unconstrained version of the animated map that opens the Platform infrastructure
 lecture: `index.html`. It follows the brief in
-`lecture_materials/src/platform-infrastructure/SCENE-BRIEF.md` (the rules in § 6, the scenarios in
+`lecture_materials/day-on-the-platform/SCENE-BRIEF.md` (the rules in § 6, the scenarios in
 § 7, the review findings in § 11).
 
 Open `index.html` in a browser. Ten chapters (Back, Next, Replay), then the whole day. Drag to pan,

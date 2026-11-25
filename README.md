@@ -1,21 +1,19 @@
 # course-code-hub
 Full code for LLMOps with Datarbricks Course
 
-## Platform lecture (draft)
+## Platform lecture
 
-- [Browser presentation](presentation_prep/platform/platform.html): press **F** to present, **N** for notes and sources.
-- [Lecture notes in HTML](lecture_materials/platform-infrastructure.html), A4 pages, printable to PDF.
-- [Interactive page](lecture_materials/PLATFORM-UNDER-THE-WORKSPACE.html): the path of an action through
-  Databricks, who may do what, the OIDC sign-in, five ways to manage a resource, a lost workspace,
-  and an onboarding run.
-- Demos: `notebooks/platform/` (`p1` identity, `p2` Unity Catalog, `p3` the ensure pattern, `p4`
-  secrets, `four_ways/`, `inventory.py`) and `.github/workflows/whoami.yml`.
-- The live onboarding demo: [`notebooks/platform/onboard_by_hand/README.md`](notebooks/platform/onboard_by_hand/README.md),
-  one mock student by Terraform, the SDK and REST, then by the onboarding pipeline.
+- [Interactive deck](lecture_materials/platform-lecture/index.html): the platform behind the
+  workspace, everything you click as code, what infrastructure as code needs, dev → acc → prd, and
+  the onboarding automation. Open it in a browser: → next, ← back, Esc overview, N notes, F full screen.
+- Offline copy: [`index.bundled.html`](lecture_materials/platform-lecture/index.bundled.html), with no network needed.
+- Part 1 embeds the animated scene [`lecture_materials/day-on-the-platform/`](lecture_materials/day-on-the-platform/index.html),
+  and part 4 its own module in `lecture_materials/platform-lecture/part4/`.
 
-The study guide is built by `python3 lecture_materials/src/platform_infrastructure_pages.py`, the
-interactive page by `python3 lecture_materials/src/platform-infrastructure/build.py`, and the deck by
-`node presentation_prep/platform/build.mjs`; edit the sources, never the built files.
+Rebuild from the sources, never edit the built pages:
+`python3 lecture_materials/day-on-the-platform/src/build.py --bundle`, then
+`python3 lecture_materials/platform-lecture/part4/src/build.py --bundle`, then
+`python3 lecture_materials/platform-lecture/src/build.py --bundle`. Each folder's README has the details.
 
 ## Lecture 5 presentation
 
