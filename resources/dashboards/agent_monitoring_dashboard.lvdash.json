@@ -1,49 +1,149 @@
 {
   "datasets": [
     {
-      "name": "monitoring",
-      "displayName": "Agent Monitoring",
+      "name": "04979a26",
+      "displayName": "arxiv_traces_aggregated",
       "queryLines": [
         "SELECT * FROM arxiv_agent_monitoring_live"
-      ],
-      "columns": [
-        {
-          "displayName": "Request Date",
-          "description": "Date on which the trace request was received",
-          "expression": "DATE(request_time)"
-        },
-        {
-          "displayName": "Latency Seconds",
-          "description": "Execution latency in seconds",
-          "expression": "latency_seconds"
-        }
-      ]
-    },
-    {
-      "name": "evaluations",
-      "displayName": "Agent Evaluations",
-      "queryLines": [
-        "SELECT * FROM arxiv_agent_monitoring_live WHERE word_count_check IS NOT NULL OR polite_tone IS NOT NULL OR hook_in_post IS NOT NULL"
       ]
     }
   ],
   "pages": [
     {
-      "name": "overview",
-      "displayName": "Overview",
+      "name": "fa71ea72",
+      "displayName": "Agent monitoring",
       "layout": [
         {
           "widget": {
-            "name": "trace_count",
+            "name": "671ee87a",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<span style=\"font-size: 36px;line-height: 1.5;\">ArXiv agent monitoring</span>",
+                "<span style=\"font-size: 16px;\">Live production traces and evaluation feedback</span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "recent-traces",
             "queries": [
               {
                 "name": "main_query",
                 "query": {
-                  "datasetName": "monitoring",
+                  "datasetName": "04979a26",
                   "fields": [
                     {
-                      "name": "count(trace_id)",
-                      "expression": "COUNT(`trace_id`)"
+                      "name": "trace_id",
+                      "expression": "`trace_id`"
+                    },
+                    {
+                      "name": "request_time",
+                      "expression": "`request_time`"
+                    },
+                    {
+                      "name": "latency_seconds",
+                      "expression": "`latency_seconds`"
+                    },
+                    {
+                      "name": "tool_call_count",
+                      "expression": "`tool_call_count`"
+                    },
+                    {
+                      "name": "has_error",
+                      "expression": "`has_error`"
+                    },
+                    {
+                      "name": "word_count_check",
+                      "expression": "`word_count_check`"
+                    },
+                    {
+                      "name": "polite_tone",
+                      "expression": "`polite_tone`"
+                    },
+                    {
+                      "name": "hook_in_post",
+                      "expression": "`hook_in_post`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "trace_id",
+                    "displayName": "Trace ID"
+                  },
+                  {
+                    "fieldName": "request_time",
+                    "displayName": "Request time"
+                  },
+                  {
+                    "fieldName": "latency_seconds",
+                    "displayName": "Latency (s)"
+                  },
+                  {
+                    "fieldName": "tool_call_count",
+                    "displayName": "Tool calls"
+                  },
+                  {
+                    "fieldName": "has_error",
+                    "displayName": "Error"
+                  },
+                  {
+                    "fieldName": "word_count_check",
+                    "displayName": "Word count"
+                  },
+                  {
+                    "fieldName": "polite_tone",
+                    "displayName": "Polite tone"
+                  },
+                  {
+                    "fieldName": "hook_in_post",
+                    "displayName": "Hook"
+                  }
+                ]
+              },
+              "frame": {
+                "title": "Production traces and assessments",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 12,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "request-time-seconds-over-time",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "04979a26",
+                  "fields": [
+                    {
+                      "name": "minutely(request_time)",
+                      "expression": "DATE_TRUNC(\"MINUTE\", `request_time`)"
+                    },
+                    {
+                      "name": "avg(latency_seconds)",
+                      "expression": "AVG(`latency_seconds`)"
                     }
                   ],
                   "disaggregated": false
@@ -51,125 +151,721 @@
               }
             ],
             "spec": {
-              "version": 2,
-              "frame": {"title": "Total Traces", "showTitle": true},
-              "widgetType": "counter",
-              "encodings": {
-                "value": {"fieldName": "count(trace_id)", "displayName": "Traces"}
-              }
-            }
-          },
-          "position": {"x": 0, "y": 0, "width": 4, "height": 3}
-        },
-        {
-          "widget": {
-            "name": "evaluated_traces",
-            "queries": [{
-              "name": "main_query",
-              "query": {
-                "datasetName": "evaluations",
-                "fields": [{"name": "count(trace_id)", "expression": "COUNT(`trace_id`)"}],
-                "disaggregated": false
-              }
-            }],
-            "spec": {
-              "version": 2,
-              "frame": {"title": "Evaluated Traces", "showTitle": true},
-              "widgetType": "counter",
-              "encodings": {"value": {"fieldName": "count(trace_id)", "displayName": "Evaluated"}}
-            }
-          },
-          "position": {"x": 4, "y": 0, "width": 4, "height": 3}
-        },
-        {
-          "widget": {
-            "name": "polite_tone_score",
-            "queries": [{
-              "name": "main_query",
-              "query": {
-                "datasetName": "evaluations",
-                "fields": [{"name": "avg(polite_tone)", "expression": "AVG(`polite_tone`)"}],
-                "disaggregated": false
-              }
-            }],
-            "spec": {
-              "version": 2,
-              "frame": {"title": "Average Polite Tone", "showTitle": true},
-              "widgetType": "counter",
-              "encodings": {"value": {"fieldName": "avg(polite_tone)", "displayName": "Polite Tone"}}
-            }
-          },
-          "position": {"x": 8, "y": 0, "width": 4, "height": 3}
-        },
-        {
-          "widget": {
-            "name": "evaluation_scores",
-            "queries": [{
-              "name": "main_query",
-              "query": {
-                "datasetName": "evaluations",
-                "fields": [
-                  {"name": "avg(word_count_check)", "expression": "AVG(`word_count_check`)"},
-                  {"name": "avg(hook_in_post)", "expression": "AVG(`hook_in_post`)"}
-                ],
-                "disaggregated": false
-              }
-            }],
-            "spec": {
-              "version": 2,
-              "frame": {"title": "Evaluation Scores", "showTitle": true},
-              "widgetType": "table",
-              "encodings": {
-                "columns": [
-                  {"fieldName": "avg(word_count_check)", "displayName": "Word Count"},
-                  {"fieldName": "avg(hook_in_post)", "displayName": "Hook In Post"}
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "showDescription": false,
+                "title": "Average request latency (seconds)"
+              },
+              "mark": {
+                "colors": [
+                  "#E9750C",
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
                 ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "minutely(request_time)",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(latency_seconds)",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "label": {
+                  "show": false
+                }
               }
             }
           },
-          "position": {"x": 0, "y": 3, "width": 12, "height": 4}
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 12,
+            "height": 4
+          }
         },
         {
           "widget": {
-            "name": "average_latency",
-            "queries": [{"name": "main_query", "query": {"datasetName": "monitoring", "fields": [{"name": "avg(latency_seconds)", "expression": "AVG(`latency_seconds`)"}], "disaggregated": false}}],
-            "spec": {"version": 2, "frame": {"title": "Average Latency (seconds)", "showTitle": true}, "widgetType": "counter", "encodings": {"value": {"fieldName": "avg(latency_seconds)", "displayName": "Latency"}}}
+            "name": "average-tool-calls-per-minute",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "04979a26",
+                  "fields": [
+                    {
+                      "name": "minutely(request_time)",
+                      "expression": "DATE_TRUNC(\"MINUTE\", `request_time`)"
+                    },
+                    {
+                      "name": "avg(tool_call_count)",
+                      "expression": "AVG(`tool_call_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Average tool calls per request"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "selectionColor"
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "minutely(request_time)",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(tool_call_count)",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
           },
-          "position": {"x": 0, "y": 7, "width": 3, "height": 3}
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 6,
+            "height": 4
+          }
         },
         {
           "widget": {
-            "name": "error_count",
-            "queries": [{"name": "main_query", "query": {"datasetName": "monitoring", "fields": [{"name": "sum(has_error)", "expression": "SUM(`has_error`)"}], "disaggregated": false}}],
-            "spec": {"version": 2, "frame": {"title": "Traces With Errors", "showTitle": true}, "widgetType": "counter", "encodings": {"value": {"fieldName": "sum(has_error)", "displayName": "Errors"}}}
+            "name": "error-rate",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "04979a26",
+                  "fields": [
+                    {
+                      "name": "minutely(request_time)",
+                      "expression": "DATE_TRUNC(\"MINUTE\", `request_time`)"
+                    },
+                    {
+                      "name": "avg(has_error)",
+                      "expression": "AVG(`has_error`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "title": "Trace error rate"
+              },
+              "mark": {
+                "colors": [
+                  "#E9750C",
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "minutely(request_time)",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(has_error)",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  }
+                }
+              }
+            }
           },
-          "position": {"x": 3, "y": 7, "width": 3, "height": 3}
+          "position": {
+            "x": 6,
+            "y": 11,
+            "width": 6,
+            "height": 4
+          }
         },
         {
           "widget": {
-            "name": "llm_calls",
-            "queries": [{"name": "main_query", "query": {"datasetName": "monitoring", "fields": [{"name": "sum(llm_call_count)", "expression": "SUM(`llm_call_count`)"}], "disaggregated": false}}],
-            "spec": {"version": 2, "frame": {"title": "LLM Calls", "showTitle": true}, "widgetType": "counter", "encodings": {"value": {"fieldName": "sum(llm_call_count)", "displayName": "LLM Calls"}}}
+            "name": "passed-word-count-assessment",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "04979a26",
+                  "fields": [
+                    {
+                      "name": "minutely(request_time)",
+                      "expression": "DATE_TRUNC(\"MINUTE\", `request_time`)"
+                    },
+                    {
+                      "name": "avg(word_count_check)",
+                      "expression": "AVG(`word_count_check`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "showDescription": false,
+                "title": "Word-count pass rate (evaluated traces)"
+              },
+              "mark": {
+                "colors": [
+                  "#F24B37",
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "minutely(request_time)",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(word_count_check)",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  },
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "label": {
+                  "show": false
+                }
+              }
+            }
           },
-          "position": {"x": 6, "y": 7, "width": 3, "height": 3}
+          "position": {
+            "x": 0,
+            "y": 15,
+            "width": 6,
+            "height": 5
+          }
         },
         {
           "widget": {
-            "name": "tool_calls",
-            "queries": [{"name": "main_query", "query": {"datasetName": "monitoring", "fields": [{"name": "sum(tool_call_count)", "expression": "SUM(`tool_call_count`)"}], "disaggregated": false}}],
-            "spec": {"version": 2, "frame": {"title": "Tool Calls", "showTitle": true}, "widgetType": "counter", "encodings": {"value": {"fieldName": "sum(tool_call_count)", "displayName": "Tool Calls"}}}
+            "name": "polite-tone-pass-rate",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "04979a26",
+                  "fields": [
+                    {
+                      "name": "minutely(request_time)",
+                      "expression": "DATE_TRUNC(\"MINUTE\", `request_time`)"
+                    },
+                    {
+                      "name": "avg(polite_tone)",
+                      "expression": "AVG(`polite_tone`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "showDescription": false,
+                "title": "Polite-tone pass rate (evaluated sample)"
+              },
+              "mark": {
+                "colors": [
+                  "#337FF9",
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "minutely(request_time)",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(polite_tone)",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  },
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "label": {
+                  "show": false
+                }
+              }
+            }
           },
-          "position": {"x": 9, "y": 7, "width": 3, "height": 3}
+          "position": {
+            "x": 6,
+            "y": 15,
+            "width": 6,
+            "height": 5
+          }
         },
         {
           "widget": {
-            "name": "recent_requests",
-            "queries": [{"name": "main_query", "query": {"datasetName": "monitoring", "fields": [{"name": "trace_id", "expression": "`trace_id`"}, {"name": "request_time", "expression": "`request_time`"}, {"name": "latency_seconds", "expression": "`latency_seconds`"}, {"name": "span_count", "expression": "`span_count`"}, {"name": "has_error", "expression": "`has_error`"}], "disaggregated": true}}],
-            "spec": {"version": 2, "frame": {"title": "Recent Requests", "showTitle": true}, "widgetType": "table", "encodings": {"columns": [{"fieldName": "trace_id", "displayName": "Trace ID"}, {"fieldName": "request_time", "displayName": "Request Time"}, {"fieldName": "latency_seconds", "displayName": "Latency (s)"}, {"fieldName": "span_count", "displayName": "Spans"}, {"fieldName": "has_error", "displayName": "Error"}]}}
+            "name": "hook-pass-rate",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "04979a26",
+                  "fields": [
+                    {
+                      "name": "minutely(request_time)",
+                      "expression": "DATE_TRUNC(\"MINUTE\", `request_time`)"
+                    },
+                    {
+                      "name": "avg(hook_in_post)",
+                      "expression": "AVG(`hook_in_post`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "showDescription": false,
+                "title": "Hook pass rate (evaluated sample)"
+              },
+              "mark": {
+                "colors": [
+                  "#E9750C",
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "minutely(request_time)",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(hook_in_post)",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  },
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "label": {
+                  "show": false
+                }
+              }
+            }
           },
-          "position": {"x": 0, "y": 10, "width": 12, "height": 6}
+          "position": {
+            "x": 0,
+            "y": 20,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "evaluation-coverage",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "04979a26",
+                  "fields": [
+                    {
+                      "name": "minutely(request_time)",
+                      "expression": "DATE_TRUNC(\"MINUTE\", `request_time`)"
+                    },
+                    {
+                      "name": "word_count_coverage",
+                      "expression": "COUNT(`word_count_check`) / NULLIF(COUNT(`trace_id`), 0)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "showDescription": false,
+                "title": "Word-count evaluation coverage"
+              },
+              "mark": {
+                "colors": [
+                  "#39857C",
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "minutely(request_time)",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "word_count_coverage",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 1
+                    }
+                  },
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "label": {
+                  "show": false
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 20,
+            "width": 6,
+            "height": 5
+          }
         }
-      ]
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
     }
-  ]
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
 }

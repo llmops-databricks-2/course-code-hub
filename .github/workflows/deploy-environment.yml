@@ -20,6 +20,8 @@ jobs:
       DATABRICKS_AUTH_TYPE: github-oidc
       DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
       DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      BUNDLE_VAR_git_sha: ${{ github.sha }}
+      BUNDLE_VAR_branch: ${{ github.ref_name }}
 
     steps:
       - name: Checkout source code
@@ -37,10 +39,7 @@ jobs:
 
       - name: Deploy bundle resources
         run: |
-          databricks bundle deploy \
-            --target "${{ inputs.target }}" \
-            --var="git_sha=${GITHUB_SHA}" \
-            --var="branch=${GITHUB_REF_NAME}"
+          databricks bundle deploy --target "${{ inputs.target }}"
 
       - name: Evaluate and test App
         run: |

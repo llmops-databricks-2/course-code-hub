@@ -79,12 +79,10 @@ def test_evaluates_original_traces():
     get_trace.assert_called_once_with("original-id")
     selection = spark.sql.call_args_list[0]
     assert "NOT EXISTS" in selection.args[0]
-    assert "root.time >= current_timestamp()" in selection.args[0]
     assert selection.kwargs["args"] == {
         "app_name": "app-dev",
         "scorer_name": "word_count_check",
         "sample_threshold": 1000,
-        "lookback_days": 7,
     }
     assert "pmod(xxhash64(root.trace_id), 10000)" in selection.args[0]
     assert spark.sql.call_count == 1

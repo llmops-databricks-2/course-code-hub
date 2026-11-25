@@ -26,15 +26,9 @@ from arxiv_curator.evaluation import (
 
 spark = SparkSession.builder.getOrCreate()
 env = get_env(spark)
-max_traces = int(get_widget(spark, "max_traces", "1000"))
 llm_sample_rate = float(get_widget(spark, "llm_sample_rate", "0.1"))
-lookback_days = int(get_widget(spark, "lookback_days", "7"))
-if lookback_days < 1:
-    raise ValueError("lookback_days must be positive")
 if not 0 <= llm_sample_rate <= 1:
     raise ValueError("llm_sample_rate must be between 0 and 1")
-if max_traces < 1:
-    raise ValueError("max_traces must be positive")
 cfg = ProjectConfig.from_yaml("../project_config.yml", env=env)
 os.environ["MLFLOW_TRACING_SQL_WAREHOUSE_ID"] = cfg.warehouse_id
 mlflow.set_tracking_uri("databricks")
@@ -54,11 +48,11 @@ mlflow.set_experiment(experiment_id=experiment.experiment_id)
 # MAGIC %md
 # MAGIC ## Evaluate existing traces
 # MAGIC
-# MAGIC Select a bounded batch of recent, successful App traces missing valid
+# MAGIC Select successful App traces missing valid
 # MAGIC word-count feedback. A stable trace-ID hash chooses the LLM sample from
 # MAGIC that same batch. Evaluate the sample first, then the word-count scorer on
 # MAGIC the full batch; MLflow records feedback on the original traces.
-# MAGIC A longer lookback can be used for backfill. Selection is scoped by UC
+# MAGIC Selection is scoped by UC
 # MAGIC location and App deployment tag, not by experiment ID.
 
 # COMMAND ----------
@@ -72,7 +66,6 @@ candidates = spark.sql(
     FROM {spans} root
     WHERE root.parent_span_id IS NULL
       AND root.status.code IN ('OK', 'STATUS_CODE_OK')
-      AND root.time >= current_timestamp() - make_interval(0, 0, 0, :lookback_days)
       AND EXISTS (
           SELECT 1 FROM {annotations} tag
           WHERE tag.target_type = 'TRACE' AND tag.target_id = root.trace_id
@@ -87,13 +80,11 @@ candidates = spark.sql(
             AND coalesce(try_cast(feedback.metadata:['mlflow.valid'] AS BOOLEAN), true)
       )
     ORDER BY root.time ASC, root.trace_id ASC
-    LIMIT {max_traces}
     """,
     args={
         "app_name": cfg.agent_app_name,
         "scorer_name": word_count_check.name,
         "sample_threshold": int(llm_sample_rate * 10000),
-        "lookback_days": lookback_days,
     },
 ).collect()
 if candidates:
