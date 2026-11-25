@@ -10,7 +10,7 @@ bundle:
 artifacts:
   default:
     type: whl
-    build: uv build --native-tls
+    build: uv build --native-tls && python3 scripts/prepare_app_deployment.py
     path: .
 
 variables:
@@ -53,12 +53,14 @@ include:
   - resources/monitoring_view.yml
   - resources/monitoring_dashboard.yml
   - resources/monitoring_alert.yml
+  - resources/monitoring_probe.yml
 
 sync:
   include:
     - eval_inputs.txt
     - project_config.yml
     - prompts/*.txt
+    - app_deployment/**
 
 targets:
   dev:

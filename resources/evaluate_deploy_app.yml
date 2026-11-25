@@ -17,7 +17,7 @@ resources:
             notebook_path: deployment_scripts/evaluate_deploy_app.py
             base_parameters:
               env: "${bundle.target}"
-              source_code_path: "${workspace.file_path}"
+              source_code_path: "${workspace.file_path}/app_deployment"
               genie_space_id: "${resources.genie_spaces.arxiv-curator-space.id}"
               git_sha: "${var.git_sha}"
               git_branch: "${var.branch}"

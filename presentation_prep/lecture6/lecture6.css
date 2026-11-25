@@ -18,3 +18,5 @@
 .tier-example .content pre{font-size:17px;line-height:1.28;padding:15px 20px;margin:0}.tier-example .caption{font-size:18px!important;margin-top:10px!important}
 .col p.scorer-tier{color:#d84432;font-size:14px;font-weight:700;letter-spacing:.06em;margin:5px 0 16px}
 .telemetry-columns{display:grid;grid-template-columns:1.3fr 1fr;gap:25px}.telemetry-columns h3{font-size:21px;margin:0 0 14px}.telemetry-columns pre{font-size:14px;line-height:1.6;margin:0;white-space:pre}.telemetry-mlflow{background:#fff;border:1px solid #ded9d3;border-top:4px solid #f24b37;border-radius:6px;padding:20px 22px}.telemetry-mlflow p{font-size:19px;margin:8px 0 16px}.telemetry-mlflow code{font-size:17px;line-height:1.8}.telemetry-code .caption{font-size:18px!important}
+
+.observe-boundary .content table{font-size:19px}.observe-boundary .content th,.observe-boundary .content td{padding:12px 14px}.observe-boundary .content th:first-child{width:23%}.observe-boundary .content th:nth-child(2){width:39%}.metrics-injection .diagram{height:350px}.metrics-injection .diagram-note{font-size:20px!important}

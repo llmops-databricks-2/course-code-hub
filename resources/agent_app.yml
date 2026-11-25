@@ -3,7 +3,7 @@ resources:
     arxiv_agent_app:
       name: agent-arxiv-curator-${bundle.target}
       description: Arxiv research agent with Lakebase pgvector retrieval
-      source_code_path: ../
+      source_code_path: ../app_deployment
       usage_policy_id: ${var.usage_policy_id}
       telemetry_export_destinations:
         - unity_catalog:

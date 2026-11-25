@@ -14,7 +14,6 @@ import os
 
 import mlflow
 from loguru import logger
-from mlflow.entities.trace_location import UnityCatalog
 from pyspark.sql import SparkSession
 
 from arxiv_curator.config import ProjectConfig, get_env, get_widget
@@ -32,17 +31,7 @@ if not 0 <= llm_sample_rate <= 1:
 cfg = ProjectConfig.from_yaml("../project_config.yml", env=env)
 os.environ["MLFLOW_TRACING_SQL_WAREHOUSE_ID"] = cfg.warehouse_id
 mlflow.set_tracking_uri("databricks")
-experiment = mlflow.get_experiment_by_name(cfg.experiment_name)
-if experiment is None:
-    raise ValueError(f"Experiment does not exist: {cfg.experiment_name}")
-location = experiment.trace_location
-if not isinstance(location, UnityCatalog) or (
-    location.catalog_name,
-    location.schema_name,
-    location.table_prefix,
-) != (cfg.catalog, cfg.schema, "llmops"):
-    raise ValueError(f"Experiment {cfg.experiment_name} is not bound to the expected UC tables")
-mlflow.set_experiment(experiment_id=experiment.experiment_id)
+mlflow.set_experiment(cfg.experiment_name)
 
 # COMMAND ----------
 # MAGIC %md

@@ -101,8 +101,8 @@ if app.pending_deployment:
 w.apps.deploy_and_wait(
     app_name=app_name,
     app_deployment=AppDeployment(
-        # This notebook lives in notebooks/; deploy the repository root.
-        source_code_path=os.path.abspath(".."),
+        # The bundle build prepares a dedicated App-only source directory.
+        source_code_path=os.path.abspath("../app_deployment"),
         command=["uv", "run", "start-server"],
         env_vars=[
             EnvVar(name="ARXIV_ENV", value=env),

@@ -6,7 +6,6 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import yaml
-from mlflow.entities.trace_location import UnityCatalog
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -40,9 +39,6 @@ def test_evaluates_original_traces():
         experiment_name="/Shared/dev",
         agent_app_name="app-dev",
     )
-    experiment = SimpleNamespace(
-        experiment_id="123", trace_location=UnityCatalog("llmops_dev", "arxiv", "llmops")
-    )
     trace = object()
     spark = MagicMock()
     spark.sql.side_effect = [
@@ -64,7 +60,6 @@ def test_evaluates_original_traces():
         patch("arxiv_curator.evaluation.word_count_check", scorer("word_count_check")),
         patch("arxiv_curator.evaluation.polite_tone_guideline", scorer("polite_tone")),
         patch("arxiv_curator.evaluation.hook_in_post_guideline", scorer("hook_in_post")),
-        patch("mlflow.get_experiment_by_name", return_value=experiment),
         patch("mlflow.set_tracking_uri"),
         patch("mlflow.set_experiment"),
         patch("mlflow.get_trace", return_value=trace) as get_trace,

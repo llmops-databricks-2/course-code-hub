@@ -6,6 +6,20 @@
       "queryLines": [
         "SELECT * FROM arxiv_agent_monitoring_live"
       ]
+    },
+    {
+      "name": "http_metrics",
+      "displayName": "App HTTP metrics",
+      "queryLines": [
+        "SELECT time AS request_time,",
+        "  try_cast(histogram.attributes:['http.route'] AS STRING) AS route,",
+        "  try_cast(histogram.attributes:['http.request.method'] AS STRING) AS method,",
+        "  try_cast(histogram.attributes:['http.response.status_code'] AS INT) AS status_code,",
+        "  histogram.count AS request_count, histogram.sum AS duration_seconds",
+        "FROM app_otel_metrics",
+        "WHERE name = 'app.http.request.duration'",
+        "  AND service_name = concat('agent-arxiv-curator-', regexp_replace(current_catalog(), '^llmops_', ''))"
+      ]
     }
   ],
   "pages": [
@@ -27,6 +41,67 @@
             "x": 0,
             "y": 0,
             "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "request-time-filter",
+            "queries": [
+              {
+                "name": "request_time_filter_query",
+                "query": {
+                  "datasetName": "04979a26",
+                  "fields": [
+                    {
+                      "name": "request_time",
+                      "expression": "`request_time`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "http_time_filter_query",
+                "query": {
+                  "datasetName": "http_metrics",
+                  "fields": [
+                    {
+                      "name": "request_time",
+                      "expression": "`request_time`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-date-range-picker",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "request_time",
+                    "displayName": "Request time",
+                    "queryName": "request_time_filter_query"
+                  },
+                  {
+                    "fieldName": "request_time",
+                    "displayName": "HTTP request time",
+                    "queryName": "http_time_filter_query"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Request time"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 4,
             "height": 2
           }
         },
@@ -123,7 +198,7 @@
           },
           "position": {
             "x": 0,
-            "y": 2,
+            "y": 4,
             "width": 12,
             "height": 5
           }
@@ -223,7 +298,7 @@
           },
           "position": {
             "x": 0,
-            "y": 7,
+            "y": 9,
             "width": 12,
             "height": 4
           }
@@ -321,7 +396,7 @@
           },
           "position": {
             "x": 0,
-            "y": 11,
+            "y": 13,
             "width": 6,
             "height": 4
           }
@@ -424,7 +499,7 @@
           },
           "position": {
             "x": 6,
-            "y": 11,
+            "y": 13,
             "width": 6,
             "height": 4
           }
@@ -531,7 +606,7 @@
           },
           "position": {
             "x": 0,
-            "y": 15,
+            "y": 17,
             "width": 6,
             "height": 5
           }
@@ -638,7 +713,7 @@
           },
           "position": {
             "x": 6,
-            "y": 15,
+            "y": 17,
             "width": 6,
             "height": 5
           }
@@ -745,7 +820,7 @@
           },
           "position": {
             "x": 0,
-            "y": 20,
+            "y": 22,
             "width": 6,
             "height": 5
           }
@@ -852,8 +927,499 @@
           },
           "position": {
             "x": 6,
-            "y": 20,
+            "y": 22,
             "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "http_metrics_heading",
+            "multilineTextboxSpec": {
+              "lines": [
+                "<span style=\"font-size: 28px;\">App HTTP requests</span>",
+                "<span style=\"font-size: 14px;\">Requests reaching the App; proxy rejections require a separate signal.</span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 25,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "http-requests",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "http_metrics",
+                  "fields": [
+                    {
+                      "name": "minutely(request_time)",
+                      "expression": "DATE_TRUNC(\"MINUTE\", `request_time`)"
+                    },
+                    {
+                      "name": "requests",
+                      "expression": "SUM(`request_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "showDescription": false,
+                "title": "HTTP requests reaching the App"
+              },
+              "mark": {
+                "colors": [
+                  "#337FF9",
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "minutely(request_time)",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "requests",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "label": {
+                  "show": false
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 27,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "http-errors",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "http_metrics",
+                  "fields": [
+                    {
+                      "name": "minutely(request_time)",
+                      "expression": "DATE_TRUNC(\"MINUTE\", `request_time`)"
+                    },
+                    {
+                      "name": "errors",
+                      "expression": "SUM(CASE WHEN `status_code` >= 500 THEN `request_count` ELSE 0 END)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "showDescription": false,
+                "title": "HTTP 5xx responses reaching the App"
+              },
+              "mark": {
+                "colors": [
+                  "#F24B37",
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "minutely(request_time)",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "errors",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "label": {
+                  "show": false
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 27,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "http-latency",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "http_metrics",
+                  "fields": [
+                    {
+                      "name": "minutely(request_time)",
+                      "expression": "DATE_TRUNC(\"MINUTE\", `request_time`)"
+                    },
+                    {
+                      "name": "http_latency",
+                      "expression": "SUM(`duration_seconds`) / NULLIF(SUM(`request_count`), 0)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "showDescription": false,
+                "title": "Average HTTP duration (seconds)"
+              },
+              "mark": {
+                "colors": [
+                  "#E9750C",
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "minutely(request_time)",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "http_latency",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "label": {
+                  "show": false
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 31,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "http-4xx",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "http_metrics",
+                  "fields": [
+                    {
+                      "name": "minutely(request_time)",
+                      "expression": "DATE_TRUNC(\"MINUTE\", `request_time`)"
+                    },
+                    {
+                      "name": "client_errors",
+                      "expression": "SUM(CASE WHEN `status_code` >= 400 AND `status_code` < 500 THEN `request_count` ELSE 0 END)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "frame": {
+                "showTitle": true,
+                "showDescription": false,
+                "title": "HTTP 4xx responses reaching the App"
+              },
+              "mark": {
+                "colors": [
+                  "#39857C",
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "minutely(request_time)",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "client_errors",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "label": {
+                  "show": false
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 31,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "http-status-breakdown",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "http_metrics",
+                  "fields": [
+                    {
+                      "name": "route",
+                      "expression": "`route`"
+                    },
+                    {
+                      "name": "method",
+                      "expression": "`method`"
+                    },
+                    {
+                      "name": "status_code",
+                      "expression": "`status_code`"
+                    },
+                    {
+                      "name": "requests",
+                      "expression": "SUM(`request_count`)"
+                    },
+                    {
+                      "name": "avg_duration",
+                      "expression": "SUM(`duration_seconds`) / NULLIF(SUM(`request_count`), 0)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "title": "HTTP responses by route and status",
+                "showTitle": true
+              },
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "route",
+                    "displayName": "Route"
+                  },
+                  {
+                    "fieldName": "method",
+                    "displayName": "Method"
+                  },
+                  {
+                    "fieldName": "status_code",
+                    "displayName": "HTTP status"
+                  },
+                  {
+                    "fieldName": "requests",
+                    "displayName": "Requests"
+                  },
+                  {
+                    "fieldName": "avg_duration",
+                    "displayName": "Avg duration (s)"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 35,
+            "width": 12,
             "height": 5
           }
         }

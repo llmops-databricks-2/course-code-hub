@@ -4,10 +4,13 @@
 # isort: off
 import agent_server.agent  # noqa: F401 - configures credentials and registers handlers
 from mlflow.genai.agent_server import AgentServer, setup_mlflow_git_based_version_tracking
+
+from agent_server.http_metrics import configure_http_metrics
 # isort: on
 
 agent_server = AgentServer("ResponsesAgent", enable_chat_proxy=True)
 app = agent_server.app
+metrics_provider = configure_http_metrics(app)
 setup_mlflow_git_based_version_tracking()
 
 
