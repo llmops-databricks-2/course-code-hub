@@ -1,0 +1,4 @@
+/* the joined diagram's layers: perimeter, then the roads, then the boxes and labels */
+.peri{z-index:0}
+.dia-s{z-index:1}
+.dia .nd,.dia .elabel,.dia .story,.dia .outside{z-index:2}

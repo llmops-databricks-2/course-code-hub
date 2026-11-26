@@ -1,0 +1,1194 @@
+[
+ {
+  "console": "workspace",
+  "item": "New",
+  "what": "The create menu: shortcut to make a notebook, query, dashboard, job, pipeline, etc.",
+  "terraform": {
+   "resource": "none",
+   "provider_level": "n/a",
+   "code": "",
+   "url": null
+  },
+  "sdk": {
+   "call": "UI only (each menu entry maps to the item's own create call)",
+   "code": "",
+   "url": null
+  },
+  "rest": {
+   "method": "",
+   "path": "",
+   "body": "",
+   "url": null
+  },
+  "notes": "UI only; no object behind it. See the individual items."
+ },
+ {
+  "console": "workspace",
+  "item": "Workspace",
+  "what": "The file tree of folders, notebooks, files and Git folders (repos).",
+  "terraform": {
+   "resource": "databricks_directory, databricks_notebook, databricks_workspace_file, databricks_repo",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_directory\" \"d\" {\n  path = \"/Shared/course\"\n}\nresource \"databricks_repo\" \"r\" {\n  url  = \"https://github.com/user/demo.git\"\n  path = \"/Repos/me@example.com/demo\"\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/directory"
+  },
+  "sdk": {
+   "call": "w.workspace.mkdirs(path); w.workspace.list(path); w.repos.create(url, provider)",
+   "code": "from databricks.sdk import WorkspaceClient\nw = WorkspaceClient()\nw.workspace.mkdirs(\"/Shared/course\")\nw.repos.create(url=\"https://github.com/user/demo.git\", provider=\"gitHub\", path=\"/Repos/me@example.com/demo\")",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/workspace/workspace.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/workspace/mkdirs",
+   "body": {
+    "path": "/Shared/course"
+   },
+   "url": "https://docs.databricks.com/api/workspace/workspace"
+  },
+  "notes": "Git folders: POST /api/2.0/repos with {url, provider, path}. Notebooks: databricks_notebook / w.workspace.upload or import_ (POST /api/2.0/workspace/import)."
+ },
+ {
+  "console": "workspace",
+  "item": "Recents",
+  "what": "A per-user view of recently opened objects.",
+  "terraform": {
+   "resource": "none",
+   "provider_level": "n/a",
+   "code": "",
+   "url": null
+  },
+  "sdk": {
+   "call": "UI only (closest: list objects with w.workspace.list)",
+   "code": "",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/workspace/workspace.html"
+  },
+  "rest": {
+   "method": "",
+   "path": "",
+   "body": "",
+   "url": null
+  },
+  "notes": "UI only. No API for the Recents list was found."
+ },
+ {
+  "console": "workspace",
+  "item": "Catalog",
+  "what": "Unity Catalog explorer: catalogs, schemas, tables, volumes and grants.",
+  "terraform": {
+   "resource": "databricks_catalog, databricks_schema, databricks_volume, databricks_sql_table, databricks_grants (or databricks_grant)",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_catalog\" \"c\" { name = \"course\" }\nresource \"databricks_schema\" \"s\" {\n  catalog_name = databricks_catalog.c.name\n  name         = \"bronze\"\n}\nresource \"databricks_grants\" \"g\" {\n  schema = databricks_schema.s.id\n  grant {\n    principal  = \"students\"\n    privileges = [\"USE_SCHEMA\", \"SELECT\"]\n  }\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/catalog"
+  },
+  "sdk": {
+   "call": "w.catalogs.create(name); w.schemas.create(name, catalog_name); w.volumes.create(catalog_name, schema_name, name, volume_type); w.grants.update(securable_type, full_name, changes=[PermissionsChange(...)])",
+   "code": "w.catalogs.create(name=\"course\")\nw.schemas.create(name=\"bronze\", catalog_name=\"course\")\nfrom databricks.sdk.service.catalog import VolumeType\nw.volumes.create(catalog_name=\"course\", schema_name=\"bronze\", name=\"raw\", volume_type=VolumeType.MANAGED)",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/catalog/catalogs.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.1/unity-catalog/catalogs",
+   "body": {
+    "name": "course"
+   },
+   "url": "https://docs.databricks.com/api/workspace/catalogs"
+  },
+  "notes": "Schemas POST /api/2.1/unity-catalog/schemas; volumes POST /api/2.1/unity-catalog/volumes; grants PATCH /api/2.1/unity-catalog/permissions/{securable_type}/{full_name}. Prefer databricks_grants (authoritative per securable) or databricks_grant (additive)."
+ },
+ {
+  "console": "workspace",
+  "item": "Jobs & Pipelines",
+  "what": "Lakeflow Jobs (scheduled multi-task workflows) and Lakeflow Spark Declarative Pipelines.",
+  "terraform": {
+   "resource": "databricks_job, databricks_pipeline",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_job\" \"j\" {\n  name = \"daily\"\n  task {\n    task_key = \"a\"\n    notebook_task {\n      notebook_path = \"/Shared/course/etl\"\n    }\n  }\n}\nresource \"databricks_pipeline\" \"p\" {\n  name    = \"ldp\"\n  catalog = \"course\"\n  schema  = \"bronze\"\n  library {\n    notebook { path = \"/Shared/course/ldp\" }\n  }\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/job"
+  },
+  "sdk": {
+   "call": "w.jobs.create(name=, tasks=[Task(...)]); w.pipelines.create(name=, catalog=, schema=, libraries=[...])",
+   "code": "from databricks.sdk.service import jobs\nw.jobs.create(name=\"daily\", tasks=[jobs.Task(task_key=\"a\",\n    notebook_task=jobs.NotebookTask(notebook_path=\"/Shared/course/etl\"))])",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/jobs/jobs.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.2/jobs/create",
+   "body": {
+    "name": "daily",
+    "tasks": [
+     {
+      "task_key": "a",
+      "notebook_task": {
+       "notebook_path": "/Shared/course/etl"
+      }
+     }
+    ]
+   },
+   "url": "https://docs.databricks.com/api/workspace/jobs"
+  },
+  "notes": "Pipelines: POST /api/2.0/pipelines. Job example omits compute (serverless) - UNCONFIRMED that the minimal HCL applies in every workspace; docs example uses new_cluster."
+ },
+ {
+  "console": "workspace",
+  "item": "Compute",
+  "what": "Classic clusters; serverless compute needs no object, its Python environments are workspace base environments.",
+  "terraform": {
+   "resource": "databricks_cluster; databricks_environments_workspace_base_environment, databricks_environments_default_workspace_base_environment (serverless environments)",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_cluster\" \"c\" {\n  cluster_name            = \"shared\"\n  spark_version           = data.databricks_spark_version.latest_lts.id\n  node_type_id            = data.databricks_node_type.smallest.id\n  autotermination_minutes = 20\n  num_workers             = 1\n}\nresource \"databricks_environments_workspace_base_environment\" \"e\" {\n  display_name = \"course-env\"\n  filepath     = \"/Volumes/course/bronze/raw/environment.yaml\"\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/cluster"
+  },
+  "sdk": {
+   "call": "w.clusters.create(spark_version, ...); w.environments.create_workspace_base_environment(workspace_base_environment=WorkspaceBaseEnvironment(...))",
+   "code": "w.clusters.create(spark_version=\"17.3.x-scala2.13\", cluster_name=\"shared\",\n    node_type_id=\"i3.xlarge\", num_workers=1, autotermination_minutes=20)\n# serverless environments:\nlist(w.environments.list_workspace_base_environments())",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/compute/clusters.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.1/clusters/create",
+   "body": {
+    "spark_version": "17.3.x-scala2.13",
+    "cluster_name": "shared",
+    "num_workers": 1,
+    "node_type_id": "i3.xlarge"
+   },
+   "url": "https://docs.databricks.com/api/workspace/clusters"
+  },
+  "notes": "Serverless has no resource of its own. Base environments: POST /api/environments/v1/workspace-base-environments (docs: /api/workspace/environments). SDK example values (runtime version, node type) are illustrative. Environments SDK doc URL: workspace/environments/environments.html."
+ },
+ {
+  "console": "workspace",
+  "item": "Discover",
+  "what": "Browse of curated data assets by Discover domains and certified/popular assets.",
+  "terraform": {
+   "resource": "databricks_domain (Public Preview; Discover domains only)",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_domain\" \"finance\" {\n  tag_key  = \"finance\"\n  subtitle = \"Financial data assets\"\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/domain"
+  },
+  "sdk": {
+   "call": "w.domains.create_domain(domain=Domain(tag_key=...)); w.domains.list_domains()",
+   "code": "from databricks.sdk.service.domains import Domain\nw.domains.create_domain(domain=Domain(tag_key=\"finance\", subtitle=\"Financial data assets\"))",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/domains/domains.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/domains",
+   "body": {
+    "tag_key": "finance",
+    "subtitle": "Financial data assets"
+   },
+   "url": "https://docs.databricks.com/api/workspace/domains"
+  },
+  "notes": "The Discover page itself is a UI view; only its domains are objects. Domain tag_key must be an existing governed tag. SDK Domain field names not individually checked beyond tag_key/subtitle (from TF docs)."
+ },
+ {
+  "console": "workspace",
+  "item": "Marketplace",
+  "what": "Databricks Marketplace: consumer browse and install of data/AI listings.",
+  "terraform": {
+   "resource": "none",
+   "provider_level": "n/a",
+   "code": "",
+   "url": null
+  },
+  "sdk": {
+   "call": "w.consumer_listings.list(); w.consumer_installations.list_all? / w.consumer_installations.create(listing_id, ...)",
+   "code": "for l in w.consumer_listings.list():\n    print(l.id, l.summary.name)",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/marketplace/consumer_listings.html"
+  },
+  "rest": {
+   "method": "GET",
+   "path": "/api/2.1/marketplace-consumer/listings",
+   "body": null,
+   "url": "https://docs.databricks.com/api/workspace/consumerlistings"
+  },
+  "notes": "No Terraform resource in the provider's docs/resources listing. Consumer installation method names not verified: UNCONFIRMED (only consumer_listings.list verified; l.summary.name attribute UNCONFIRMED)."
+ },
+ {
+  "console": "workspace",
+  "item": "Dashboards",
+  "what": "AI/BI (Lakeview) dashboards.",
+  "terraform": {
+   "resource": "databricks_dashboard",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_dashboard\" \"d\" {\n  display_name         = \"Course KPIs\"\n  warehouse_id         = databricks_sql_endpoint.this.id\n  parent_path          = \"/Shared/course\"\n  serialized_dashboard = file(\"kpi.lvdash.json\")\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/dashboard"
+  },
+  "sdk": {
+   "call": "w.lakeview.create(dashboard=Dashboard(display_name=, warehouse_id=, serialized_dashboard=, parent_path=))",
+   "code": "from databricks.sdk.service.dashboards import Dashboard\nw.lakeview.create(dashboard=Dashboard(display_name=\"Course KPIs\", warehouse_id=\"<wh-id>\",\n    parent_path=\"/Shared/course\", serialized_dashboard=open(\"kpi.lvdash.json\").read()))",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/dashboards/lakeview.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/lakeview/dashboards",
+   "body": {
+    "display_name": "Course KPIs",
+    "warehouse_id": "<wh-id>",
+    "parent_path": "/Shared/course",
+    "serialized_dashboard": "{...}"
+   },
+   "url": "https://docs.databricks.com/api/workspace/lakeview"
+  },
+  "notes": "Publish is a separate call (databricks_dashboard has no publish; w.lakeview.publish)."
+ },
+ {
+  "console": "workspace",
+  "item": "Genie Agents",
+  "what": "Genie spaces (renamed Genie Agents): natural-language data agents over chosen tables.",
+  "terraform": {
+   "resource": "databricks_genie_agent (Private Preview; its docs page has no API link)",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_genie_agent\" \"g\" {\n  display_name = \"Sales Agent\"\n  warehouse_id = \"abcd1234567890ef\"\n  parent_path  = \"/Users/me@example.com/genie\"\n  definition = {\n    data_sources = {\n      tables = [{ identifier = \"main.sales.orders\" }]\n    }\n  }\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/genie_agent"
+  },
+  "sdk": {
+   "call": "w.genie_agents.create_genie_agent(genie_agent=GenieAgent(...)); list_genie_agents(); (legacy w.genie.* spaces API also present)",
+   "code": "agents = list(w.genie_agents.list_genie_agents())\n# create: w.genie_agents.create_genie_agent(genie_agent=GenieAgent(display_name=..., warehouse_id=...))",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/genieagents/genie_agents.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/genie/agents",
+   "body": {
+    "display_name": "Sales Agent",
+    "warehouse_id": "<wh-id>"
+   },
+   "url": "https://docs.databricks.com/api/workspace/genieagents"
+  },
+  "notes": "UNCONFIRMED: REST docs page URL and the GenieAgent field names for create (path and method verified in SDK 0.169 source). Private Preview in the provider. Older spaces: w.genie.list_spaces -> GET /api/2.0/genie/spaces."
+ },
+ {
+  "console": "workspace",
+  "item": "Alerts",
+  "what": "SQL alerts: scheduled query checks that notify.",
+  "terraform": {
+   "resource": "databricks_alert_v2 (GA); older databricks_alert",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_alert_v2\" \"a\" {\n  display_name = \"High errors\"\n  query_text   = \"SELECT count(*) AS n FROM logs\"\n  warehouse_id = \"<wh-id>\"\n  parent_path  = \"/Users/me@example.com\"\n  evaluation = {\n    source              = { name = \"n\", display = \"n\", aggregation = \"COUNT\" }\n    comparison_operator = \"GREATER_THAN\"\n    threshold           = { value = { double_value = 100 } }\n  }\n  schedule = { quartz_cron_schedule = \"0 0/15 * * * ?\", timezone_id = \"UTC\", pause_status = \"UNPAUSED\" }\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/alert_v2"
+  },
+  "sdk": {
+   "call": "w.alerts_v2.create_alert(alert=AlertV2(...)); w.alerts.create(...) for the older API",
+   "code": "list(w.alerts_v2.list_alerts())\n# create: w.alerts_v2.create_alert(alert=AlertV2(display_name=..., query_text=..., warehouse_id=..., evaluation=..., schedule=...))",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/sql/alerts_v2.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/alerts",
+   "body": {
+    "display_name": "High errors",
+    "query_text": "SELECT 1",
+    "warehouse_id": "<wh-id>"
+   },
+   "url": "https://docs.databricks.com/api/workspace/alertsv2"
+  },
+  "notes": "Body abridged: evaluation and schedule are required in practice (see TF example). Path /api/2.0/alerts is the v2 create in SDK 0.169 source; verify against the page since the older alerts API shares similar paths (/api/2.0/sql/alerts)."
+ },
+ {
+  "console": "workspace",
+  "item": "Visual Data Prep",
+  "what": "UI-based no-code data preparation (builds a pipeline/notebook output).",
+  "terraform": {
+   "resource": "none",
+   "provider_level": "n/a",
+   "code": "",
+   "url": null
+  },
+  "sdk": {
+   "call": "UI only",
+   "code": "",
+   "url": null
+  },
+  "rest": {
+   "method": "",
+   "path": "",
+   "body": "",
+   "url": null
+  },
+  "notes": "UI only. No resource or API found: UNCONFIRMED whether one exists in 2026-11."
+ },
+ {
+  "console": "workspace",
+  "item": "SQL Editor",
+  "what": "The editor for writing and running SQL; saved content is a Query object.",
+  "terraform": {
+   "resource": "databricks_query (saved queries)",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_query\" \"q\" {\n  warehouse_id = databricks_sql_endpoint.this.id\n  display_name = \"My query\"\n  query_text   = \"SELECT 42 AS value\"\n  parent_path  = \"/Shared/Queries\"\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/query"
+  },
+  "sdk": {
+   "call": "w.queries.create(query=CreateQueryRequestQuery(...)); run ad hoc SQL via w.statement_execution.execute_statement(statement, warehouse_id)",
+   "code": "r = w.statement_execution.execute_statement(statement=\"SELECT 42\", warehouse_id=\"<wh-id>\")",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/sql/statement_execution.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/sql/statements",
+   "body": {
+    "statement": "SELECT 42",
+    "warehouse_id": "<wh-id>"
+   },
+   "url": "https://docs.databricks.com/api/workspace/statementexecution"
+  },
+  "notes": "The editor UI itself is not an object; running SQL = Statement Execution API. The path /api/2.0/sql/statements is standard but not re-checked in this run: UNCONFIRMED."
+ },
+ {
+  "console": "workspace",
+  "item": "Queries",
+  "what": "Saved SQL queries.",
+  "terraform": {
+   "resource": "databricks_query",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_query\" \"q\" {\n  warehouse_id = databricks_sql_endpoint.this.id\n  display_name = \"My query\"\n  query_text   = \"SELECT 42 AS value\"\n  parent_path  = \"/Shared/Queries\"\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/query"
+  },
+  "sdk": {
+   "call": "w.queries.create(query=CreateQueryRequestQuery(display_name=, warehouse_id=, query_text=, parent_path=)); w.queries.list()",
+   "code": "from databricks.sdk.service.sql import CreateQueryRequestQuery\nw.queries.create(query=CreateQueryRequestQuery(display_name=\"My query\",\n    warehouse_id=\"<wh-id>\", query_text=\"SELECT 42 AS value\", parent_path=\"/Shared/Queries\"))",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/sql/queries.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/sql/queries",
+   "body": {
+    "query": {
+     "display_name": "My query",
+     "warehouse_id": "<wh-id>",
+     "query_text": "SELECT 42 AS value"
+    }
+   },
+   "url": "https://docs.databricks.com/api/workspace/queries"
+  },
+  "notes": "CreateQueryRequestQuery class name from SDK knowledge, not re-grepped: UNCONFIRMED."
+ },
+ {
+  "console": "workspace",
+  "item": "Query History",
+  "what": "A view of past SQL statements run on warehouses.",
+  "terraform": {
+   "resource": "none",
+   "provider_level": "n/a",
+   "code": "",
+   "url": null
+  },
+  "sdk": {
+   "call": "w.query_history.list(filter_by=QueryFilter(...)); system table system.query.history",
+   "code": "for q in w.query_history.list(max_results=10):\n    print(q.query_id, q.status)",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/sql/query_history.html"
+  },
+  "rest": {
+   "method": "GET",
+   "path": "/api/2.0/sql/history/queries",
+   "body": null,
+   "url": "https://docs.databricks.com/api/workspace/queryhistory"
+  },
+  "notes": "View, not an object: read-only. system.query.history table named from memory, not verified here: UNCONFIRMED. The list() iterator shape (items vs response object) UNCONFIRMED."
+ },
+ {
+  "console": "workspace",
+  "item": "SQL Warehouses",
+  "what": "Serverless or classic SQL compute for queries and dashboards.",
+  "terraform": {
+   "resource": "databricks_sql_endpoint",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_sql_endpoint\" \"this\" {\n  name             = \"wh-demo\"\n  cluster_size     = \"2X-Small\"\n  max_num_clusters = 1\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/sql_endpoint"
+  },
+  "sdk": {
+   "call": "w.warehouses.create(name=, cluster_size=, max_num_clusters=)",
+   "code": "w.warehouses.create(name=\"wh-demo\", cluster_size=\"2X-Small\", max_num_clusters=1).result()",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/sql/warehouses.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/sql/warehouses",
+   "body": {
+    "name": "wh-demo",
+    "cluster_size": "2X-Small",
+    "max_num_clusters": 1
+   },
+   "url": "https://docs.databricks.com/api/workspace/warehouses"
+  },
+  "notes": "Cluster size value '2X-Small' is a valid size per docs convention; TF doc example uses 'Small'."
+ },
+ {
+  "console": "workspace",
+  "item": "Runs",
+  "what": "History of job runs (and pipeline updates).",
+  "terraform": {
+   "resource": "none",
+   "provider_level": "n/a",
+   "code": "",
+   "url": null
+  },
+  "sdk": {
+   "call": "w.jobs.list_runs(job_id=)",
+   "code": "for r in w.jobs.list_runs(limit=5):\n    print(r.run_id, r.state.result_state)",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/jobs/jobs.html"
+  },
+  "rest": {
+   "method": "GET",
+   "path": "/api/2.2/jobs/runs/list",
+   "body": null,
+   "url": "https://docs.databricks.com/api/workspace/jobs"
+  },
+  "notes": "A run is created by running a job (w.jobs.run_now -> POST /api/2.2/jobs/run-now) so there is no declarative form. Run history is also in system tables (system.lakeflow.*): name from memory, UNCONFIRMED."
+ },
+ {
+  "console": "workspace",
+  "item": "Data Ingestion",
+  "what": "Lakeflow Connect: managed connectors ingesting SaaS/DB data via UC connections and ingestion pipelines.",
+  "terraform": {
+   "resource": "databricks_connection (the source); databricks_pipeline with ingestion_definition (the ingestion)",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_connection\" \"mysql\" {\n  name            = \"mysql_connection\"\n  connection_type = \"MYSQL\"\n  options = {\n    host     = \"db.example.com\"\n    port     = \"3306\"\n    user     = \"user\"\n    password = var.pw\n  }\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/connection"
+  },
+  "sdk": {
+   "call": "w.connections.create(name, connection_type, options); w.pipelines.create(ingestion_definition=IngestionPipelineDefinition(...))",
+   "code": "from databricks.sdk.service.catalog import ConnectionType\nw.connections.create(name=\"mysql_connection\", connection_type=ConnectionType.MYSQL,\n    options={\"host\": \"db.example.com\", \"port\": \"3306\", \"user\": \"user\", \"password\": \"...\"})",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/catalog/connections.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.1/unity-catalog/connections",
+   "body": {
+    "name": "mysql_connection",
+    "connection_type": "MYSQL",
+    "options": {
+     "host": "db.example.com",
+     "port": "3306",
+     "user": "u",
+     "password": "p"
+    }
+   },
+   "url": "https://docs.databricks.com/api/workspace/connections"
+  },
+  "notes": "The ingestion pipeline's ingestion_definition schema not examined: UNCONFIRMED."
+ },
+ {
+  "console": "workspace",
+  "item": "Playground",
+  "what": "Chat UI to try serving endpoints / gateway models interactively.",
+  "terraform": {
+   "resource": "none",
+   "provider_level": "n/a",
+   "code": "",
+   "url": null
+  },
+  "sdk": {
+   "call": "UI only (closest: query the endpoint, w.serving_endpoints.query(name=, messages=))",
+   "code": "",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/serving/serving_endpoints.html"
+  },
+  "rest": {
+   "method": "",
+   "path": "",
+   "body": "",
+   "url": null
+  },
+  "notes": "UI only. Query call signature not re-checked: UNCONFIRMED."
+ },
+ {
+  "console": "workspace",
+  "item": "Agents",
+  "what": "Agent Bricks: Knowledge Assistants and Supervisor Agents.",
+  "terraform": {
+   "resource": "databricks_knowledge_assistant, databricks_supervisor_agent (both Public Beta; docs give no example, only arguments)",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_knowledge_assistant\" \"ka\" {\n  display_name = \"course-qa\"\n  description  = \"Answers questions about the course.\"\n}\nresource \"databricks_supervisor_agent\" \"sa\" {\n  display_name = \"course-supervisor\"\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/knowledge_assistant"
+  },
+  "sdk": {
+   "call": "w.knowledge_assistants.create_knowledge_assistant(knowledge_assistant=...); w.supervisor_agents.create_supervisor_agent(supervisor_agent=...)",
+   "code": "from databricks.sdk.service.knowledgeassistants import KnowledgeAssistant\nw.knowledge_assistants.create_knowledge_assistant(knowledge_assistant=KnowledgeAssistant(\n    display_name=\"course-qa\", description=\"Answers questions about the course.\"))",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/knowledgeassistants/knowledge_assistants.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.1/knowledge-assistants",
+   "body": {
+    "display_name": "course-qa",
+    "description": "Answers questions about the course."
+   },
+   "url": "https://docs.databricks.com/api/workspace/knowledgeassistants"
+  },
+  "notes": "HCL is assembled from the documented required arguments (docs have no example block). Supervisor: POST /api/2.1/supervisor-agents. Knowledge sources: databricks_knowledge_assistant_knowledge_source."
+ },
+ {
+  "console": "workspace",
+  "item": "AI Gateway",
+  "what": "Unity AI Gateway services (model, model-provider and MCP services as UC objects in a schema).",
+  "terraform": {
+   "resource": "databricks_ai_gateway_model_service, databricks_ai_gateway_model_provider_service, databricks_ai_gateway_mcp_service (GA)",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_ai_gateway_model_service\" \"m\" {\n  parent           = \"schemas/main.default\"\n  model_service_id = \"support\"\n  config = {\n    routing = { destinations = [{\n      name                 = \"primary\"\n      destination_type     = \"DESTINATION_TYPE_PAY_PER_TOKEN_FOUNDATION_MODEL\"\n      pay_per_token_config = { model = \"models/system.ai.databricks-gpt-5\" }\n      traffic_percentage   = 100\n    }] }\n  }\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/ai_gateway_model_service"
+  },
+  "sdk": {
+   "call": "w.ai_gateway.create_model_service(model_service=ModelService(...), parent='schemas/main.default', model_service_id=); also create_model_provider_service, create_mcp_service",
+   "code": "list(w.ai_gateway.list_model_services(parent=\"schemas/main.default\"))\n# create: w.ai_gateway.create_model_service(model_service=ModelService(...), parent=\"schemas/main.default\", model_service_id=\"support\")",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/catalog/ai_gateway.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.1/unity-catalog/model-services",
+   "body": {
+    "note": "parent, model_service_id and model_service body; exact query/body split UNCONFIRMED",
+    "model_service": {
+     "config": {}
+    }
+   },
+   "url": "https://docs.databricks.com/api/workspace/aigateway"
+  },
+  "notes": "Distinct from the legacy per-endpoint AI Gateway config on serving endpoints. The REST body/query split was not read from the docs."
+ },
+ {
+  "console": "workspace",
+  "item": "Experiments",
+  "what": "MLflow experiments (runs, traces).",
+  "terraform": {
+   "resource": "databricks_mlflow_experiment",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_mlflow_experiment\" \"e\" {\n  name = \"/Users/me@example.com/course-exp\"\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/mlflow_experiment"
+  },
+  "sdk": {
+   "call": "w.experiments.create_experiment(name)",
+   "code": "w.experiments.create_experiment(name=\"/Users/me@example.com/course-exp\")",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/ml/experiments.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/mlflow/experiments/create",
+   "body": {
+    "name": "/Users/me@example.com/course-exp"
+   },
+   "url": "https://docs.databricks.com/api/workspace/experiments"
+  },
+  "notes": ""
+ },
+ {
+  "console": "workspace",
+  "item": "Features",
+  "what": "Feature engineering features in UC, and online stores / online tables for low-latency serving.",
+  "terraform": {
+   "resource": "databricks_feature_engineering_feature; databricks_online_store (Private Preview, no example); databricks_online_table (older)",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_online_table\" \"t\" {\n  name = \"main.default.online_table\"\n  spec {\n    source_table_full_name = \"main.default.source_table\"\n    primary_key_columns    = [\"id\"]\n    run_triggered {}\n  }\n}\nresource \"databricks_online_store\" \"s\" {\n  name     = \"course-store\"\n  capacity = \"CU_1\"\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/feature_engineering_feature"
+  },
+  "sdk": {
+   "call": "w.feature_engineering.create_feature(feature=Feature(...)); w.feature_store.create_online_store(online_store=OnlineStore(...)); w.online_tables.create(table=OnlineTable(...))",
+   "code": "from databricks.sdk.service.ml import OnlineStore\nw.feature_store.create_online_store(online_store=OnlineStore(name=\"course-store\", capacity=\"CU_1\"))",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/ml/feature_store.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/feature-store/online-stores",
+   "body": {
+    "name": "course-store",
+    "capacity": "CU_1"
+   },
+   "url": "https://docs.databricks.com/api/workspace/featurestore"
+  },
+  "notes": "Features: POST /api/2.0/feature-engineering/features. Online tables: POST /api/2.0/online-tables (docs say the older online tables are superseded by online stores: UNCONFIRMED). REST page URL for online-stores UNCONFIRMED."
+ },
+ {
+  "console": "workspace",
+  "item": "Models",
+  "what": "Unity Catalog registered models and versions.",
+  "terraform": {
+   "resource": "databricks_registered_model",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_registered_model\" \"m\" {\n  name         = \"my_model\"\n  catalog_name = \"main\"\n  schema_name  = \"default\"\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/registered_model"
+  },
+  "sdk": {
+   "call": "w.registered_models.create(catalog_name=, schema_name=, name=)",
+   "code": "w.registered_models.create(catalog_name=\"main\", schema_name=\"default\", name=\"my_model\")",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/catalog/registered_models.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.1/unity-catalog/models",
+   "body": {
+    "catalog_name": "main",
+    "schema_name": "default",
+    "name": "my_model"
+   },
+   "url": "https://docs.databricks.com/api/workspace/registeredmodels"
+  },
+  "notes": "Versions are normally created by mlflow.register_model, not IaC."
+ },
+ {
+  "console": "workspace",
+  "item": "Serving",
+  "what": "Model serving endpoints.",
+  "terraform": {
+   "resource": "databricks_model_serving",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_model_serving\" \"m\" {\n  name = \"my-endpoint\"\n  config {\n    served_entities {\n      name                  = \"m1\"\n      entity_name           = \"main.default.my_model\"\n      entity_version        = \"1\"\n      workload_size         = \"Small\"\n      scale_to_zero_enabled = true\n    }\n  }\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/model_serving"
+  },
+  "sdk": {
+   "call": "w.serving_endpoints.create(name=, config=EndpointCoreConfigInput(served_entities=[...]))",
+   "code": "from databricks.sdk.service.serving import EndpointCoreConfigInput, ServedEntityInput\nw.serving_endpoints.create(name=\"my-endpoint\", config=EndpointCoreConfigInput(served_entities=[\n    ServedEntityInput(entity_name=\"main.default.my_model\", entity_version=\"1\",\n        workload_size=\"Small\", scale_to_zero_enabled=True)]))",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/serving/serving_endpoints.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/serving-endpoints",
+   "body": {
+    "name": "my-endpoint",
+    "config": {
+     "served_entities": [
+      {
+       "entity_name": "main.default.my_model",
+       "entity_version": "1",
+       "workload_size": "Small",
+       "scale_to_zero_enabled": true
+      }
+     ]
+    }
+   },
+   "url": "https://docs.databricks.com/api/workspace/servingendpoints"
+  },
+  "notes": "ServedEntityInput / EndpointCoreConfigInput class names not re-grepped: UNCONFIRMED."
+ },
+ {
+  "console": "workspace",
+  "item": "Settings: Users and groups",
+  "what": "Workspace users, groups, service principals (workspace-level identities).",
+  "terraform": {
+   "resource": "databricks_user, databricks_group (account or workspace provider); databricks_service_principal",
+   "provider_level": "workspace (or account)",
+   "code": "resource \"databricks_user\" \"me\" {\n  user_name = \"me@example.com\"\n}\nresource \"databricks_group\" \"g\" {\n  display_name = \"students\"\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/user"
+  },
+  "sdk": {
+   "call": "w.users.create(user_name=); w.groups.create(display_name=)",
+   "code": "w.users.create(user_name=\"me@example.com\")\nw.groups.create(display_name=\"students\")",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/iam/users.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/preview/scim/v2/Users",
+   "body": {
+    "userName": "me@example.com"
+   },
+   "url": "https://docs.databricks.com/api/workspace/users"
+  },
+  "notes": "With an account-level provider the same resources create account identities; use databricks_mws_permission_assignment to assign them to a workspace. SDK also has users_v2/groups_v2 services (different API)."
+ },
+ {
+  "console": "workspace",
+  "item": "Settings: Entitlements",
+  "what": "Per-user/group/SP flags such as workspace-access, databricks-sql-access, allow-cluster-create.",
+  "terraform": {
+   "resource": "databricks_entitlements",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_entitlements\" \"e\" {\n  user_id              = databricks_user.me.id\n  allow_cluster_create = true\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/entitlements"
+  },
+  "sdk": {
+   "call": "w.users.patch(id, operations=[Patch(op=..., path='entitlements', value=[...])])",
+   "code": "# via SCIM PATCH, see REST",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/iam/users.html"
+  },
+  "rest": {
+   "method": "PATCH",
+   "path": "/api/2.0/preview/scim/v2/Users/{id}",
+   "body": {
+    "schemas": [
+     "urn:ietf:params:scim:api:messages:2.0:PatchOp"
+    ],
+    "Operations": [
+     {
+      "op": "add",
+      "path": "entitlements",
+      "value": [
+       {
+        "value": "allow-cluster-create"
+       }
+      ]
+     }
+    ]
+   },
+   "url": "https://docs.databricks.com/api/workspace/users"
+  },
+  "notes": "SDK code snippet not written because the Patch/PatchOp arguments were not verified: UNCONFIRMED. REST body follows SCIM convention, not read from the docs page."
+ },
+ {
+  "console": "workspace",
+  "item": "Settings: Secrets",
+  "what": "Secret scopes and secrets (no UI list of values).",
+  "terraform": {
+   "resource": "databricks_secret_scope, databricks_secret, databricks_secret_acl",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_secret_scope\" \"s\" {\n  name = \"app\"\n}\nresource \"databricks_secret\" \"k\" {\n  scope        = databricks_secret_scope.s.name\n  key          = \"api_key\"\n  string_value = var.api_key\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/secret_scope"
+  },
+  "sdk": {
+   "call": "w.secrets.create_scope(scope=); w.secrets.put_secret(scope=, key=, string_value=)",
+   "code": "w.secrets.create_scope(scope=\"app\")\nw.secrets.put_secret(scope=\"app\", key=\"api_key\", string_value=\"...\")",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/workspace/secrets.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/secrets/scopes/create",
+   "body": {
+    "scope": "app"
+   },
+   "url": "https://docs.databricks.com/api/workspace/secrets"
+  },
+  "notes": "Secret put: POST /api/2.0/secrets/put; ACL: POST /api/2.0/secrets/acls/put. The workspace UI has no secrets page (it is API/CLI only): UNCONFIRMED for 2026-11."
+ },
+ {
+  "console": "workspace",
+  "item": "Settings: Usage policies",
+  "what": "Serverless usage (budget) policies: tags applied to serverless usage for cost attribution; managed at account level, selectable in the workspace.",
+  "terraform": {
+   "resource": "databricks_budget_policy",
+   "provider_level": "account",
+   "code": "resource \"databricks_budget_policy\" \"p\" {\n  policy_name = \"team-a\"\n  custom_tags = [{\n    key   = \"team\"\n    value = \"a\"\n  }]\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/budget_policy"
+  },
+  "sdk": {
+   "call": "a.budget_policy.create(policy=BudgetPolicy(policy_name=, custom_tags=[...])) (AccountClient)",
+   "code": "from databricks.sdk import AccountClient\nfrom databricks.sdk.service.billing import BudgetPolicy\na = AccountClient()\na.budget_policy.create(policy=BudgetPolicy(policy_name=\"team-a\"))",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/account/billing/budget_policy.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.1/accounts/{account_id}/budget-policies",
+   "body": {
+    "policy": {
+     "policy_name": "team-a"
+    }
+   },
+   "url": "https://docs.databricks.com/api/account/budgetpolicy"
+  },
+  "notes": "Terraform doc says account-level provider only. 'policy=' parameter wrapper not verified: UNCONFIRMED. Mapping of 'usage policies' (UI name) to budget policies is from the docs' wording (databricks_online_store 'usage_policy_id') - inferred."
+ },
+ {
+  "console": "workspace",
+  "item": "Settings: Git credentials",
+  "what": "Personal access tokens for Git providers used by Git folders.",
+  "terraform": {
+   "resource": "databricks_git_credential",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_git_credential\" \"g\" {\n  git_username          = \"myuser\"\n  git_provider          = \"gitHub\"\n  personal_access_token = var.gh_pat\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/git_credential"
+  },
+  "sdk": {
+   "call": "w.git_credentials.create(git_provider=, git_username=, personal_access_token=)",
+   "code": "w.git_credentials.create(git_provider=\"gitHub\", git_username=\"myuser\", personal_access_token=\"...\")",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/workspace/git_credentials.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/git-credentials",
+   "body": {
+    "git_provider": "gitHub",
+    "git_username": "myuser",
+    "personal_access_token": "..."
+   },
+   "url": "https://docs.databricks.com/api/workspace/gitcredentials"
+  },
+  "notes": ""
+ },
+ {
+  "console": "workspace",
+  "item": "Settings: Workspace settings",
+  "what": "Workspace-level configuration flags (workspace-conf) and typed settings.",
+  "terraform": {
+   "resource": "databricks_workspace_conf (plus typed *_setting resources)",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_workspace_conf\" \"this\" {\n  custom_config = {\n    \"enableIpAccessLists\" = true\n  }\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/workspace_conf"
+  },
+  "sdk": {
+   "call": "w.workspace_conf.set_status(contents={...}); w.workspace_conf.get_status(keys=...)",
+   "code": "w.workspace_conf.set_status({\"enableIpAccessLists\": \"true\"})",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/settings/workspace_conf.html"
+  },
+  "rest": {
+   "method": "PATCH",
+   "path": "/api/2.0/workspace-conf",
+   "body": {
+    "enableIpAccessLists": "true"
+   },
+   "url": "https://docs.databricks.com/api/workspace/workspaceconf"
+  },
+  "notes": ""
+ },
+ {
+  "console": "workspace",
+  "item": "Settings: Tokens",
+  "what": "Personal access tokens.",
+  "terraform": {
+   "resource": "databricks_token (and databricks_obo_token)",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_token\" \"pat\" {\n  comment          = \"Terraform\"\n  lifetime_seconds = 8640000\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/token"
+  },
+  "sdk": {
+   "call": "w.tokens.create(comment=, lifetime_seconds=)",
+   "code": "t = w.tokens.create(comment=\"Terraform\", lifetime_seconds=8640000)",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/settings/tokens.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/token/create",
+   "body": {
+    "comment": "Terraform",
+    "lifetime_seconds": 8640000
+   },
+   "url": "https://docs.databricks.com/api/workspace/tokens"
+  },
+  "notes": "Token value appears in TF state; prefer OAuth."
+ },
+ {
+  "console": "account",
+  "item": "Data (metastores)",
+  "what": "Unity Catalog metastores and their workspace assignments.",
+  "terraform": {
+   "resource": "databricks_metastore, databricks_metastore_assignment",
+   "provider_level": "account",
+   "code": "resource \"databricks_metastore\" \"this\" {\n  name         = \"primary\"\n  storage_root = \"s3://bucket/metastore\"\n  region       = \"us-east-1\"\n}\nresource \"databricks_metastore_assignment\" \"a\" {\n  metastore_id = databricks_metastore.this.id\n  workspace_id = 123456789\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/metastore"
+  },
+  "sdk": {
+   "call": "a.metastores.create(metastore_info=...); a.metastore_assignments.create(workspace_id, metastore_id)",
+   "code": "a.metastore_assignments.create(workspace_id=123456789, metastore_id=\"<metastore-id>\")",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/account/catalog/account_metastore_assignments.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/accounts/{account_id}/workspaces/{workspace_id}/metastores/{metastore_id}",
+   "body": null,
+   "url": "https://docs.databricks.com/api/account/accountmetastoreassignments"
+  },
+  "notes": "databricks_metastore works with account or workspace provider. a.metastores.create arg name 'metastore_info' UNCONFIRMED. Metastore create REST: POST /api/2.0/accounts/{account_id}/metastores."
+ },
+ {
+  "console": "account",
+  "item": "AI",
+  "what": "Account-level AI/Gateway area of the console.",
+  "terraform": {
+   "resource": "none",
+   "provider_level": "n/a",
+   "code": "",
+   "url": null
+  },
+  "sdk": {
+   "call": "UNCONFIRMED (no account-level AI API group found; account API groups are IAM, Unity Catalog, Settings, Provisioning, Billing, OAuth, Disaster Recovery)",
+   "code": "",
+   "url": null
+  },
+  "rest": {
+   "method": "",
+   "path": "",
+   "body": "",
+   "url": null
+  },
+  "notes": "UNCONFIRMED what this sidebar entry contains; treat as UI only. Workspace-level AI Gateway services are covered under the workspace item."
+ },
+ {
+  "console": "account",
+  "item": "Cost (budgets, usage)",
+  "what": "Budgets with alerts, and budget policies for tagging serverless usage.",
+  "terraform": {
+   "resource": "databricks_budget, databricks_budget_policy",
+   "provider_level": "account",
+   "code": "resource \"databricks_budget\" \"this\" {\n  display_name = \"workspace-budget\"\n  alert_configurations {\n    time_period        = \"MONTH\"\n    trigger_type       = \"CUMULATIVE_SPENDING_EXCEEDED\"\n    quantity_type      = \"LIST_PRICE_DOLLARS_USD\"\n    quantity_threshold = \"840\"\n    action_configurations {\n      action_type = \"EMAIL_NOTIFICATION\"\n      target      = \"abc@example.com\"\n    }\n  }\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/budget"
+  },
+  "sdk": {
+   "call": "a.budgets.create(budget=CreateBudgetConfigurationBudget(...)); a.budget_policy.create(...)",
+   "code": "list(a.budgets.list())",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/account/billing/budgets.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.1/accounts/{account_id}/budgets",
+   "body": {
+    "budget": {
+     "display_name": "workspace-budget",
+     "alert_configurations": [
+      {
+       "time_period": "MONTH",
+       "trigger_type": "CUMULATIVE_SPENDING_EXCEEDED",
+       "quantity_type": "LIST_PRICE_DOLLARS_USD",
+       "quantity_threshold": "840",
+       "action_configurations": [
+        {
+         "action_type": "EMAIL_NOTIFICATION",
+         "target": "abc@example.com"
+        }
+       ]
+      }
+     ]
+    }
+   },
+   "url": "https://docs.databricks.com/api/account/budgets"
+  },
+  "notes": "a.budgets.create body class name UNCONFIRMED; list() shown only."
+ },
+ {
+  "console": "account",
+  "item": "Tags",
+  "what": "Governed tags / tag policies (account-wide tag keys and allowed values).",
+  "terraform": {
+   "resource": "databricks_tag_policy (docs say workspace-level provider)",
+   "provider_level": "workspace",
+   "code": "resource \"databricks_tag_policy\" \"t\" {\n  tag_key     = \"cost_center\"\n  description = \"Cost center\"\n  values = [{ name = \"a\" }, { name = \"b\" }]\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/tag_policy"
+  },
+  "sdk": {
+   "call": "w.tag_policies.create_tag_policy(tag_policy=TagPolicy(tag_key=, values=[...])) (WorkspaceClient; no AccountClient service in 0.169)",
+   "code": "from databricks.sdk.service.tags import TagPolicy\nw.tag_policies.create_tag_policy(tag_policy=TagPolicy(tag_key=\"cost_center\"))",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/workspace/tags/tag_policies.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.1/tag-policies",
+   "body": {
+    "tag_key": "cost_center",
+    "description": "Cost center"
+   },
+   "url": "https://docs.databricks.com/api/workspace/tagpolicies"
+  },
+  "notes": "Web search says policies are enforced account-wide but are called through a workspace host; account API docs list no tagpolicies group. TagPolicy body shape UNCONFIRMED. Entity assignment: databricks_entity_tag_assignment."
+ },
+ {
+  "console": "account",
+  "item": "Workspaces",
+  "what": "Databricks workspaces in the account.",
+  "terraform": {
+   "resource": "databricks_mws_workspaces",
+   "provider_level": "account",
+   "code": "resource \"databricks_mws_workspaces\" \"w\" {\n  account_id     = var.account_id\n  workspace_name = \"serverless-workspace\"\n  aws_region     = \"us-east-1\"\n  compute_mode   = \"SERVERLESS\"\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/mws_workspaces"
+  },
+  "sdk": {
+   "call": "a.workspaces.create(workspace_name=, aws_region=, ...)",
+   "code": "for ws in a.workspaces.list():\n    print(ws.workspace_id, ws.workspace_name)",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/account/provisioning/workspaces.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/accounts/{account_id}/workspaces",
+   "body": {
+    "workspace_name": "serverless-workspace",
+    "aws_region": "us-east-1",
+    "compute_mode": "SERVERLESS"
+   },
+   "url": "https://docs.databricks.com/api/account/workspaces"
+  },
+  "notes": ""
+ },
+ {
+  "console": "account",
+  "item": "Catalog",
+  "what": "Account-level catalog view across workspaces/metastores.",
+  "terraform": {
+   "resource": "none",
+   "provider_level": "n/a",
+   "code": "",
+   "url": null
+  },
+  "sdk": {
+   "call": "UI only (closest: a.metastores.list(), a.metastore_assignments.list(metastore_id))",
+   "code": "",
+   "url": null
+  },
+  "rest": {
+   "method": "",
+   "path": "",
+   "body": "",
+   "url": null
+  },
+  "notes": "UNCONFIRMED what this entry contains beyond metastores; no distinct API found."
+ },
+ {
+  "console": "account",
+  "item": "Genie Ontology",
+  "what": "Shared context layer (learned and modeled knowledge) for Genie One and Genie Code, administered at account level.",
+  "terraform": {
+   "resource": "none",
+   "provider_level": "n/a",
+   "code": "",
+   "url": null
+  },
+  "sdk": {
+   "call": "UI only",
+   "code": "",
+   "url": null
+  },
+  "rest": {
+   "method": "",
+   "path": "",
+   "body": "",
+   "url": null
+  },
+  "notes": "UNCONFIRMED: no Terraform resource, SDK service or REST group found. Docs: docs.databricks.com/genie/genie-ontology (cloud-dependent GA vs Public Preview)."
+ },
+ {
+  "console": "account",
+  "item": "Usage",
+  "what": "Billable usage downloads and the usage dashboards.",
+  "terraform": {
+   "resource": "none (usage is read, not configured; databricks_budget_policy and databricks_budget cover cost controls)",
+   "provider_level": "n/a",
+   "code": "",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/budget_policy"
+  },
+  "sdk": {
+   "call": "a.billable_usage.download(start_month='2026-01', end_month='2026-02'); a.usage_dashboards.create()",
+   "code": "resp = a.billable_usage.download(start_month=\"2026-10\", end_month=\"2026-10\")",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/account/billing/billable_usage.html"
+  },
+  "rest": {
+   "method": "GET",
+   "path": "/api/2.0/accounts/{account_id}/usage/download?start_month=2026-10&end_month=2026-10",
+   "body": null,
+   "url": "https://docs.databricks.com/api/account/billableusage"
+  },
+  "notes": "System table counterpart system.billing.usage named from memory, UNCONFIRMED here."
+ },
+ {
+  "console": "account",
+  "item": "User management",
+  "what": "Account users, service principals, groups and their workspace assignment.",
+  "terraform": {
+   "resource": "databricks_user, databricks_service_principal, databricks_group (account provider); databricks_mws_permission_assignment; newer databricks_account_iam_*_v2",
+   "provider_level": "account",
+   "code": "resource \"databricks_user\" \"me\" {\n  user_name = \"me@example.com\"\n}\nresource \"databricks_mws_permission_assignment\" \"a\" {\n  workspace_id = databricks_mws_workspaces.w.workspace_id\n  principal_id = databricks_user.me.id\n  permissions  = [\"USER\"]\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/user"
+  },
+  "sdk": {
+   "call": "a.users.create(user_name=); a.service_principals.create(display_name=); a.groups.create(display_name=); a.workspace_assignment.update(workspace_id, principal_id, permissions=[...])",
+   "code": "a.users.create(user_name=\"me@example.com\")\nfrom databricks.sdk.service.iam import WorkspacePermission\na.workspace_assignment.update(workspace_id=123456789, principal_id=987654321,\n    permissions=[WorkspacePermission.USER])",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/account/iam/users.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/accounts/{account_id}/scim/v2/Users",
+   "body": {
+    "userName": "me@example.com"
+   },
+   "url": "https://docs.databricks.com/api/account/users"
+  },
+  "notes": "Assignment: PUT /api/2.0/accounts/{account_id}/workspaces/{workspace_id}/permissionassignments/principals/{principal_id}. SDK doc URL for assignment: account/iam/workspace_assignment.html."
+ },
+ {
+  "console": "account",
+  "item": "Security",
+  "what": "Federation policies, SSO, IP access lists.",
+  "terraform": {
+   "resource": "databricks_account_federation_policy; databricks_ip_access_list is workspace-level only; SSO: none found",
+   "provider_level": "account",
+   "code": "resource \"databricks_account_federation_policy\" \"p\" {\n  policy_id = \"my-policy\"\n  oidc_policy = {\n    issuer        = \"https://myidp.example.com\"\n    subject_claim = \"sub\"\n  }\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/account_federation_policy"
+  },
+  "sdk": {
+   "call": "a.federation_policy.create(policy=FederationPolicy(...)); a.ip_access_lists.create(label, list_type, ip_addresses)",
+   "code": "a.ip_access_lists.create(label=\"office\", list_type=\"ALLOW\", ip_addresses=[\"1.2.3.0/24\"])",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/account/settings/ip_access_lists.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/accounts/{account_id}/ip-access-lists",
+   "body": {
+    "label": "office",
+    "list_type": "ALLOW",
+    "ip_addresses": [
+     "1.2.3.0/24"
+    ]
+   },
+   "url": "https://docs.databricks.com/api/account/accountipaccesslists"
+  },
+  "notes": "Account IP access lists exist in the SDK and REST but the TF provider has only workspace databricks_ip_access_list: no account form (not verified against registry for 'account' variant - UNCONFIRMED). Federation: POST /api/2.0/accounts/{account_id}/federationPolicies (path from memory, UNCONFIRMED). SSO: UNCONFIRMED."
+ },
+ {
+  "console": "account",
+  "item": "Cloud resources",
+  "what": "Cross-account credentials, root storage configurations, customer-managed networks (AWS).",
+  "terraform": {
+   "resource": "databricks_mws_credentials, databricks_mws_storage_configurations, databricks_mws_networks",
+   "provider_level": "account",
+   "code": "resource \"databricks_mws_credentials\" \"c\" {\n  credentials_name = \"creds\"\n  role_arn         = aws_iam_role.cross_account.arn\n}\nresource \"databricks_mws_storage_configurations\" \"s\" {\n  account_id                 = var.account_id\n  storage_configuration_name = \"storage\"\n  bucket_name                = aws_s3_bucket.root.bucket\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/mws_credentials"
+  },
+  "sdk": {
+   "call": "a.credentials.create(credentials_name, aws_credentials); a.storage.create(storage_configuration_name, root_bucket_info); a.networks.create(...)",
+   "code": "from databricks.sdk.service.provisioning import CreateCredentialAwsCredentials, CreateCredentialStsRole\na.credentials.create(credentials_name=\"creds\", aws_credentials=CreateCredentialAwsCredentials(\n    sts_role=CreateCredentialStsRole(role_arn=\"arn:aws:iam::123:role/x\")))",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/account/provisioning/credentials.html"
+  },
+  "rest": {
+   "method": "POST",
+   "path": "/api/2.0/accounts/{account_id}/credentials",
+   "body": {
+    "credentials_name": "creds",
+    "aws_credentials": {
+     "sts_role": {
+      "role_arn": "arn:aws:iam::123:role/x"
+     }
+    }
+   },
+   "url": "https://docs.databricks.com/api/account/credentials"
+  },
+  "notes": "Storage: POST /api/2.0/accounts/{account_id}/storage-configurations; networks: .../networks. Class names CreateCredentialAwsCredentials/CreateCredentialStsRole from memory, UNCONFIRMED. Not relevant to Express Edition."
+ },
+ {
+  "console": "account",
+  "item": "Previews",
+  "what": "Toggles that enable Public/Beta features for the account.",
+  "terraform": {
+   "resource": "none (closest: databricks_account_setting_v2 for some typed account settings)",
+   "provider_level": "n/a",
+   "code": "",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/account_setting_v2"
+  },
+  "sdk": {
+   "call": "UI only (closest: a.settings_v2.list_account_settings_metadata())",
+   "code": "",
+   "url": null
+  },
+  "rest": {
+   "method": "",
+   "path": "",
+   "body": "",
+   "url": null
+  },
+  "notes": "UI only; mapping of any given preview to a setting name UNCONFIRMED."
+ },
+ {
+  "console": "account",
+  "item": "Settings",
+  "what": "Account-level settings (typed settings, network policies).",
+  "terraform": {
+   "resource": "databricks_account_setting_v2; databricks_account_network_policy",
+   "provider_level": "account",
+   "code": "resource \"databricks_account_setting_v2\" \"s\" {\n  name = \"llm_proxy_partner_powered\"\n  boolean_val = {\n    value = false\n  }\n}",
+   "url": "https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/account_setting_v2"
+  },
+  "sdk": {
+   "call": "a.settings_v2.get_public_account_setting(name=); a.settings_v2.patch_public_account_setting(name=, setting=Setting(...)); a.network_policies.*",
+   "code": "a.settings_v2.get_public_account_setting(name=\"llm_proxy_partner_powered\")",
+   "url": "https://databricks-sdk-py.readthedocs.io/en/latest/account/settingsv2/settings_v2.html"
+  },
+  "rest": {
+   "method": "GET",
+   "path": "/api/2.1/accounts/{account_id}/settings/{name}",
+   "body": null,
+   "url": "https://docs.databricks.com/api/account/settingsv2"
+  },
+  "notes": "Patch is PATCH on the same path."
+ }
+]

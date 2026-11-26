@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A day on the platform</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 422 422%22%3E%3Cpath fill=%22%23f24b37%22 d=%22M 211,0 A 211,211 0 0 0 0,211 a 211,211 0 0 0 211,211 211,211 0 0 0 211,-211 211,211 0 0 0 -13.275,-73.662 l -106.328,61.391 a 87.5,87.5 0 0 1 0.586,10.109 87.5,87.5 0 0 1 -87.5,87.5 87.5,87.5 0 0 1 -87.5,-87.5 87.5,87.5 0 0 1 87.5,-87.5 87.5,87.5 0 0 1 50.463,16.018 L 372.853,75.633 A 211,211 0 0 0 211,0 Z%22/%3E%3C/svg%3E">
+<!--FONTS-->
+<style>
+/*CSS*/
+</style>
+</head>
+<body>
+<!--SPRITES-->
+<header class="top">
+  <svg class="lockup" viewBox="0 0 1700 422" fill="none" aria-label="CAUCHY" role="img"><path d="M 211,0 A 211,211 0 0 0 0,211 a 211,211 0 0 0 211,211 211,211 0 0 0 211,-211 211,211 0 0 0 -13.275,-73.662 l -106.328,61.391 a 87.5,87.5 0 0 1 0.586,10.109 87.5,87.5 0 0 1 -87.5,87.5 87.5,87.5 0 0 1 -87.5,-87.5 87.5,87.5 0 0 1 87.5,-87.5 87.5,87.5 0 0 1 50.463,16.018 L 372.853,75.633 A 211,211 0 0 0 211,0 Z" fill="#f24b37"/><text x="546" y="248" font-family="'Nunito', sans-serif" font-weight="600" font-size="199" letter-spacing="0.1em" fill="#1a1a1a" dominant-baseline="central">CAUCHY</text></svg>
+  <div class="top-t">
+    <span class="eyebrow">LLMOps course · Platform infrastructure</span>
+    <h1>A day on the platform</h1>
+  </div>
+  <div class="legend" id="legend" aria-label="Legend">
+    <span class="lg-t">Traffic</span>
+    <span><i class="dot" style="--c:#c9705f"></i>developers</span>
+    <span><i class="dot" style="--c:#d9a441"></i>tokens</span>
+    <span><i class="dot" style="--c:#6b5fb0"></i>users</span>
+    <span><i class="dot" style="--c:#506fa0"></i>inside the platform</span>
+    <span><i class="dot" style="--c:#4e7566"></i>data</span>
+    <span><i class="dot" style="--c:#3f9b6b"></i>results</span>
+    <span><i class="dot" style="--c:#d64545"></i>refused</span>
+    <span class="lg-t lg-p">Where it runs</span>
+    <span><i class="sw" style="--c:#f3ecdf"></i>outside</span>
+    <span><i class="sw" style="--c:#ccd2dc"></i>your Databricks account</span>
+    <span><i class="sw sw-ghost"></i>your cloud account (not used)</span>
+    <span><i class="sw sw-ghost sw-res"></i>your resources (not used)</span>
+  </div>
+</header>
+
+<main class="theater" id="theater">
+  <div class="cap" id="cap" aria-live="polite">
+    <span class="cap-n" id="capN">1 / 10</span>
+    <div class="cap-b"><b id="capT"></b><p id="capP"></p></div>
+    <div class="cap-log" aria-label="What just happened"><span class="clock" id="clock" title="Story time">09:00</span><ul id="log"></ul></div>
+  </div>
+
+  <div class="stage" id="stage" tabindex="0" aria-label="The platform map. Drag to pan, scroll or pinch to zoom, click a part to read what it does.">
+    <svg id="sv" role="img" aria-label="Developers on the left push code through GitHub; platform users on the right send requests; both come in from outside and arrive at the front door of the control plane, inside your Databricks account, are authenticated, authorized by workspace ACLs or Unity Catalog, and served by serverless compute that reads default storage in parallel, all of it in your Databricks account. Your cloud account and your resources are drawn beside it, dashed and empty: the course uses neither."></svg>
+    <canvas id="fx" aria-hidden="true"></canvas>
+
+    <aside class="hud hud-info" id="info" hidden></aside>
+    <div class="hud hud-nav">
+      <svg id="mini" aria-label="Minimap: click or drag to move the view"></svg>
+      <div class="zoom">
+        <button id="zIn" aria-label="Zoom in" title="Zoom in (+)">+</button>
+        <button id="zOut" aria-label="Zoom out" title="Zoom out (−)">−</button>
+        <button id="zFit" title="Fit all (0)">Fit all</button>
+      </div>
+    </div>
+    <div class="hud hud-hint" id="hint">Drag to pan · click the map, then scroll or pinch to zoom · click a part to read about it · ← → chapters · Space pause · [ ] speed · F present</div>
+    <div class="hud hud-err" id="err" hidden></div>
+  </div>
+
+  <div class="bar" id="bar">
+    <button id="bBack" aria-label="Previous chapter">← Back</button>
+    <button id="bNext" class="primary" aria-label="Next chapter">Next →</button>
+    <button id="bReplay">Replay</button>
+    <button id="bResume" hidden>Resume tour</button>
+    <span class="sep"></span>
+    <button id="bWhole">The whole day</button>
+    <label class="jump">Jump to
+      <select id="jump" aria-label="Jump to a scenario">
+        <optgroup label="Developers">
+          <option value="0">1 · Local development: Python through Databricks Connect</option>
+          <option value="1">2 · Pull request: CI fails, fixed, merged</option>
+          <option value="2">3 · CD signs in with OIDC</option>
+          <option value="3">4 · Deploy a bundle to acc, then prd</option>
+        </optgroup>
+        <optgroup label="Platform users">
+          <option value="4">5 · Python in a notebook, with traces</option>
+          <option value="5">6 · AI question to Genie</option>
+          <option value="6">7 · Unity Catalog allows a dashboard, refuses a query</option>
+          <option value="7">8 · SQL query in the SQL editor, read in parallel</option>
+          <option value="8">9 · AI chat with the agent app</option>
+        </optgroup>
+        <optgroup label="Platform">
+          <option value="9">10 · Scheduled job: audit and monitoring</option>
+        </optgroup>
+        <optgroup label="Everything">
+          <option value="10">The whole day</option>
+        </optgroup>
+      </select>
+    </label>
+    <span class="sep"></span>
+    <button class="pp" id="bPlay" aria-pressed="false" title="Pause or play (Space)"><span aria-hidden="true">❚❚</span> Pause</button>
+    <label class="speed" title="Speed ([ slower, ] faster)">Speed
+      <input type="range" id="speed" min="0.25" max="3" step="0.25" value="1" aria-label="Speed">
+      <output id="speedOut">1×</output>
+    </label>
+    <label class="chk free"><input type="checkbox" id="tDevs" checked><span>Developers</span></label>
+    <label class="chk free"><input type="checkbox" id="tUsers" checked><span>Users</span></label>
+    <label class="chk free"><input type="checkbox" id="tSched" checked><span>Schedules</span></label>
+    <span class="grow"></span>
+    <button id="bPresent" title="Present full screen (F)">Present</button>
+  </div>
+</main>
+
+<footer class="foot">
+  <p>An illustration, not a measured drawing: one request path is drawn where the real platform has many, and every simplification is named in the panel that opens when you click a part. Nothing here calls Databricks or GitHub.</p>
+  <p>Databricks product icons: official Databricks artwork, via the community set oieduardorabelo/databricks-architecture-icons (MIT). Databricks and its product names are trademarks of Databricks, Inc. The people are drawn for this page. GitHub, GitHub Actions and Python marks belong to their owners. Motion: GSAP <!--GSAPV--> (GSAP standard licence). Fonts: Nunito and Fira Code (SIL Open Font License 1.1).</p>
+</footer>
+<!--LIBS-->
+<script>
+/*JS*/
+</script>
+</body>
+</html>

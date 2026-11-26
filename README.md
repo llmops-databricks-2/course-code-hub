@@ -1,6 +1,20 @@
 # course-code-hub
 Full code for LLMOps with Datarbricks Course
 
+## Platform lecture
+
+- [Interactive deck](lecture_materials/platform-lecture/index.html): the platform behind the
+  workspace, everything you click as code, what infrastructure as code needs, dev → acc → prd, and
+  the onboarding automation. Open it in a browser: → next, ← back, Esc overview, N notes, F full screen.
+- Offline copy: [`index.bundled.html`](lecture_materials/platform-lecture/index.bundled.html), with no network needed.
+- Part 1 embeds the animated scene [`lecture_materials/day-on-the-platform/`](lecture_materials/day-on-the-platform/index.html),
+  and part 4 its own module in `lecture_materials/platform-lecture/part4/`.
+
+Rebuild from the sources, never edit the built pages:
+`python3 lecture_materials/day-on-the-platform/src/build.py --bundle`, then
+`python3 lecture_materials/platform-lecture/part4/src/build.py --bundle`, then
+`python3 lecture_materials/platform-lecture/src/build.py --bundle`. Each folder's README has the details.
+
 ## Lecture 5 presentation
 
 - [Browser presentation](presentation_prep/lecture5/lecture5.html)

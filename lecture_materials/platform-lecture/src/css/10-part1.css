@@ -1,0 +1,52 @@
+/* Part 1: the beats sit on a dimmed still of the animated map (src/assets/day-still.jpg, made by still.py) */
+.still{position:absolute;inset:-12px;background:#2a2d31 var(--still) center top/cover no-repeat;filter:blur(3px) saturate(.55) brightness(.42)}
+.still::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(20,22,26,.25),rgba(20,22,26,.72))}
+.p1 .beat{position:absolute;inset:0;padding:34px 44px}
+.p1-h{display:flex;flex-direction:column;gap:4px}
+.p1-h .eyebrow{color:#e9c9a0}
+.p1-h h2{color:#fff;font-size:44px}
+.p1 .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 2px 6px rgba(0,0,0,.18),0 24px 60px rgba(0,0,0,.32)}
+
+/* beat 1: how much there is */
+.b-much .one{position:absolute;left:44px;top:150px;width:548px;padding:24px 26px;display:flex;flex-direction:column;gap:12px}
+.one-l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.one-l li{display:grid;grid-template-columns:36px 184px 1fr;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:18.5px}
+.one-l li:last-child{border-bottom:0}
+.one-l .cnt{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--c);color:#fff;font-size:18.5px;font-variant-numeric:tabular-nums}
+.one-l .w{color:var(--ink);font-weight:600}
+.one-l .d{color:var(--body);white-space:nowrap}
+.one-f{font-size:18.5px;border-top:1px solid var(--line);padding-top:12px}
+.b-much .many{position:absolute;left:620px;top:150px;width:776px;padding:24px 26px;display:flex;flex-direction:column;gap:16px}
+.many-h{display:flex;align-items:flex-end;justify-content:space-between;gap:20px}
+.many-h .big{font-size:72px;line-height:.95;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.many-h .unit{font-size:26px;color:var(--ink);font-weight:600;margin-left:12px}
+.many-h p{font-size:19px;text-align:right;max-width:330px}
+.mx{width:100%;height:auto;display:block}
+.once{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips>span,.chips>a{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:3px 13px;font-size:18.5px;color:var(--ink);white-space:nowrap}
+
+/* beat 2: what goes wrong by hand */
+.wrong{position:absolute;left:44px;right:44px;top:156px;display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.w-c{padding:22px 20px 24px;display:flex;flex-direction:column;gap:10px;min-height:316px}
+.w-c .gl{width:44px;height:44px;stroke:var(--no);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;background:#fbeeee;border-radius:12px;padding:8px}
+.w-c h3{font-size:23px;line-height:1.2}
+.w-c p{font-size:18.5px}
+.incident{position:absolute;left:44px;right:44px;top:520px;padding:26px 32px;display:flex;align-items:center;gap:30px;border-left:6px solid var(--flame)!important}
+.incident .when{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;width:150px;height:150px;border-radius:50%;background:var(--ink);color:#fff}
+.incident .when b{color:#fff;font-size:34px;line-height:1.1}
+.incident .when span{font-size:20px;opacity:.75}
+.incident h3{font-size:28px;margin-bottom:8px}
+.incident p{font-size:23px;line-height:1.4;max-width:60ch}
+
+/* beat 3: the answer */
+.iac{position:absolute;left:44px;top:146px;display:flex;gap:22px;align-items:baseline;font-size:104px;font-weight:700;letter-spacing:-.035em;color:#fff;line-height:1.05}
+.iac .code{font-family:"Fira Code",monospace;font-weight:500;color:#ffd9b8;letter-spacing:-.05em}
+.iac .code::before{content:"{ ";color:var(--flame)}
+.iac .code::after{content:" }";color:var(--flame)}
+.answer{position:absolute;left:44px;right:44px;top:330px;display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.a-c{padding:22px 20px 24px;display:flex;flex-direction:column;gap:8px;min-height:250px}
+.a-c .no{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:1.5px solid var(--ink);color:var(--ink);font-weight:700;font-size:18.5px}
+.a-c h3{font-size:27px}
+.a-c p{font-size:19.5px}
+.p1-next{position:absolute;left:44px;top:640px;color:#fff;font-size:28px;font-weight:500;max-width:28ch;line-height:1.3}

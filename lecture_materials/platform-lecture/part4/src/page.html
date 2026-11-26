@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dev → acc → prd for infrastructure</title>
+<!--ICON-->
+<!--FONTS-->
+<style>
+/*CSS*/
+</style>
+</head>
+<body>
+<!--SPRITES-->
+<header class="cap">
+  <div class="tabs" role="tablist" aria-label="Scene">
+    <button id="s1" role="tab" aria-selected="true" title="Scene 1 (key 1)"><b>1</b>One environment, straight to main</button>
+    <button id="s2" role="tab" aria-selected="false" title="Scene 2 (key 2)"><b>2</b>PR, checks, dev → acc → prd</button>
+  </div>
+  <div class="cap-b" aria-live="polite">
+    <span class="cap-n" id="capN">1 / 8</span>
+    <p id="capP"></p>
+  </div>
+</header>
+
+<main class="stage" id="stage" tabindex="0" aria-label="The scene. Space plays and pauses, the right arrow plays one beat, the left arrow goes back one beat.">
+  <svg id="sv" role="img" preserveAspectRatio="xMidYMid meet"></svg>
+  <button class="bigplay" id="big">▶ Play</button>
+  <div class="hud-err" id="err" hidden></div>
+</main>
+
+<footer class="bar">
+  <button id="bPlay" class="primary" aria-pressed="false" title="Play or pause (Space)">▶ Play</button>
+  <button id="bStep" title="Play one beat, then stop (→)">Step →</button>
+  <button id="bBack" title="Back one beat (←)">← Back</button>
+  <button id="bReplay" title="Replay this scene (R)">Replay</button>
+  <span class="sep"></span>
+  <div class="dots" id="dots" aria-label="Beats"></div>
+  <span class="sep"></span>
+  <label class="speed" title="Speed ([ slower, ] faster)">Speed
+    <input type="range" id="speed" min="0.5" max="3" step="0.25" value="1" aria-label="Speed">
+    <output id="speedOut">1×</output>
+  </label>
+  <span class="grow"></span>
+  <span class="hint"><kbd>Space</kbd> play · <kbd>→</kbd> one beat · <kbd>←</kbd> back</span>
+</footer>
+<!--LIBS-->
+<script>
+/*JS*/
+</script>
+</body>
+</html>

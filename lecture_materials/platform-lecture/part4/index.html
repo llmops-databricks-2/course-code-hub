@@ -1,0 +1,1553 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dev → acc → prd for infrastructure</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 422 422%22%3E%3Cpath fill=%22%23f24b37%22 d=%22M 211,0 A 211,211 0 0 0 0,211 a 211,211 0 0 0 211,211 211,211 0 0 0 211,-211 211,211 0 0 0 -13.275,-73.662 l -106.328,61.391 a 87.5,87.5 0 0 1 0.586,10.109 87.5,87.5 0 0 1 -87.5,87.5 87.5,87.5 0 0 1 -87.5,-87.5 87.5,87.5 0 0 1 87.5,-87.5 87.5,87.5 0 0 1 50.463,16.018 L 372.853,75.633 A 211,211 0 0 0 211,0 Z%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap">
+<style>
+/* Part 4, both pages. Palette and type: the Cauchy tokens of the course pages
+   (lecture_materials/src/platform-infrastructure/head.html), plus the traffic families of the
+   "day on the platform" scene. The root size follows the window, so a 1920-wide screen shows the
+   same picture as a 1280-wide one, larger: 16px at 1280 and below, 24px at 1920. */
+:root{
+  --bg:#f6f5f3; --panel:#ffffff; --alt:#f0efed; --ink:#1a1a1a; --body:#5d5d5d; --muted:#8a8a8a;
+  --line:#e0dfdd; --line-soft:#ebeae8; --flame:#f24b37; --link:#2466d9;
+  --sage-bg:#f0f5f2; --sage-bd:#c8dad2; --sage:#4e7566;
+  --blue-bg:#f0f4fb; --blue-bd:#cdd8ed; --blue:#506fa0;
+  --warm-bg:#faf6f0; --warm-bd:#e3d9ca; --warm:#8a7556;
+  --dev:#c9705f; --token:#d9a441; --user:#6b5fb0; --plat:#506fa0; --data:#4e7566; --ok:#3f9b6b; --no:#d64545;
+  --ink-ok:#1f6b46; --ink-no:#a12b2b; --ink-warn:#7a5a12;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{font-size:max(16px,1.25vw)}
+html,body{margin:0;height:100%}
+body{background:#f7f3ec;color:var(--body);font:1rem/1.45 "Nunito",system-ui,sans-serif;overflow:hidden}
+button,select,input{font:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:.3rem .95rem;font-size:1rem;font-weight:500;white-space:nowrap;line-height:1.3}
+button:hover{background:var(--alt)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--ink);border-color:var(--ink);color:var(--panel)}
+button.primary:hover{background:#333}
+button:focus-visible,a:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+code,.mono{font-family:"Fira Code",ui-monospace,monospace;font-size:.94em;font-variant-ligatures:none}
+a{color:var(--link)}
+/* The animation page: a caption strip, the stage, a transport bar. The page is the height of its
+   iframe; the stage takes what the two strips leave. */
+body{display:flex;flex-direction:column}
+.cap{flex:none;display:flex;align-items:stretch;gap:1rem;padding:.4rem .75rem;background:var(--panel);border-bottom:1px solid var(--line);height:4rem}
+.tabs{flex:none;display:flex;flex-direction:column;justify-content:center;gap:.2rem}
+.tabs button{border-radius:.5rem;padding:.02rem .7rem;text-align:left;font-size:1rem;line-height:1.35;color:var(--body);background:none;border-color:transparent}
+.tabs button:hover{background:var(--alt)}
+.tabs button[aria-selected=true]{background:var(--ink);border-color:var(--ink);color:var(--panel);font-weight:600}
+.tabs button b{font-family:"Fira Code",ui-monospace,monospace;font-weight:500;margin-right:.45rem}
+.cap-b{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:.75rem;border-left:1px solid var(--line-soft);padding-left:1rem}
+.cap-n{flex:none;font:500 1rem "Fira Code",ui-monospace,monospace;color:var(--ink);border:1px solid var(--ink);border-radius:999px;padding:.1rem .7rem;white-space:nowrap}
+.cap-b p{margin:0;font-size:1rem;line-height:1.38;color:var(--body);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cap-b p b{color:var(--ink);font-weight:600;font-size:1.06rem;margin-right:.3rem}
+
+.stage{position:relative;flex:1 1 0;min-height:0;overflow:hidden;background:#f7f3ec;outline-offset:-2px}
+#sv{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
+.hud-err{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border:1px solid var(--no);color:var(--ink);border-radius:12px;padding:1.1rem 1.4rem;max-width:32rem;font-size:1rem}
+.bigplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:1.25rem;font-weight:600;padding:.7rem 1.7rem;background:var(--ink);color:#fff;border-color:var(--ink);box-shadow:0 10px 30px rgba(26,26,26,.25)}
+.bigplay:hover{background:#333}
+.bigplay[hidden]{display:none}
+
+.bar{flex:none;display:flex;align-items:center;gap:.5rem;padding:0 .75rem;background:var(--panel);border-top:1px solid var(--line);height:3rem}
+.bar .sep{width:1px;height:1.4rem;background:var(--line);margin:0 .25rem}
+.bar .grow{flex:1 1 0}
+#bPlay{min-width:6.6rem}
+.dots{display:flex;gap:.3rem;align-items:center}
+.dots button{width:1.75rem;height:1.75rem;padding:0;border-radius:50%;font:500 1rem "Fira Code",ui-monospace,monospace;color:var(--body);display:grid;place-items:center}
+.dots button.past{background:#e7e4de;border-color:#d5d1c9;color:var(--ink)}
+.dots button.now{background:var(--flame);border-color:var(--flame);color:#fff}
+.speed{display:inline-flex;align-items:center;gap:.4rem;font-size:1rem;color:var(--body);white-space:nowrap}
+.speed input{width:6.5rem;accent-color:var(--ink);margin:0}
+.speed output{font:500 1rem "Fira Code",ui-monospace,monospace;color:var(--ink);min-width:3.2em}
+.hint{font-size:1rem;color:var(--muted);white-space:nowrap}
+kbd{font:500 .9rem "Fira Code",ui-monospace,monospace;color:var(--ink);background:var(--alt);border:1px solid var(--line);border-radius:5px;padding:0 .3rem}
+@media (max-width:1180px){.hint{display:none}}
+
+/* ---------- the drawing ---------- */
+#sv text{font-family:"Nunito",system-ui,sans-serif;fill:var(--ink);font-size:17px}
+#sv .mono{font-family:"Fira Code",ui-monospace,monospace;font-size:16px;font-weight:500;font-variant-ligatures:none}
+#sv .b{font-weight:600}
+#sv .sans{font-family:"Nunito",system-ui,sans-serif;font-weight:500}
+#sv .zl{font-size:16.5px;font-weight:600;letter-spacing:.08em;fill:#3a4a66}
+#sv .zs{font-size:16px;font-weight:500;fill:#5b6a85}
+#sv .tt{font-size:17px;font-weight:600}
+#sv .tt.big{font-size:19px}
+#sv .ts{font-size:16.5px;fill:#5d5d5d}
+#sv .ink{fill:var(--ink)}
+#sv .ok{fill:var(--ink-ok)} #sv .no{fill:var(--ink-no)} #sv .dev{fill:#a8503f} #sv .user{fill:#54489a}
+#sv .pn{font-size:18px;font-weight:600}
+
+.zone .zr{stroke-width:1.5}
+.z-dbx .zr{fill:rgba(80,111,160,.16);stroke:rgba(80,111,160,.62);stroke-width:2.2}
+.z-plane .zr{fill:rgba(80,111,160,.10);stroke:rgba(80,111,160,.34)}
+.z-store .zr{fill:rgba(78,117,102,.17);stroke:rgba(78,117,102,.45)}
+#sv .z-store .zl{fill:#3c5c50} #sv .z-store .zs{fill:#4e7566}
+.z-ghost .zr{fill:rgba(255,255,255,.2);stroke:rgba(80,111,160,.62);stroke-width:2;stroke-dasharray:9 7}
+.z-res .zr{stroke:rgba(78,117,102,.7)}
+#sv .gh-t{font-size:16.5px;font-weight:600;letter-spacing:.08em;fill:#3a4a66}
+#sv .z-res .gh-t{fill:#3c5c50}
+.z-devs .zr{fill:rgba(255,255,255,.5);stroke:rgba(138,117,86,.34)}
+#sv .z-devs .zl,#sv .z-gh .zl{fill:#6a5a40}
+#sv .z-gh .zs{fill:#8a7556}
+.gh-out{fill:none;stroke:#b9b4ab;stroke-width:3.5}
+.gh-in{fill:#eef0f4}
+.cell{fill:rgba(255,255,255,.46);stroke:rgba(80,111,160,.3);stroke-width:1.2}
+.lh{fill:#fff;stroke:#c9d2e2;stroke-width:1.2}
+#sv .lh-t{font-size:17px}
+.vtag{fill:#eeece8;stroke:#d5d1c9}
+.vtag.v-new{fill:#e3f3ea;stroke:var(--ok)}
+#sv .vt{fill:#6b6b6b} #sv .vt.v-new{fill:var(--ink-ok);font-weight:600}
+
+.sh1{fill:#1a1a1a;opacity:.08}
+.face{fill:url(#gTile);stroke:#d9d6d1;stroke-width:1.5}
+.face-no{fill:#fbe9e7;stroke:var(--no);stroke-width:2.5}
+.plate{fill:#f4f2ee;stroke:#e6e3de}
+.stepb circle{fill:var(--ink)}
+#sv .stepb text{fill:#fff;font-size:16px;font-weight:600;text-anchor:middle}
+
+/* rails */
+.rail{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.r-lane{stroke:#c9c3b8;stroke-width:6}
+.r-lane-c{stroke:#fbfaf7;stroke-width:1.8}
+.r-stub{stroke:#b9bdc9;stroke-width:3}
+
+/* what an environment holds */
+.dbar{fill:#6b5fb0;opacity:.78}
+.axis{stroke:#9aa3b5;stroke-width:1.5}
+.trend{fill:none;stroke:var(--ok);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+.crack{fill:none;stroke:var(--no);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.ui-l{stroke:#d5d2cc;stroke-width:5;stroke-linecap:round}
+.gr{fill:#fff;stroke:#e0cf9f;stroke-width:1.5}
+.gr-no{fill:#fbe9e7;stroke:var(--no);stroke-dasharray:6 4}
+.cab{fill:url(#gCab)}
+.blade{fill:#4a5369;stroke:#5c6781}
+.led{fill:#77819a}
+.vent{stroke:#333a4b;stroke-width:2;stroke-linecap:round}
+.cyl{fill:url(#gCyl);stroke:#7fa091;stroke-width:1.5}
+.cyl-top{fill:#eef5f1;stroke:#7fa091;stroke-width:1.5}
+.cyl-row{fill:none;stroke:#9fb8ad;stroke-width:1.2}
+.cyl-ghost{fill:none;stroke:var(--no);stroke-width:1.5;stroke-dasharray:5 4;opacity:.75}
+.would{fill:rgba(214,69,69,.08);stroke:var(--no);stroke-width:2.5;stroke-dasharray:8 5}
+
+/* GitHub */
+.g-main{stroke:#3d4350;stroke-width:4;stroke-linecap:round}
+.g-dot{stroke:#fff;stroke-width:2.5}
+.skip{fill:rgba(255,255,255,.6);stroke:#b9b4ab;stroke-width:1.5;stroke-dasharray:6 4}
+.skip-x{fill:none;stroke:#9a958c;stroke-width:2.6;stroke-linecap:round}
+.chip{fill:#f4f2ee;stroke:#d9d6d1;stroke-width:1.5}
+.arrow{fill:none;stroke:#9a9a9a;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.plan{fill:#fff;stroke:#3d4350;stroke-width:2}
+.plan-seam{stroke:#fff;stroke-width:3}
+.plan-bad{fill:#fbe9e7}
+
+/* people */
+.desk-top{fill:url(#gDesk)} .desk-front{fill:#d9c9ad} .desk-leg{fill:#c9b896} .desk-panel{fill:#e6d9bf}
+.arm{fill:none;stroke-width:11.5;stroke-linecap:round;stroke-linejoin:round}
+.arm-sh{stroke:#1a1a1a;stroke-width:13.5;opacity:.13}
+.specs{fill:rgba(255,255,255,.4);stroke:#3a3f4a;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.mug{fill:#fff;stroke:#c9c3b8;stroke-width:1.2} .mug-h{fill:none;stroke:#c9c3b8;stroke-width:2.2;stroke-linecap:round}
+.lead{stroke:#b9bdc9;stroke-width:3;stroke-linecap:round}
+.lap-base{fill:#dfe3ea;stroke:#aab1bf;stroke-width:1} .lap-side{fill:#b6bdca} .lap-key{fill:#b9c0cd}
+.lap-lid{fill:#2f333c} .lap-edge{fill:#1f2228}
+.lap-scr{fill:url(#gScr)}
+.glow{opacity:.5}
+
+/* packets, verdicts, bubbles */
+.pk-disc{stroke:#fff;stroke-width:2.2}
+.vd-disc{stroke:#fff;stroke-width:2.5}
+.vd-mark{fill:none;stroke:#fff;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+.vd-tag{fill:#fff;stroke-width:2}
+#sv .vd-t{font-size:17px;font-weight:600}
+.bub{fill:#fff;stroke:#3d4350;stroke-width:2}
+.bub.good{stroke:var(--ok)} .bub.bad{stroke:var(--no);fill:#fff6f5}
+.bub-seam{stroke:#fff;stroke-width:3;stroke-linecap:butt}
+.bub-seam.bad{stroke:#fff6f5}
+#sv .bub-t{font-size:17px;font-weight:600}
+#sv .bub-t.bad{fill:var(--ink-no)}
+#sv .stamp-t{font-size:30px;font-weight:600;letter-spacing:.06em}
+
+</style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="dbx-enterprise-security" viewBox="0 0 48 48"><g transform="translate(2 2) scale(0.4583)"><path d="M54.3809 64.0385C54.3809 60.5185 51.5201 57.6577 48.0001 57.6577C44.4801 57.6577 41.6193 60.5185 41.6193 64.0385C41.6193 67.5585 44.4801 70.4193 48.0001 70.4193C51.5201 70.4193 54.3809 67.5585 54.3809 64.0385ZM48.0001 68.5057C45.5425 68.5057 43.5393 66.5025 43.5393 64.0449C43.5393 61.5873 45.5425 59.5841 48.0001 59.5841C50.4577 59.5841 52.4609 61.5873 52.4609 64.0449C52.4609 66.5025 50.4577 68.5057 48.0001 68.5057Z" fill="#FF5F46" /><path d="M69.568 41.4273L60.384 41.4272L59.4688 41.4336L40.6848 41.4272L40.6848 27.2832C40.6848 23.3344 43.8976 20.1216 47.8464 20.1216L48.1536 20.1216C52.1024 20.1216 55.3152 23.3344 55.3152 27.2832L55.3152 36.6208L57.2352 36.6208L57.2352 27.2833C57.2352 22.2784 53.1584 18.2016 48.1536 18.2016L47.8464 18.2016C42.8416 18.2016 38.7648 22.2784 38.7648 27.2832L38.7648 43.3472L69.5744 43.3473C71.1616 43.3473 72.4544 44.6401 72.4544 46.2273L72.4544 81.8497C72.4544 83.4368 71.1616 84.7296 69.5744 84.7296L52.5376 84.736L52.5376 77.7536C58.4064 75.8208 62.4384 70.2849 62.4384 64.0384C62.4384 60.2113 60.96 56.6016 58.272 53.888C57.2736 52.8833 56.1728 52.0513 54.9952 51.4113C52.2112 49.8561 49.0432 49.2801 45.8368 49.7472C39.4048 50.6881 34.3936 55.8721 33.6576 62.3425C32.8704 69.2608 36.96 75.6224 43.456 77.7536L43.456 84.7424L26.432 84.7424C24.8448 84.7424 23.552 83.4496 23.552 81.8624L23.552 46.2336C23.552 44.6464 24.8448 43.3536 26.432 43.3536L32.2304 43.3472L32.2304 26.8544C32.2304 18.2528 39.232 11.2576 47.8336 11.2576L48.1664 11.2576C56.768 11.2576 63.7696 18.2528 63.7696 26.8544L63.7696 36.6656L65.6896 36.6656L65.6896 26.8544C65.6896 17.1968 57.8304 9.33765 48.1664 9.33765L47.8336 9.33765C38.1696 9.33765 30.3104 17.1968 30.3104 26.8544L30.3104 41.4272L26.432 41.4336C23.7888 41.4336 21.6384 43.5904 21.6384 46.2336L21.6384 81.8624C21.6384 84.512 23.7888 86.6625 26.4384 86.6625L45.3824 86.6625L45.3824 76.3072L44.6784 76.1152C38.6944 74.4768 34.8672 68.7809 35.5712 62.56C36.2112 56.9536 40.5504 52.4672 46.1312 51.648C48.9152 51.2384 51.6608 51.7376 54.0864 53.0944C55.104 53.6512 56.064 54.3744 56.9216 55.2384C59.2512 57.5937 60.5312 60.7233 60.5312 64.0384C60.5312 69.6704 56.7488 74.6304 51.3344 76.1152L51.0272 76.1985L50.8672 76.4032L50.6304 76.64L50.6304 85.6896L50.6304 86.6496L69.5872 86.6433C72.2304 86.6433 74.3872 84.4864 74.3872 81.8432L74.3872 46.2273C74.368 43.5841 72.2176 41.4273 69.568 41.4273Z" fill="#FF5F46" /></g></symbol>
+<symbol id="dbx-genie-one" viewBox="0 0 48 48"><g transform="translate(2 2) scale(2.75)"><g clip-path="url(#dbx-genie-one-genie-one-clip0_2042_717)"><path d="M2.51709 4.83094V11.0712L7.99951 14.2118L13.4829 11.0702V4.83192L7.99951 1.69032L2.51709 4.83094ZM15.0825 11.4188C15.0825 11.7773 14.8906 12.1088 14.5796 12.287L8.49658 15.7714L8.37842 15.829C8.09549 15.9448 7.7719 15.9247 7.50244 15.7704L1.42041 12.287C1.10936 12.1088 0.91748 11.7773 0.91748 11.4188V4.48426C0.91748 4.12579 1.10936 3.79428 1.42041 3.6161L7.50244 0.132698C7.81026 -0.0436223 8.18873 -0.0445151 8.49658 0.131722L14.5796 3.6161C14.8906 3.79428 15.0825 4.12578 15.0825 4.48426V11.4188Z" fill="#FF3621" /><path d="M7.12192 11.7479V6.06344L5.7439 6.43826L5.78638 5.25185L7.37139 4.15625H8.8417V11.7479L7.98181 12.2656L7.12192 11.7479Z" fill="#FF3621" /></g><defs><clipPath id="dbx-genie-one-genie-one-clip0_2042_717"><rect width="16" height="16" fill="white" /></clipPath></defs></g></symbol>
+<symbol id="dbx-lakeflow-jobs" viewBox="0 0 48 48"><g transform="translate(2.2178 2) scale(0.4356)"><path d="M47.5805 89.8304L54.0939 83.3171L47.5805 76.7837L46.1605 78.1971L50.2605 82.2971H17.0672C16.2721 82.2953 15.5101 81.9787 14.9478 81.4164C14.3856 80.8542 14.069 80.0922 14.0672 79.2971V68.1171C14.069 67.322 14.3856 66.5599 14.9478 65.9977C15.5101 65.4355 16.2721 65.1188 17.0672 65.1171H28.9205V63.1171H17.0605C15.735 63.1188 14.4643 63.6462 13.527 64.5835C12.5897 65.5208 12.0623 66.7915 12.0605 68.1171V79.3171C12.0623 80.6426 12.5897 81.9133 13.527 82.8506C14.4643 83.7879 15.735 84.3153 17.0605 84.3171H50.2605L46.1605 88.4171L47.5805 89.8304Z" fill="#FF5F46" /><path d="M12 13.537V24.597C12.0018 25.54 12.3776 26.4438 13.0451 27.11C13.7125 27.7762 14.617 28.1503 15.56 28.1503H26.62C27.563 28.1503 28.4675 27.7762 29.1349 27.11C29.8024 26.4438 30.1782 25.54 30.18 24.597V21.5703H37.4C38.1951 21.5721 38.9571 21.8887 39.5194 22.4509C40.0816 23.0132 40.3982 23.7752 40.4 24.5703V39.377C40.4018 40.7025 40.9291 41.9733 41.8664 42.9106C42.8037 43.8479 44.0745 44.3752 45.4 44.377H60.9867L56.8867 48.477L58.3067 49.8903L64.82 43.377L58.3067 36.8636L56.8867 38.277L60.9867 42.377H45.4C44.6049 42.3752 43.8428 42.0586 43.2806 41.4964C42.7184 40.9341 42.4018 40.1721 42.4 39.377V24.5703C42.3982 23.2448 41.8709 21.974 40.9336 21.0367C39.9963 20.0994 38.7255 19.5721 37.4 19.5703H29.18H28.18V24.5703C28.18 24.7749 28.1396 24.9774 28.0611 25.1663C27.9826 25.3552 27.8676 25.5267 27.7227 25.6711C27.5777 25.8154 27.4057 25.9297 27.2165 26.0073C27.0273 26.085 26.8245 26.1245 26.62 26.1236H15.5667C15.157 26.1272 14.7625 25.9688 14.469 25.6829C14.1756 25.3969 14.007 25.0066 14 24.597V13.537C14.0018 13.1244 14.1669 12.7293 14.4593 12.4382C14.7516 12.1471 15.1474 11.9836 15.56 11.9836H26.62C27.0326 11.9836 27.4284 12.1471 27.7207 12.4382C28.0131 12.7293 28.1782 13.1244 28.18 13.537V14.117L21.4733 20.7836L18.4933 17.8036L17.08 19.217L21.4733 23.617L29.82 15.2836L30.18 15.0436V13.537C30.1782 12.594 29.8024 11.6902 29.1349 11.024C28.4675 10.3578 27.563 9.98365 26.62 9.98365H15.5667C15.0992 9.98277 14.6361 10.074 14.2038 10.2521C13.7716 10.4302 13.3786 10.6917 13.0474 11.0216C12.7162 11.3516 12.4533 11.7436 12.2735 12.1751C12.0938 12.6067 12.0009 13.0695 12 13.537Z" fill="#FF5F46" /><path d="M79.28 45.1103L76.3 42.117L74.8867 43.537L79.28 47.9303L87.6267 39.5837L87.9933 39.3437V37.8503C87.9916 36.9073 87.6157 36.0035 86.9483 35.3373C86.2808 34.6712 85.3763 34.297 84.4333 34.297H73.3733C72.4309 34.297 71.5271 34.6714 70.8607 35.3377C70.1944 36.0041 69.82 36.9079 69.82 37.8503V48.9103C69.8218 49.8522 70.1967 50.755 70.8627 51.421C71.5287 52.087 72.4315 52.4619 73.3733 52.4637H77.8867V61.297C77.8849 61.7845 77.6905 62.2514 77.3458 62.5961C77.0011 62.9408 76.5341 63.1352 76.0466 63.137H37.2467L40.9133 58.9903L39.4133 57.657L33.6533 64.1637L40.1267 70.637L41.54 69.2237L37.44 65.1237H76.0466C76.5509 65.1237 77.0503 65.0243 77.5162 64.8314C77.982 64.6384 78.4054 64.3555 78.7619 63.999C79.1185 63.6424 79.4014 63.2191 79.5943 62.7532C79.7873 62.2873 79.8867 61.7879 79.8867 61.2837V52.4637H84.4333C85.3769 52.4637 86.2821 52.0897 86.9506 51.4237C87.6191 50.7577 87.9965 49.854 88 48.9103V44.9103H86V48.9103C85.9982 49.3229 85.8331 49.718 85.5407 50.0091C85.2484 50.3002 84.8526 50.4637 84.44 50.4637H73.3733C72.9613 50.4637 72.5662 50.3 72.2749 50.0087C71.9836 49.7174 71.82 49.3223 71.82 48.9103V37.8503C71.82 37.4384 71.9836 37.0433 72.2749 36.752C72.5662 36.4607 72.9613 36.297 73.3733 36.297H84.4333C84.6384 36.2952 84.8418 36.3341 85.0318 36.4114C85.2218 36.4887 85.3947 36.6028 85.5403 36.7472C85.686 36.8916 85.8016 37.0635 85.8805 37.2528C85.9594 37.4421 86 37.6452 86 37.8503V38.397L79.28 45.1103Z" fill="#FF5F46" /><path d="M68.7069 85.0503L65.7269 82.0637L64.3136 83.4503L68.7069 87.8503L76.9536 79.6037L77.4136 79.4503V77.7637C77.4118 76.8206 77.036 75.9169 76.3685 75.2507C75.7011 74.5845 74.7966 74.2103 73.8536 74.2103H62.8002C61.8572 74.2103 60.9527 74.5845 60.2853 75.2507C59.6179 75.9169 59.242 76.8206 59.2402 77.7637V88.8503C59.2438 89.7928 59.6202 90.6956 60.2872 91.3614C60.9543 92.0272 61.8578 92.4019 62.8002 92.4037H73.8536C74.7966 92.4037 75.7011 92.0295 76.3685 91.3633C77.036 90.6971 77.4118 89.7933 77.4136 88.8503V84.8503H75.4136V88.8503C75.4118 89.2629 75.2467 89.658 74.9543 89.9491C74.6619 90.2402 74.2662 90.4037 73.8536 90.4037H62.8002C62.3876 90.4037 61.9919 90.2402 61.6995 89.9491C61.4071 89.658 61.242 89.2629 61.2402 88.8503V77.7903C61.2402 77.5858 61.2806 77.3832 61.3591 77.1944C61.4376 77.0055 61.5526 76.8339 61.6976 76.6896C61.8425 76.5453 62.0145 76.431 62.2038 76.3533C62.393 76.2756 62.5957 76.2361 62.8002 76.237H73.8536C74.0581 76.2361 74.2608 76.2756 74.45 76.3533C74.6393 76.431 74.8113 76.5453 74.9563 76.6896C75.1012 76.8339 75.2162 77.0055 75.2947 77.1944C75.3732 77.3832 75.4136 77.5858 75.4136 77.7903V78.337L68.7069 85.0503Z" fill="#FF5F46" /><path d="M19.4137 44.117L18.0004 45.537L22.3937 49.9303L31.1871 41.137L30.7804 40.4703C29.5345 38.4247 27.5901 36.8992 25.3067 36.1761C23.0233 35.453 20.5553 35.581 18.3589 36.5365C16.1626 37.4921 14.3865 39.2105 13.3589 41.3741C12.3314 43.5377 12.122 46.0001 12.7693 48.3062C13.4167 50.6122 14.8771 52.6059 16.8805 53.9187C18.8839 55.2314 21.2949 55.7744 23.6676 55.4473C26.0404 55.1202 28.2145 53.945 29.7879 52.1392C31.3614 50.3333 32.2278 48.0188 32.2271 45.6236H30.2271C30.2155 47.5022 29.536 49.3153 28.3101 50.7387C27.0843 52.1622 25.392 53.1031 23.536 53.3932C21.68 53.6833 19.7813 53.3037 18.1795 52.3223C16.5778 51.3408 15.3774 49.8215 14.7931 48.0362C14.2088 46.2508 14.2787 44.3158 14.9903 42.5773C15.7018 40.8387 17.0087 39.41 18.6771 38.5467C20.3455 37.6833 22.2667 37.4417 24.0969 37.865C25.9271 38.2882 27.5471 39.3488 28.6671 40.857L22.4271 47.1036L19.4137 44.117Z" fill="#FF5F46" /><path d="M58.0339 17.5837L56.6205 19.0037L61.0138 23.3971L69.8072 14.5971L69.4005 13.9304C68.1546 11.8847 66.2102 10.3593 63.9268 9.63619C61.6434 8.91305 59.1754 9.04108 56.979 9.99662C54.7827 10.9522 53.0066 12.6706 51.9791 14.8342C50.9515 16.9978 50.7421 19.4602 51.3895 21.7663C52.0368 24.0723 53.4972 26.066 55.5006 27.3787C57.504 28.6915 59.915 29.2345 62.2877 28.9074C64.6605 28.5802 66.8346 27.4051 68.408 25.5993C69.9815 23.7934 70.848 21.4789 70.8472 19.0837H68.8472C68.8503 20.9659 68.1837 22.7878 66.9664 24.2234C65.7491 25.659 64.0608 26.6146 62.2034 26.9192C60.346 27.2238 58.4409 26.8576 56.8288 25.886C55.2168 24.9144 54.0031 23.4009 53.4049 21.6163C52.8067 19.8317 52.863 17.8925 53.5638 16.1457C54.2646 14.3988 55.5642 12.9583 57.2299 12.082C58.8956 11.2056 60.8189 10.9506 62.6554 11.3626C64.492 11.7745 66.122 12.8265 67.2538 14.3304L61.0138 20.5704L58.0339 17.5837Z" fill="#FF5F46" /></g></symbol>
+<symbol id="dbx-notebooks" viewBox="0 0 48 48"><g transform="translate(2 2) scale(2.75)"><path fill-rule="evenodd" clip-rule="evenodd" d="M3 1.75C3 1.33579 3.33579 1 3.75 1L14.25 1C14.6642 1 15 1.33579 15 1.75L15 14.25C15 14.6642 14.6642 15 14.25 15L3.75 15C3.33579 15 3 14.6642 3 14.25L3 12.5H1V11H3L3 8.75H1L1 7.25H3L3 5H1L1 3.5L3 3.5L3 1.75ZM4.5 2.5L4.5 13.5H6L6 2.5L4.5 2.5ZM7.5 2.5L7.5 13.5L13.5 13.5L13.5 2.5L7.5 2.5Z" fill="#FF3621" /></g></symbol>
+<symbol id="dbx-rest-api" viewBox="0 0 48 48"><g transform="translate(2 2) scale(0.4583)"><path d="M47.6417 36.9986C51.4202 36.9986 54.4833 33.9355 54.4833 30.157C54.4833 26.3785 51.4202 23.3154 47.6417 23.3154C43.8632 23.3154 40.8001 26.3785 40.8001 30.157C40.8001 33.9355 43.8632 36.9986 47.6417 36.9986Z" stroke="#FF5F46" stroke-width="1.92" stroke-miterlimit="3" stroke-linecap="square" /><path d="M68.9153 73.8431C72.6938 73.8431 75.7569 70.78 75.7569 67.0015C75.7569 63.223 72.6938 60.1599 68.9153 60.1599C65.1368 60.1599 62.0737 63.223 62.0737 67.0015C62.0737 70.78 65.1368 73.8431 68.9153 73.8431Z" stroke="#FF5F46" stroke-width="1.92" stroke-miterlimit="3" stroke-linecap="square" /><path d="M26.3681 73.8431C30.1466 73.8431 33.2097 70.78 33.2097 67.0015C33.2097 63.223 30.1466 60.1599 26.3681 60.1599C22.5896 60.1599 19.5265 63.223 19.5265 67.0015C19.5265 70.78 22.5896 73.8431 26.3681 73.8431Z" stroke="#FF5F46" stroke-width="1.92" stroke-miterlimit="3" stroke-linecap="square" /><path d="M60.5953 67.0016L44.1409 67.0016C44.1409 76.8192 36.1793 84.7808 26.3617 84.7808C16.5441 84.7808 8.58249 76.8192 8.58249 67.0016C8.58249 57.184 16.5441 49.2224 26.3617 49.2224" stroke="#FF5F46" stroke-width="1.92" stroke-miterlimit="3" stroke-linecap="square" /><path d="M51.9105 37.5488L60.0321 51.6096C68.5313 46.7008 79.4049 49.6128 84.3137 58.1184C89.2225 66.6176 86.3105 77.4912 77.8049 82.4C69.3057 87.3088 58.4321 84.3968 53.5233 75.8912" stroke="#FF5F46" stroke-width="1.92" stroke-miterlimit="3" stroke-linecap="square" /><path d="M30.5217 59.8081L38.7521 45.5553C30.2529 40.6465 27.3345 29.7729 32.2433 21.2737C37.1521 12.7745 48.0257 9.8561 56.5249 14.7649C65.0241 19.6737 67.9425 30.5473 63.0337 39.0465" stroke="#FF5F46" stroke-width="1.92" stroke-miterlimit="3" stroke-linecap="square" /></g></symbol>
+<symbol id="dbx-sql-warehouse" viewBox="0 0 48 48"><g transform="translate(2 2) scale(2.75)"><path fill-rule="evenodd" clip-rule="evenodd" d="M1 1.75C1 1.33579 1.33579 1 1.75 1L14.25 1C14.6642 1 15 1.33579 15 1.75L15 8.99999H13.5L13.5 7L2.5 7L2.5 13.5H8V15H1.75C1.33579 15 1 14.6642 1 14.25L1 1.75ZM13.5 2.5V5.5L2.5 5.5L2.5 2.5L13.5 2.5Z" fill="#FF3621" /><path d="M11.4306 8.01191L8.43056 11.5119C8.23994 11.7343 8.19623 12.0473 8.31862 12.3134C8.441 12.5795 8.7071 12.75 9 12.75H12.3693L10.4306 15.0119L11.5694 15.9881L14.5694 12.4881C14.7601 12.2657 14.8038 11.9527 14.6814 11.6866C14.559 11.4205 14.2929 11.25 14 11.25H10.6307L12.5694 8.98809L11.4306 8.01191Z" fill="#FF3621" /></g></symbol>
+<symbol id="dbx-unity-catalog" viewBox="0 0 48 48"><g transform="translate(2 2) scale(0.7097)"><path d="M30.9246 22.4343L23.5127 26.7172V35.2831L30.9246 39.566L38.3366 35.2831V26.7172L30.9246 22.4343Z" fill="#FF5F46" /><path d="M46.5527 21.9881H55.0809L50.7945 14.5823L46.5527 21.9881Z" fill="#FF5F46" /><path d="M46.5527 40.0566L50.8392 47.4625L55.1256 40.0566H46.5527Z" fill="#FF5F46" /><path d="M26.6387 56.43H35.1669L30.8804 49.0242L26.6387 56.43Z" fill="#FF5F46" /><path d="M6.72461 40.0566L11.011 47.4625L15.2974 40.0566H6.72461Z" fill="#FF5F46" /><path d="M6.72461 21.9881H15.2528L10.9664 14.5823L6.72461 21.9881Z" fill="#FF5F46" /><path d="M26.6387 5.57031L30.9251 12.9762L35.2115 5.57031H26.6387Z" fill="#FF5F46" /><path d="M39.0509 7.04248L34.0947 15.6083L42.6676 20.5604L47.6237 11.9946L39.0509 7.04248Z" fill="#FABFBA" /><path d="M55.7503 26.0481H45.8379V35.9523H55.7503V26.0481Z" fill="#FABFBA" /><path d="M42.6676 41.4844L34.0947 46.4365L39.0509 55.0023L47.6237 50.0502L42.6676 41.4844Z" fill="#FABFBA" /><path d="M19.1369 41.4844L14.1807 50.0502L22.7535 55.0023L27.7097 46.4365L19.1369 41.4844Z" fill="#FABFBA" /><path d="M15.967 26.0481H6.05469V35.9523H15.967V26.0481Z" fill="#FABFBA" /><path d="M22.7535 7.04248L14.1807 11.9946L19.1369 20.5604L27.7097 15.6083L22.7535 7.04248Z" fill="#FABFBA" /></g></symbol>
+<symbol id="dbx-workspace" viewBox="0 0 48 48"><g transform="translate(3.2941 2) scale(2.5882)"><path fill-rule="evenodd" clip-rule="evenodd" d="M2.5 1.01074C2.08579 1.01074 1.75 1.34653 1.75 1.76074L1.75 4.76074C1.75 5.17496 2.08579 5.51074 2.5 5.51074L6 5.51074L6 4.01074L3.25 4.01074L3.25 2.51074L12.75 2.51074V4.01074H10V5.51074L13.5 5.51074C13.9142 5.51074 14.25 5.17496 14.25 4.76074V1.76074C14.25 1.34653 13.9142 1.01074 13.5 1.01074L2.5 1.01074ZM2.75 11.0107C2.05964 11.0107 1.5 11.5704 1.5 12.2607C1.5 12.9511 2.05964 13.5107 2.75 13.5107C3.44036 13.5107 4 12.9511 4 12.2607C4 11.5704 3.44036 11.0107 2.75 11.0107ZM0 12.2607C0 11.0005 0.847651 9.93834 2.0039 9.61316C2.08058 8.16299 3.28073 7.01074 4.75 7.01074H7.25L7.25 4.01074H8.75V7.01074L11.25 7.01074C12.7193 7.01074 13.9194 8.16299 13.9961 9.61316C15.1523 9.93834 16 11.0005 16 12.2607C16 13.7795 14.7688 15.0107 13.25 15.0107C12.0176 15.0107 10.9745 14.2001 10.625 13.0829C10.2755 14.2001 9.2324 15.0107 8 15.0107C6.7676 15.0107 5.72454 14.2001 5.375 13.0829C5.02546 14.2001 3.9824 15.0107 2.75 15.0107C1.23122 15.0107 0 13.7795 0 12.2607ZM5.375 11.4386C5.10006 10.5598 4.396 9.8707 3.50822 9.6166C3.57969 8.99414 4.10839 8.51074 4.75 8.51074H7.25V9.61426C6.35835 9.86645 5.6508 10.5571 5.375 11.4386ZM8.75 9.61426V8.51074L11.25 8.51074C11.8916 8.51074 12.4203 8.99414 12.4918 9.6166C11.604 9.8707 10.8999 10.5598 10.625 11.4386C10.3492 10.5571 9.64165 9.86645 8.75 9.61426ZM12 12.2607C12 11.5704 12.5596 11.0107 13.25 11.0107C13.9404 11.0107 14.5 11.5704 14.5 12.2607C14.5 12.9511 13.9404 13.5107 13.25 13.5107C12.5596 13.5107 12 12.9511 12 12.2607ZM6.75 12.2607C6.75 12.9511 7.30964 13.5107 8 13.5107C8.69036 13.5107 9.25 12.9511 9.25 12.2607C9.25 11.5704 8.69036 11.0107 8 11.0107C7.30964 11.0107 6.75 11.5704 6.75 12.2607Z" fill="#FF3621" /></g></symbol>
+<symbol id="mk-github" viewBox="0 0 256 250"><path fill="#161614" d="M128.001 0C57.317 0 0 57.307 0 128.001c0 56.554 36.676 104.535 87.535 121.46c6.397 1.185 8.746-2.777 8.746-6.158c0-3.052-.12-13.135-.174-23.83c-35.61 7.742-43.124-15.103-43.124-15.103c-5.823-14.795-14.213-18.73-14.213-18.73c-11.613-7.944.876-7.78.876-7.78c12.853.902 19.621 13.19 19.621 13.19c11.417 19.568 29.945 13.911 37.249 10.64c1.149-8.272 4.466-13.92 8.127-17.116c-28.431-3.236-58.318-14.212-58.318-63.258c0-13.975 5-25.394 13.188-34.358c-1.329-3.224-5.71-16.242 1.24-33.874c0 0 10.749-3.44 35.21 13.121c10.21-2.836 21.16-4.258 32.038-4.307c10.878.049 21.837 1.47 32.066 4.307c24.431-16.56 35.165-13.12 35.165-13.12c6.967 17.63 2.584 30.65 1.255 33.873c8.207 8.964 13.173 20.383 13.173 34.358c0 49.163-29.944 59.988-58.447 63.157c4.591 3.972 8.682 11.762 8.682 23.704c0 17.126-.148 30.91-.148 35.126c0 3.407 2.304 7.398 8.792 6.14C219.37 232.5 256 184.537 256 128.002C256 57.307 198.691 0 128.001 0m-80.06 182.34c-.282.636-1.283.827-2.194.39c-.929-.417-1.45-1.284-1.15-1.922c.276-.655 1.279-.838 2.205-.399c.93.418 1.46 1.293 1.139 1.931m6.296 5.618c-.61.566-1.804.303-2.614-.591c-.837-.892-.994-2.086-.375-2.66c.63-.566 1.787-.301 2.626.591c.838.903 1 2.088.363 2.66m4.32 7.188c-.785.545-2.067.034-2.86-1.104c-.784-1.138-.784-2.503.017-3.05c.795-.547 2.058-.055 2.861 1.075c.782 1.157.782 2.522-.019 3.08m7.304 8.325c-.701.774-2.196.566-3.29-.49c-1.119-1.032-1.43-2.496-.726-3.27c.71-.776 2.213-.558 3.315.49c1.11 1.03 1.45 2.505.701 3.27m9.442 2.81c-.31 1.003-1.75 1.459-3.199 1.033c-1.448-.439-2.395-1.613-2.103-2.626c.301-1.01 1.747-1.484 3.207-1.028c1.446.436 2.396 1.602 2.095 2.622m10.744 1.193c.036 1.055-1.193 1.93-2.715 1.95c-1.53.034-2.769-.82-2.786-1.86c0-1.065 1.202-1.932 2.733-1.958c1.522-.03 2.768.818 2.768 1.868m10.555-.405c.182 1.03-.875 2.088-2.387 2.37c-1.485.271-2.861-.365-3.05-1.386c-.184-1.056.893-2.114 2.376-2.387c1.514-.263 2.868.356 3.061 1.403" /></symbol>
+<symbol id="mk-githubactions" viewBox="0 0 256 256"><path fill="#4a7ebf" d="M53.604 0c29.604 0 53.604 23.992 53.604 53.59c0 29.09-23.189 52.75-52.093 53.553c0 2.461.109 7.111 1.501 9.92c1.933 3.893 13.525 11.144 24.892 11.144h4.084c2.567-18.271 18.257-32.332 37.24-32.332c18.906 0 34.55 13.946 37.211 32.11h21.13c2.661-18.164 18.304-32.11 37.21-32.11c20.775 0 37.617 16.837 37.617 37.607s-16.842 37.606-37.617 37.606c-18.906 0-34.55-13.948-37.21-32.11h-21.129c-2.66 18.162-18.305 32.11-37.212 32.11c-18.87 0-34.494-13.893-37.199-32.007l-4.515.135c-7.435-.056-15.29-2.042-21.598-6.328c-1.72-1.169-3.415-2.397-5.182-3.56v2.441c-.01.79-.153 12.657-.164 25.833v2.79c.005 8.641.073 17.545.277 24.04c.446 14.246 12.034 25.745 24.822 28.436c1.663.35 4.52.394 6.321.238c2.571-18.264 18.26-32.32 37.238-32.32c20.774 0 37.616 16.838 37.616 37.607c0 20.77-16.842 37.607-37.616 37.607c-18.769 0-34.323-13.744-37.153-31.714h-3.254c-24.436-1.334-39.628-23.746-39.363-41.923c.334-22.877.082-45.764.079-68.646v-7.565C18.546 101.286 0 79.606 0 53.591C0 23.992 23.999 0 53.604 0m69.228 191.78c-14.701 0-26.62 11.915-26.62 26.613s11.919 26.614 26.62 26.614s26.62-11.915 26.62-26.614c0-14.698-11.918-26.614-26.62-26.614m0-84.912c-14.701 0-26.62 11.915-26.62 26.614c0 14.697 11.919 26.613 26.62 26.613s26.62-11.916 26.62-26.613c0-14.699-11.918-26.614-26.62-26.614m95.551 0c-14.702 0-26.62 11.915-26.62 26.614c0 14.697 11.918 26.613 26.62 26.613s26.621-11.916 26.621-26.613c0-14.699-11.918-26.614-26.62-26.614m15.161 15.408a5.496 5.496 0 0 1 .17 7.606l-.16.168l-16.31 16.345a5.5 5.5 0 0 1-7.576.198l-.172-.163l-7.985-7.86a5.496 5.496 0 0 1-.06-7.773a5.5 5.5 0 0 1 7.606-.22l.168.16l4.092 4.027l12.452-12.477a5.5 5.5 0 0 1 7.775-.01m-95.99-.08a5.497 5.497 0 0 1 .17 7.606l-.16.168l-16.31 16.344a5.5 5.5 0 0 1-7.576.198l-.172-.163l-7.985-7.86a5.498 5.498 0 0 1 7.546-7.992l.168.16l4.093 4.027l12.451-12.478a5.5 5.5 0 0 1 7.775-.01M53.604 10.993c-23.532 0-42.608 19.07-42.608 42.598c0 23.525 19.076 42.597 42.608 42.597s42.608-19.072 42.608-42.597c0-23.527-19.076-42.598-42.608-42.598M49.171 28.13A744 744 0 0 1 75.7 44.841c7.308 4.82 7.29 13.563-.1 18.394a609 609 0 0 1-27.058 16.712c-7.455 4.34-15.8-.65-16.002-9.344c-.13-5.602-.024-11.21-.032-16.817c-.006-5.454-.113-10.911.019-16.363c.222-9.248 8.736-14.066 16.643-9.293m-5.91 8.872v3.868l-.001 5.674l-.001 3.71v5.482c0 4.23.002 8.394.01 12.557c.003 1.96 1.023 1.88 2.343 1.063q11.408-7.071 22.827-14.127c1.258-.776 1.294-1.587.06-2.365c-8.154-5.139-16.318-10.26-25.238-15.862" /><path fill="#85b3df" d="M133.227 223.88a5.497 5.497 0 1 0 .001-10.996a5.497 5.497 0 0 0 0 10.995m-21.049.001a5.497 5.497 0 1 0 0-10.996a5.497 5.497 0 0 0 0 10.995m106.205 21.128c-14.702 0-26.62-11.915-26.62-26.614c0-14.698 11.918-26.614 26.62-26.614c14.701 0 26.62 11.916 26.62 26.614s-11.919 26.614-26.62 26.614m0-64.22c-18.906 0-34.55 13.947-37.211 32.11h-6.153c-2.685 0-4.864 2.461-4.864 5.496s2.179 5.497 4.864 5.497h6.153c2.66 18.163 18.305 32.11 37.21 32.11C239.159 256 256 239.162 256 218.393c0-20.77-16.842-37.607-37.616-37.607" /></symbol>
+<symbol id="mk-databricks" viewBox="0 0 256 276"><path fill="#ee3d2c" d="m242.284 113.629l-114.158 64.268l-122.24-68.672L0 112.399v49.864l128.126 71.834l114.145-64.017v26.387l-114.145 64.281l-122.24-68.672L0 195.25v8.545l128.126 71.846L256 203.795v-49.851l-5.886-3.174l-121.988 68.42l-114.41-64.016v-26.4l114.41 64.016L256 120.97V71.82l-6.375-3.664l-121.499 68.183L19.602 75.735l108.524-60.842l89.16 50.089l7.843-4.391V54.48L128.126 0L0 71.833v7.831l128.126 71.846l114.145-64.281z" /></symbol>
+</svg>
+<header class="cap">
+  <div class="tabs" role="tablist" aria-label="Scene">
+    <button id="s1" role="tab" aria-selected="true" title="Scene 1 (key 1)"><b>1</b>One environment, straight to main</button>
+    <button id="s2" role="tab" aria-selected="false" title="Scene 2 (key 2)"><b>2</b>PR, checks, dev → acc → prd</button>
+  </div>
+  <div class="cap-b" aria-live="polite">
+    <span class="cap-n" id="capN">1 / 8</span>
+    <p id="capP"></p>
+  </div>
+</header>
+
+<main class="stage" id="stage" tabindex="0" aria-label="The scene. Space plays and pauses, the right arrow plays one beat, the left arrow goes back one beat.">
+  <svg id="sv" role="img" preserveAspectRatio="xMidYMid meet"></svg>
+  <button class="bigplay" id="big">▶ Play</button>
+  <div class="hud-err" id="err" hidden></div>
+</main>
+
+<footer class="bar">
+  <button id="bPlay" class="primary" aria-pressed="false" title="Play or pause (Space)">▶ Play</button>
+  <button id="bStep" title="Play one beat, then stop (→)">Step →</button>
+  <button id="bBack" title="Back one beat (←)">← Back</button>
+  <button id="bReplay" title="Replay this scene (R)">Replay</button>
+  <span class="sep"></span>
+  <div class="dots" id="dots" aria-label="Beats"></div>
+  <span class="sep"></span>
+  <label class="speed" title="Speed ([ slower, ] faster)">Speed
+    <input type="range" id="speed" min="0.5" max="3" step="0.25" value="1" aria-label="Speed">
+    <output id="speedOut">1×</output>
+  </label>
+  <span class="grow"></span>
+  <span class="hint"><kbd>Space</kbd> play · <kbd>→</kbd> one beat · <kbd>←</kbd> back</span>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.1/gsap.min.js" integrity="sha512-VMHB/Dy1/3d+djJPdMhxbplbZgbfPNHy+yWCxB1MSrwUEcNE+gnviL/DwlGsh9wwobnRTiQc6ChK2ZoJamshXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.1/MotionPathPlugin.min.js" integrity="sha512-UY+C2Ml/WmSOCNGlHkf8Lxir2mqkiwsOOOw5p3Wnl6nXSiZZBDqu+xgWvCbhTn5wC7m3YIU9mXhWt9lYDV/EDA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+(() => {
+"use strict";
+// Part 4 of the platform lecture: "dev → acc → prd for infrastructure", two animated scenes.
+// The drawing language is the one of lecture_materials/day-on-the-platform (developers on the
+// left, GitHub below them, your Databricks account in the middle, the platform users on the right;
+// white tiles with depth, packets that fly along rails, verdict discs), redrawn here for a stage
+// that is always whole on screen: a world 1280 units wide and 580 to 740 high, so one unit is at
+// least one CSS pixel on a 1280-wide screen and every label is 16 units or more.
+//
+// The files of src/js are concatenated in name order into one function scope by build.py:
+// 00-core (helpers), 05-people (the figures), 10-world (the drawing, laid out for a height),
+// 20-engine (the scene clock, packets, verdicts, bubbles, effects), 30-scene1 and 35-scene2 (the
+// two stories, beat by beat), 40-ui (controls, keys, the postMessage protocol).
+//
+// One clock: every motion of a scene is a child of one paused GSAP timeline, built whole before it
+// plays. Nothing is changed from a callback, so the timeline can be paused, stepped, sought back
+// and rebuilt for another stage height at the same second.
+
+const NS = "http://www.w3.org/2000/svg";
+const $ = (id) => document.getElementById(id);
+const post = (msg) => { if (window.parent !== window) window.parent.postMessage({type: "part4", page: "index", ...msg}, "*"); };
+if (!window.gsap || !window.MotionPathPlugin) {
+  // the CDN did not answer: say so instead of showing an empty stage
+  const b = $("err");
+  b.hidden = false;
+  b.textContent = "This page loads GSAP from cdnjs.cloudflare.com and could not reach it. Open it with a network connection, or use index.bundled.html, which carries everything.";
+  post({event: "ready", ok: false});
+  return;
+}
+gsap.registerPlugin(MotionPathPlugin);
+const svg = $("sv"), stage = $("stage");
+const W = 1280, HMIN = 580, HMAX = 740;
+const FAM = {dev: "#c9705f", token: "#d9a441", user: "#6b5fb0", plat: "#506fa0", data: "#4e7566", ok: "#3f9b6b", no: "#d64545"};
+const INK_OK = "#1f6b46", INK_NO = "#a12b2b";
+
+const el = (tag, attrs, parent) => {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+};
+const txt = (x, y, s, cls, parent, attrs = {}) => {
+  // a fill is set as a style: a fill attribute would lose to the stylesheet's rule for text
+  const {fill, ...rest} = attrs;
+  const t = el("text", {x, y, class: cls, ...rest}, parent);
+  if (fill) t.style.fill = fill;
+  t.textContent = s;
+  return t;
+};
+const use = (id, x, y, size, parent, attrs = {}) => el("use", {href: "#" + id, x, y, width: size, height: size, ...attrs}, parent);
+
+// text is measured on a canvas, not in the SVG: the page may be built while its iframe is hidden,
+// and a hidden SVG measures every text as zero
+const meas = document.createElement("canvas").getContext("2d");
+const textW = (s, font) => { meas.font = font; return meas.measureText(s).width; };
+const F = {
+  body: '500 17px "Nunito", system-ui, sans-serif',
+  bold: '600 17px "Nunito", system-ui, sans-serif',
+  mono: '500 16px "Fira Code", ui-monospace, monospace',
+};
+
+// an orthogonal polyline's length, and its points as GSAP wants them
+const pathLen = (pts) => pts.reduce((n, p, i) => (i ? n + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0), 0);
+const rev = (pts) => pts.slice().reverse();
+const polyD = (pts) => "M" + pts.map((p) => p[0] + " " + p[1]).join("L");
+
+// ---------- the people ----------
+// Copied from lecture_materials/day-on-the-platform/src/js/05-people.js and the vignette of its
+// 10-world.js (drawn for that page, from no illustration pack), so both pages show the same
+// people at the same desks. Added here: a tint over the laptop's screen, for the red of a refused
+// request, and avatar(), a bust in a disc for the reviewer. The developer of this scene is
+// Victor, drawn here for this page: short hair with a sideburn, broad shoulders, a shirt with a
+// collar, in the warm colour of developer traffic.
+// Eight calm, flat figures, drawn here and taken from no illustration pack: a head shape with hair,
+// shoulders, two arms. No eyes and no mouth: the turn of the head towards the laptop says enough.
+// The coordinates are the vignette's (10-world.js): the desk's back edge is y = 84 and the laptop
+// stands on the right, so everyone is drawn turned to the right; the users' column mirrors them.
+// Clothing: the developers wear the warm family of their traffic, the users the violet one.
+const LOOK = {
+  victor: {skin: "#e8b89a", hair: "#3b2a20", style: "short", shirt: "#c9705f", collar: "#a8503f", pose: "type", build: "broad"},
+  bo: {skin: "#a9714b", hair: "#241a14", style: "crop", shirt: "#dcae5a", pose: "mug", glasses: true},
+  chen: {skin: "#f0c9a8", hair: "#1f1a18", style: "side", shirt: "#a8766a", pose: "chin"},
+  dana: {skin: "#7a4a32", hair: "#2a1c16", style: "curls", shirt: "#6b5fb0", pose: "type"},
+  eli: {skin: "#f1cdb0", hair: "#9a5a38", style: "crop", shirt: "#8f84c7", pose: "chin", beard: true},
+  fay: {skin: "#c98f6b", hair: "#3a2619", style: "bob", shirt: "#57508f", pose: "type", glasses: true},
+  gus: {skin: "#e2ad8c", hair: "#b98a54", style: "quiff", shirt: "#7d8fc4", pose: "mug"},
+  tess: {skin: "#f3d6c0", hair: "#b5b1ab", style: "long", shirt: "#a7a0d8", pose: "type"},
+};
+// the head is an ellipse centred on (75, 28), 15 wide and 17 high, and each style is a cap over it;
+// HEAD then enlarges head and hair together, so the figures read as people, not as mannequins
+const HEAD = "translate(75 30) scale(1.14) translate(-75 -28)";
+const CAP = "M60 32C57.5 15 66 8.5 76 9C85 9.5 91 15 90.8 23C86.5 18.5 80 16.5 73 18C67.5 19.5 64.5 25 64.5 32Z";
+const FRINGE = "M59 31C56 12 67 6.5 78 7.5C88.5 8.5 93 16 91.5 24C86 21.5 81 18.5 75 18C70 18.5 67.5 23 67 31Z";
+const HAIR = {
+  crop: {front: (g, c) => el("path", {d: CAP, fill: c}, g)},
+  short: {front: (g, c) => { el("path", {d: CAP, fill: c}, g); el("path", {d: "M66.3 29.5h3.2v5.6c-1.9.2-3.2-1-3.2-2.9z", fill: c}, g); }},
+  bun: {front: (g, c) => { el("circle", {cx: 61, cy: 10.5, r: 7, fill: c}, g); el("path", {d: CAP, fill: c}, g); }},
+  side: {front: (g, c) => el("path", {d: "M60 32C56.5 13 67 6.5 78 7.5C88.5 8.5 93.5 16 91.5 26C87 21.5 81 20 74.5 20.5C68.5 21 65 26 64.5 32Z", fill: c}, g)},
+  quiff: {front: (g, c) => { el("path", {d: CAP, fill: c}, g); el("ellipse", {cx: 81, cy: 11.5, rx: 10, ry: 6, transform: "rotate(-10 81 11.5)", fill: c}, g); }},
+  bob: {front: (g, c) => el("path", {d: "M59.5 30C56 12 67 6.5 78 7.5C88.5 8.5 93 16 91.5 24C86 21.5 81 18.5 75 18C70 18.5 67.5 23 67 29C66.8 36 66.5 42 64.5 47.5C60 48.5 56.5 45 57 40C58 37 59 34 59.5 30Z", fill: c}, g)},
+  long: {
+    back: (g, c) => el("path", {d: "M58.5 26C56.5 38 55.5 45 53.5 51C52.5 55 55 58 59 58H66.5C68 51 68.5 42 67.5 32Z", fill: c}, g),
+    front: (g, c) => el("path", {d: FRINGE, fill: c}, g),
+  },
+  curls: {
+    back: (g, c) => [[58.5, 40, 8.5], [60, 48, 6.5]].forEach(([cx, cy, r]) => el("circle", {cx, cy, r, fill: c}, g)),
+    front: (g, c) => [[61, 21, 9.5], [66, 13, 9], [75, 9.5, 9], [84, 11, 8.5], [90, 17, 6.5], [57.5, 30.5, 8]].forEach(([cx, cy, r]) => el("circle", {cx, cy, r, fill: c}, g)),
+  },
+};
+// the person's upper body, drawn before the desk, which hides the rest; returns the head, which nods
+const personBust = (g, who) => {
+  const k = LOOK[who], hair = HAIR[k.style];
+  if (hair.back) hair.back(el("g", {transform: HEAD}, g), k.hair);
+  const broad = k.build === "broad";
+  el("path", {d: broad ? "M31 92C31 73 39 62.5 55 59.5L66.5 57H83.5L96 59.5C109 62.5 115 73 115 92Z" : "M38 92C38 75 44 64.5 57 61.5L67 59H83L91 61.5C102 64.5 108 75 108 92Z", fill: k.shirt}, g);
+  el("rect", broad ? {x: 67.8, y: 44, width: 14.4, height: 19, rx: 6.5, fill: k.skin} : {x: 69.5, y: 44, width: 11, height: 18, rx: 5.5, fill: k.skin}, g);
+  if (k.collar) el("path", {d: "M66.5 57l8.5 9.5l-5.2 4.2l-6.3-10.5zM83.5 57l-8.5 9.5l5.2 4.2l6.3-10.5z", fill: k.collar}, g);
+  const nod = el("g", {}, g), head = el("g", {transform: HEAD}, nod);
+  el("ellipse", {cx: 75, cy: 28, rx: 15, ry: 17, fill: k.skin}, head);
+  el("ellipse", {cx: 90, cy: 31, rx: 2.4, ry: 3, fill: k.skin}, head);              // the nose: which way they look
+  if (k.beard) el("path", {d: "M64.5 34C65 43.5 70 46.5 76.5 45.8C83.5 45 89 41 90 33.5C86.5 37 81.5 38.5 76.5 38.3C71.5 38 67.5 36.5 64.5 34Z", fill: k.hair}, head);
+  hair.front(head, k.hair);
+  el("ellipse", {cx: 64, cy: 33.5, rx: 2.5, ry: 3.6, fill: k.skin}, head);            // an ear
+  if (k.glasses) el("path", {d: "M76 25.5h6a1.6 1.6 0 0 1 1.6 1.6v3a1.6 1.6 0 0 1-1.6 1.6h-6a1.6 1.6 0 0 1-1.6-1.6v-3a1.6 1.6 0 0 1 1.6-1.6zM86.6 25.5h3.6v6.2h-3.6a1.4 1.4 0 0 1-1.4-1.4v-3.4a1.4 1.4 0 0 1 1.4-1.4zM83.6 28h1.6M74.4 28L65 29.5", class: "specs"}, head);
+  return nod;
+};
+// the arms, drawn over the desk and the laptop's base: hands on the keys, on a mug, or under the chin
+const personArms = (g, who) => {
+  const k = LOOK[who];
+  const arm = (d, hx, hy) => {
+    el("path", {d, class: "arm arm-sh"}, g);
+    const a = el("path", {d, class: "arm", stroke: k.shirt}, g);
+    if (k.build === "broad") a.style.strokeWidth = 13.2;
+    el("circle", {cx: hx, cy: hy, r: 5.4, fill: k.skin}, g);
+  };
+  if (k.pose === "mug") {
+    el("rect", {x: 62, y: 89, width: 13, height: 15, rx: 2, class: "mug"}, g);
+    el("path", {d: "M75 93c5 0 5 8 0 8", class: "mug-h"}, g);
+    arm("M48 75C42 85 41 94 46 98L55 100.5", 58, 100.8);
+  } else arm("M48 75C42 87 42 98 52 101L84 105", 87.5, 105.3);
+  if (k.pose === "chin") arm("M99 75C108 84 113 91 112 96L97 58", 95.5, 53.5);
+  else arm("M99 75C108 83 112 90 120 94L137.5 99.3", 141, 100);
+};
+
+const SCREEN = {
+  code: (g, c) => [[12, 14, 30, c], [18, 22, 44, "#9aa3b5"], [18, 30, 36, "#9aa3b5"], [24, 38, 28, "#3f9b6b"], [18, 46, 40, "#9aa3b5"], [12, 54, 22, c]].forEach(([x, y, w, col]) => el("rect", {x, y: y - 2, width: w, height: 4, rx: 2, fill: col}, g)),
+  nb: (g, c) => { [12, 34].forEach((y) => el("rect", {x: 10, y, width: 80, height: 18, rx: 3, fill: "#fff", stroke: "#c6d1e6"}, g)); [[16, 19, 34, c], [16, 25, 50, "#9aa3b5"], [16, 41, 44, "#9aa3b5"], [16, 47, 26, "#3f9b6b"]].forEach(([x, y, w, col]) => el("rect", {x, y: y - 1.5, width: w, height: 3, rx: 1.5, fill: col}, g)); },
+  chat: (g, c) => { el("rect", {x: 10, y: 12, width: 48, height: 16, rx: 8, fill: c}, g); el("rect", {x: 36, y: 34, width: 54, height: 20, rx: 8, fill: "#fff", stroke: "#c6d1e6"}, g); [[42, 41, 40], [42, 47, 28]].forEach(([x, y, w]) => el("rect", {x, y: y - 1.5, width: w, height: 3, rx: 1.5, fill: "#9aa3b5"}, g)); },
+  chart: (g, c) => { [[14, 26], [30, 16], [46, 34], [62, 22], [78, 30]].forEach(([x, hh]) => el("rect", {x, y: 54 - hh, width: 10, height: hh, rx: 2, fill: c}, g)); el("rect", {x: 10, y: 54, width: 80, height: 2, fill: "#9aa3b5"}, g); },
+  sql: (g, c) => { el("rect", {x: 10, y: 10, width: 80, height: 12, rx: 3, fill: c, opacity: 0.85}, g); for (let r = 0; r < 4; r++) for (let k = 0; k < 3; k++) el("rect", {x: 10 + k * 28, y: 26 + r * 8, width: 24, height: 5, rx: 1.5, fill: r % 2 ? "#c6d1e6" : "#dfe7f4"}, g); },
+};
+// a person behind a desk with an open laptop: the base lies on the desk, the screen leans back and
+// is turned half to the person and half to us, so both see what is on it
+const vignette = (parent, x, y, s, flip, who, kind, colour) => {
+  const outer = el("g", {transform: `translate(${x},${y}) scale(${s})`}, parent);
+  const m = flip ? el("g", {transform: "translate(240,0) scale(-1,1)"}, outer) : outer;
+  el("ellipse", {cx: 115, cy: 152, rx: 124, ry: 8, fill: "#1a1a1a", opacity: 0.07}, m);
+  const head = personBust(el("g", {}, m), who);
+  el("rect", {x: 8, y: 130, width: 9, height: 22, class: "desk-leg"}, m);
+  el("rect", {x: 213, y: 130, width: 9, height: 22, class: "desk-leg"}, m);
+  el("rect", {x: 6, y: 131, width: 218, height: 13, class: "desk-panel"}, m);
+  el("polygon", {points: "18,84 212,84 236,124 -6,124", class: "desk-top"}, m);
+  el("rect", {x: -6, y: 124, width: 242, height: 9, rx: 2, class: "desk-front"}, m);
+  // the laptop's lead to the edge of the desk, where the rail to the laptop setup takes over
+  if (!flip) el("line", {x1: 190, y1: 106, x2: 226, y2: 106, class: "lead"}, m);
+  const glow = el("polygon", {points: "159,35 154,83 96,80 86,20", fill: "url(#gGlow)", class: "glow"}, m);
+  el("ellipse", {cx: 164, cy: 112, rx: 44, ry: 9, fill: "#1a1a1a", opacity: 0.1}, m);
+  el("polygon", {points: "124,100 166,123 166,127 124,104", class: "lap-side"}, m);
+  el("polygon", {points: "166,123 196,106 196,110 166,127", class: "lap-side"}, m);
+  el("polygon", {points: "124,100 166,123 196,106 154,83", class: "lap-base"}, m);
+  const kb = el("g", {transform: "matrix(0.42,0.23,0.5,-0.2833,124,100)"}, m);
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 9; c++) el("rect", {x: 9 + c * 9.2, y: 26 + r * 9, width: 7, height: 6, rx: 1, class: "lap-key"}, kb);
+  el("rect", {x: 38, y: 8, width: 24, height: 12, rx: 2, class: "lap-key"}, kb);
+  personArms(el("g", {}, m), who);
+  el("polygon", {points: "159,35 201,58 204,56 162,33", class: "lap-edge"}, m);
+  el("polygon", {points: "154,83 196,106 201,58 159,35", class: "lap-lid"}, m);
+  const scr = el("g", {transform: "matrix(0.42,0.23,-0.078,0.75,159,35)"}, m);
+  el("rect", {x: 5, y: 5, width: 90, height: 54, rx: 3, class: "lap-scr"}, scr);
+  SCREEN[kind](scr, colour);
+  const flash = el("rect", {x: 5, y: 5, width: 90, height: 54, rx: 3, fill: "#fff", opacity: 0}, scr);
+  const alarm = el("g", {opacity: 0}, scr);
+  el("rect", {x: 5, y: 5, width: 90, height: 54, rx: 3, fill: "#f6d0cd"}, alarm);
+  el("path", {d: "M38 20l24 24M62 20l-24 24", fill: "none", stroke: "#d64545", "stroke-width": 7, "stroke-linecap": "round"}, alarm);
+  // where the laptop's lead starts, in the world: the right corner of its base
+  return {bust: head, glow, flash, alarm, px: Math.round(x + (flip ? 240 - 196 : 196) * s), py: Math.round(y + 106 * s)};
+};
+// a bust in a disc: the reviewer, who has no desk in this scene
+let avatarN = 0;
+const avatar = (parent, cx, cy, r, who) => {
+  const id = "av" + ++avatarN, g = el("g", {}, parent), inner = el("g", {}, g);
+  el("circle", {cx, cy, r}, el("clipPath", {id}, g));
+  el("circle", {cx, cy, r, fill: "#f4eee2"}, inner);
+  const k = (r * 2) / 76, body = el("g", {"clip-path": "url(#" + id + ")"}, inner);
+  personBust(el("g", {transform: "translate(" + (cx - 73 * k) + "," + (cy - 44 * k) + ") scale(" + k + ")"}, body), who);
+  el("circle", {cx, cy, r, fill: "none", stroke: "#fff", "stroke-width": 2.5}, inner);
+  el("circle", {cx, cy, r: r + 1.2, fill: "none", stroke: "#cfc8ba", "stroke-width": 1.2}, inner);
+  return {g, inner, cx, cy, r};
+};
+
+// ---------- the drawing ----------
+// The ground says where a part runs, as in Databricks' own architecture picture
+// (https://docs.databricks.com/aws/en/getting-started/high-level-architecture). Outside, on the
+// warm page: the developer, GitHub and the platform users. Your Databricks account: one perimeter
+// that holds the control plane, the serverless compute plane and default storage. Under it,
+// outside it, dashed and empty: your cloud account and your resources, which a serverless
+// workspace does not have. No cloud-provider frame wraps the Databricks account.
+//
+// Inside the account the planes are rows and the environments are columns. The control plane's
+// tiles stand in the order every request meets them: (1) the front door, (2) identity and auth,
+// (3) the two authorizers, Unity Catalog for data and AI assets and workspace ACLs for workspace
+// objects. Under them, each environment holds a dashboard (a workspace object), its grants (Unity
+// Catalog's privileges), a SQL warehouse (serverless compute) and its tables (default storage):
+// top to bottom is the order a request touches them.
+//
+// buildWorld(n, H) draws the world of scene n for a stage H units high and returns its geometry.
+
+let L = {};
+
+const mkDefs = () => {
+  const defs = el("defs", {}, svg);
+  const grad = (id, stops, x2 = 0, y2 = 1) => {
+    const g = el("linearGradient", {id, x1: 0, y1: 0, x2, y2}, defs);
+    stops.forEach(([o, c, a]) => el("stop", {offset: o, "stop-color": c, ...(a == null ? {} : {"stop-opacity": a})}, g));
+  };
+  grad("gTile", [[0, "#ffffff"], [1, "#faf9f6"]]);
+  grad("gCab", [[0, "#333a4b"], [1, "#262b38"]]);
+  grad("gCyl", [[0, "#dcebe3"], [0.5, "#f4faf6"], [1, "#cfe1d8"]], 1, 0);
+  grad("gDesk", [[0, "#f3e9d6"], [1, "#e6d8bd"]]);
+  grad("gScr", [[0, "#fafdff"], [1, "#dbe7fa"]]);
+  const fire = el("linearGradient", {id: "gFire", x1: 0, y1: 1, x2: 0, y2: 0}, defs);
+  [[0, "#ffc93c"], [0.45, "#f58a1f"], [1, "#dd3f2a"]].forEach(([o, c]) => el("stop", {offset: o, "stop-color": c}, fire));
+  const glow = el("linearGradient", {id: "gGlow", x1: 1, y1: 0, x2: 0, y2: 0}, defs);
+  el("stop", {offset: 0, "stop-color": "#bcd6ff", "stop-opacity": 0.8}, glow);
+  el("stop", {offset: 1, "stop-color": "#bcd6ff", "stop-opacity": 0}, glow);
+  const p = el("pattern", {id: "pDots", width: 22, height: 22, patternUnits: "userSpaceOnUse"}, defs);
+  el("circle", {cx: 2, cy: 2, r: 1, fill: "#8a7556", opacity: 0.16}, p);
+};
+
+// a white card with depth, an icon plate, a title, a step badge
+const tile = (x, y, w, h, o = {}) => {
+  const g = el("g", {class: "tile " + (o.cls || "")}, o.layer || L.tile);
+  el("rect", {x: x + 1, y: y + 3, width: w - 2, height: h, rx: 11, class: "sh1"}, g);
+  const face = el("rect", {x, y, width: w, height: h, rx: 10, class: "face"}, g);
+  const is = o.is || 24, pl = is + 8;
+  let tx = x + 12;
+  const py = o.top != null ? y + o.top : y + (h - pl) / 2;
+  if (o.icon || o.glyph) {
+    el("rect", {x: x + 6, y: py, width: pl, height: pl, rx: 8, class: "plate"}, g);
+    if (o.icon) use(o.icon, x + 10, py + 4, is, g);
+    else o.glyph(el("g", {transform: `translate(${x + 6 + pl / 2},${py + pl / 2}) scale(${is / 40})`}, g));
+    tx = x + 6 + pl + 9;
+  }
+  const ty = o.top != null ? py + pl / 2 + 6 : y + h / 2 + 6;
+  const title = o.title ? txt(tx, ty, o.title, "tt", g) : null;
+  if (o.step) {
+    const b = el("g", {class: "stepb"}, g);
+    el("circle", {cx: x + 3, cy: y + 3, r: 12}, b);
+    txt(x + 3, y + 8.8, o.step, "", b);
+  }
+  return {g, face, title, x, y, w, h, tx, cx: x + w / 2, cy: y + h / 2};
+};
+
+const glyphPr = (g) => { el("path", {d: "M-9-8v16M9 8v-9a6 6 0 0 0-6-6h-3", fill: "none", stroke: "#c9705f", "stroke-width": 3.2, "stroke-linecap": "round"}, g); [[-9, -10], [-9, 10], [9, 10]].forEach(([x, y]) => el("circle", {cx: x, cy: y, r: 4.4, fill: "#fff", stroke: "#c9705f", "stroke-width": 3}, g)); };
+const keyGlyph = (g, c, s = 1) => { const k = el("g", {transform: `scale(${s})`}, g); el("circle", {cx: -6, cy: 0, r: 5, fill: "none", stroke: c, "stroke-width": 2.8}, k); el("path", {d: "M-1 0h12M7 0v4.5M11 0v3.5", fill: "none", stroke: c, "stroke-width": 2.8, "stroke-linecap": "round"}, k); return k; };
+// a small state disc: a tick or a cross on a colour
+const mark = (parent, cx, cy, ok, r = 9) => {
+  const g = el("g", {transform: `translate(${cx},${cy})`}, parent), inner = el("g", {}, g);
+  el("circle", {r, fill: ok ? FAM.ok : FAM.no, stroke: "#fff", "stroke-width": 1.5}, inner);
+  el("path", {d: ok ? "M-4 0l2.8 3.3l5.4-6.6" : "M-3.5-3.5l7 7M3.5-3.5l-7 7", fill: "none", stroke: "#fff", "stroke-width": 2.4, "stroke-linecap": "round", "stroke-linejoin": "round"}, inner);
+  return inner;
+};
+// a spinner: three quarters of a ring, turned by the scene clock
+const spinner = (parent, cx, cy, r = 8, col = FAM.token) => {
+  const g = el("g", {transform: `translate(${cx},${cy})`}, parent), inner = el("g", {}, g);
+  el("circle", {r, fill: "none", stroke: "#e6e3de", "stroke-width": 3}, inner);
+  el("path", {d: `M0 ${-r}A${r} ${r} 0 1 1 ${-r} 0`, fill: "none", stroke: col, "stroke-width": 3, "stroke-linecap": "round"}, inner);
+  return inner;
+};
+
+// ----- the four things an environment holds -----
+const FLAME = "M0 0C-14 0-15-14-8-22C-6-16-3-16-2-20C-1-30 3-34 2-40C10-32 15-20 13-10C12-3 7 0 0 0Z";
+const dashboard = (x, y, w, h, parent) => {
+  const g = el("g", {}, parent);
+  el("rect", {x: x + 1, y: y + 3, width: w - 2, height: h, rx: 9, class: "sh1"}, g);
+  const face = el("rect", {x, y, width: w, height: h, rx: 8, class: "face"}, g);
+  use("dbx-genie-one", x + 8, y + 6, 20, g);
+  txt(x + 33, y + 22, "Dashboard", "tt", g);
+  [[x + 10, y + 34, 76], [x + 10, y + 44, 52]].forEach(([lx, ly, lw]) => { if (ly < y + h - 6) el("line", {x1: lx, y1: ly, x2: lx + lw, y2: ly, class: "ui-l"}, g); });
+  const bx = x + w - 78, by = y + h - 8, bh = h - 34;
+  const bars = [0.5, 0.78, 0.38, 0.64, 0.92].map((f, i) => el("rect", {x: bx + i * 14, y: by - Math.max(6, bh * f), width: 10, height: Math.max(6, bh * f), rx: 2, class: "dbar"}, g));
+  el("line", {x1: bx - 4, y1: by, x2: bx + 70, y2: by, class: "axis"}, g);
+  // the better version: a rising line over the bars, drawn when the change lands
+  const tp = [[bx - 2, by - bh * 0.3 - 4], [bx + 19, by - bh * 0.62 - 4], [bx + 33, by - bh * 0.5 - 4], [bx + 66, by - bh - 5]];
+  const trend = el("path", {d: polyD(tp), class: "trend", "stroke-dasharray": 140, "stroke-dashoffset": 140}, g);
+  const star = el("path", {d: "M0-9l2.4 6.6l6.6 2.4l-6.6 2.4l-2.4 6.6l-2.4-6.6l-6.6-2.4l6.6-2.4z", fill: FAM.token, transform: `translate(${bx + 66},${by - bh - 5})`, opacity: 0}, g);
+  // broken: a pink face, a crack, no data
+  const broken = el("g", {opacity: 0}, g);
+  el("rect", {x, y, width: w, height: h, rx: 8, class: "face-no"}, broken);
+  use("dbx-genie-one", x + 8, y + 6, 20, broken, {opacity: 0.45});
+  txt(x + 33, y + 22, "Dashboard", "tt no", broken);
+  el("path", {d: `M${x + w * 0.52} ${y}l-9 ${h * 0.3}l12 ${h * 0.16}l-10 ${h * 0.24}l8 ${h * 0.3}`, class: "crack"}, broken);
+  txt(x + w - 12, y + h - 10, "no data", "ts no", broken, {"text-anchor": "end"});
+  return {g, face, bars, by, trend, star, broken, x, y, w, h, cx: x + w / 2, cy: y + h / 2};
+};
+const grant = (x, y, w, h, verb, who, parent) => {
+  const g = el("g", {}, parent), ok = el("g", {}, g), no = el("g", {opacity: 0}, g);
+  const face = el("rect", {x, y, width: w, height: h, rx: h / 2, class: "gr"}, ok);
+  keyGlyph(el("g", {transform: `translate(${x + 20},${y + h / 2})`}, ok), "#c98f1e");
+  const t = txt(x + 38, y + h / 2 + 5.5, verb, "mono b", ok);
+  el("tspan", {class: "ts sans", dx: 7}, t).textContent = who;
+  el("rect", {x, y, width: w, height: h, rx: h / 2, class: "gr gr-no"}, no);
+  keyGlyph(el("g", {transform: `translate(${x + 20},${y + h / 2})`}, no), "#d64545");
+  el("path", {d: `M${x + 9} ${y + h - 7}L${x + 33} ${y + 7}`, stroke: "#d64545", "stroke-width": 2.6, "stroke-linecap": "round"}, no);
+  txt(x + 38, y + h / 2 + 5.5, "REVOKED", "mono b no", no);
+  return {g, ok, no, face, x, y, w, h, cx: x + w / 2, cy: y + h / 2};
+};
+const rack = (x, y, w, h, title, icon, parent) => {
+  const g = el("g", {}, parent);
+  el("rect", {x: x + 1, y: y + 3, width: w - 2, height: h, rx: 9, class: "sh1"}, g);
+  const face = el("rect", {x, y, width: w, height: h, rx: 8, class: "face"}, g);
+  use(icon, x + 8, y + 5, 20, g);
+  txt(x + 33, y + 21.5, title, "tt", g);
+  const cy0 = y + 28, ch = h - 34;
+  el("rect", {x: x + 8, y: cy0, width: w - 16, height: ch, rx: 6, class: "cab"}, g);
+  const bw = (w - 16 - 8 - 3 * 5) / 4;
+  const blades = [0, 1, 2, 3].map((i) => {
+    const bx = x + 12 + i * (bw + 5);
+    const b = el("rect", {x: bx, y: cy0 + 4, width: bw, height: ch - 8, rx: 3, class: "blade"}, g);
+    const led = el("circle", {cx: bx + 8, cy: cy0 + ch / 2, r: 3, class: "led"}, g);
+    const lit = el("circle", {cx: bx + 8, cy: cy0 + ch / 2, r: 3, fill: "#7be0a4", opacity: 0}, g);
+    el("line", {x1: bx + 16, y1: cy0 + ch / 2, x2: bx + bw - 5, y2: cy0 + ch / 2, class: "vent"}, g);
+    return {b, led, lit};
+  });
+  // burnt: a dark wash, smoke that rises, and flames standing on the cabinet's floor
+  const char = el("rect", {x, y, width: w, height: h, rx: 8, fill: "#2a2320", opacity: 0}, g);
+  const smoke = [0, 1, 2].map((i) => el("circle", {cx: x + w * (0.25 + i * 0.25), cy: y + 8, r: 7 + i * 2, fill: "#6f6a66", opacity: 0}, g));
+  const fire = el("g", {opacity: 0}, g);
+  const fy = y + h - 4, fs = ((h + 2) / 40) * 0.86;
+  const flames = [0.16, 0.4, 0.63, 0.86].map((f, i) => {
+    const fx = x + w * f, s = fs * (i % 2 ? 0.82 : 1);
+    const fg = el("g", {transform: `translate(${fx},${fy})`}, fire), inner = el("g", {}, fg);
+    el("path", {d: FLAME, fill: "url(#gFire)", transform: `scale(${s})`}, inner);
+    el("path", {d: FLAME, fill: "#ffe58a", transform: `translate(1,-1) scale(${s * 0.5})`}, inner);
+    return inner;
+  });
+  return {g, face, blades, char, smoke, fire, flames, x, y, w, h, cx: x + w / 2, cy: y + h / 2};
+};
+const tables = (x, y, w, h, label, parent) => {
+  const g = el("g", {}, parent), cw = 46, gap = 14, x0 = x + (w - 3 * cw - 2 * gap) / 2;
+  const cyls = [0, 1, 2].map((i) => {
+    const cx = x0 + cw / 2 + i * (cw + gap), top = y + 7;
+    const d = `M${cx - cw / 2} ${top}v${h - 14}a${cw / 2} 7 0 0 0 ${cw} 0v${-(h - 14)}`;
+    const ghost = el("g", {opacity: 0}, g);
+    el("path", {d: d + `a${cw / 2} 7 0 0 0 ${-cw} 0`, class: "cyl-ghost"}, ghost);
+    const c = el("g", {}, g), inner = el("g", {}, c);
+    el("path", {d, class: "cyl"}, inner);
+    el("ellipse", {cx, cy: top, rx: cw / 2, ry: 7, class: "cyl-top"}, inner);
+    const rows = [0.42, 0.68].map((f) => el("path", {d: `M${cx - cw / 2} ${top + (h - 14) * f}a${cw / 2} 7 0 0 0 ${cw} 0`, class: "cyl-row"}, inner));
+    const hit = el("ellipse", {cx, cy: top, rx: cw / 2, ry: 7, fill: "#bfe6cf", stroke: FAM.ok, "stroke-width": 1.5, opacity: 0}, inner);
+    const puffs = [[-16, -6], [0, -14], [16, -6], [-10, 10], [12, 10]].map(([dx, dy]) => el("circle", {cx: cx + dx * 0.4, cy: y + h / 2 + dy * 0.4, r: 5, fill: "#b9b4ab", opacity: 0}, g));
+    return {inner, ghost, hit, rows, puffs, cx, cy: y + h / 2};
+  });
+  const name = txt(x + w / 2, y + h + 19, label, "mono", g, {"text-anchor": "middle"});
+  const gone = txt(x + w / 2, y + h + 19, "dropped", "mono b no", g, {"text-anchor": "middle", opacity: 0});
+  return {g, cyls, name, gone, x, y, w, h, cx: x + w / 2, cy: y + h / 2};
+};
+
+function buildWorld(n, H) {
+  svg.replaceChildren();
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  mkDefs();
+  ["bg", "zone", "rail", "tile", "ppl", "pk", "fx", "top"].forEach((k) => (L[k] = el("g", {}, svg)));
+  el("rect", {x: -1200, y: -1200, width: W + 2400, height: H + 2400, fill: "#f7f3ec"}, L.bg);
+  el("rect", {x: -1200, y: -1200, width: W + 2400, height: H + 2400, fill: "url(#pDots)"}, L.bg);
+  const G = {n, H, RAIL_Y: 77, BUS: 150};
+
+  // ----- the account, its planes and what is not there -----
+  const accB = H - 54;
+  const free = H - 413 - 150;
+  const hD = 58 + free * 0.34, hR = 52 + free * 0.28, hC = 36 + free * 0.2, gap = 2 + free * 0.09;
+  const acc = el("g", {class: "zone z-dbx"}, L.zone);
+  G.accR = el("rect", {x: 300, y: 10, width: 680, height: accB - 10, rx: 18, class: "zr"}, acc);
+  use("mk-databricks", 313, 17, 21, acc);
+  txt(342, 35, "YOUR DATABRICKS ACCOUNT", "zl", acc);
+  txt(968, 35, "a serverless workspace", "zs", acc, {"text-anchor": "end"});
+  const colX = [318, 536, 754], colW = 208;
+  const yDash = 196, yGrant = yDash + hD + 6, cbB = yGrant + 30 + 12;
+  const pT = cbB + gap, yRack = pT + 32, pB = yRack + hR + 12;
+  const sT = pB + gap, yCyl = sT + 32, sB = yCyl + hC + 33;
+  const band = (y, h, cls, label, sub) => {
+    const g = el("g", {class: "zone " + cls}, L.zone);
+    el("rect", {x: 306, y, width: 668, height: h, rx: 13, class: "zr"}, g);
+    const t = txt(318, y + 19, label, "zl", g);
+    if (sub) { const s = el("tspan", {class: "zs", dx: 10}, t); s.textContent = sub; s.setAttribute("style", "letter-spacing:0"); }
+  };
+  band(44, cbB - 44, "z-plane", "CONTROL PLANE");
+  band(pT, pB - pT, "z-plane", "SERVERLESS COMPUTE PLANE", "runs the queries");
+  band(sT, sB - sT, "z-store", "DEFAULT STORAGE", "in your Databricks account");
+  [[300, "YOUR CLOUD ACCOUNT", ""], [646, "YOUR RESOURCES", "z-res"]].forEach(([x, label, cls]) => {
+    const g = el("g", {class: "zone z-ghost " + cls}, L.zone);
+    el("rect", {x, y: H - 46, width: 334, height: 36, rx: 12, class: "zr"}, g);
+    const t = txt(x + 14, H - 22, label, "gh-t", g);
+    const s = el("tspan", {class: "zs", dx: 10}, t); s.textContent = "not used here"; s.setAttribute("style", "letter-spacing:0");
+  });
+
+  // the control plane, in the order a request meets it
+  G.door = tile(515, 48, 250, 38, {icon: "dbx-rest-api", title: "Web app & REST APIs", step: "1"});
+  G.auth = tile(colX[1], 98, colW, 40, {icon: "dbx-enterprise-security", title: "Identity & auth", step: "2"});
+  G.uc = tile(colX[0], 98, colW, 40, {icon: "dbx-unity-catalog", title: "Unity Catalog", step: "3"});
+  G.acl = tile(colX[2], 98, colW, 40, {icon: "dbx-workspace", title: "Workspace ACLs", step: "3"});
+
+  // the environments: one wide one in scene 1, three side by side in scene 2
+  const STACK = n === 1
+    ? [["SELECT", "analysts", "SQL warehouse", "dbx-sql-warehouse", "sales"], ["MODIFY", "engineers", "Job compute", "dbx-lakeflow-jobs", "features"], ["EXECUTE", "the app", "Notebook compute", "dbx-notebooks", "agent"]]
+    : ["llmops_dev", "llmops_acc", "llmops_prd"].map((c) => ["SELECT", "analysts", "SQL warehouse", "dbx-sql-warehouse", c]);
+  const cell = (x, y, w, h) => el("rect", {x, y, width: w, height: h, rx: 10, class: "cell"}, L.zone);
+  const spans = n === 1 ? [[colX[0], 644, [0, 1, 2]]] : colX.map((x, i) => [x, colW, [i]]);
+  const NAMES = n === 1 ? ["prd"] : ["dev", "acc", "prd"];
+  G.stacks = [];
+  G.envs = spans.map(([x, w, ks], e) => {
+    const cells = [cell(x, 158, w, cbB - 6 - 158), cell(x, pT + 26, w, pB - 6 - pT - 26), cell(x, sT + 26, w, sB - 6 - sT - 26)];
+    const hg = el("g", {}, L.tile);
+    const pill = el("rect", {x: x + 8, y: 164, width: w - 16, height: 26, rx: 13, class: "lh"}, hg);
+    const name = txt(x + 21, 183, NAMES[e], "mono b lh-t", hg);
+    const env = {name: NAMES[e], x, w, cells, pill, nameT: name};
+    if (n === 1) txt(x + 62, 183, "production: the only environment", "ts", hg);
+    else {
+      const tag = (label, cls, o) => {
+        const g = el("g", {opacity: o}, hg);
+        el("rect", {x: x + w - 46, y: 167, width: 34, height: 20, rx: 10, class: "vtag " + cls}, g);
+        txt(x + w - 29, 182.5, label, "mono vt " + cls, g, {"text-anchor": "middle"});
+        return g;
+      };
+      env.v1 = tag("v1", "", 1);
+      env.v2 = tag("v2", "v-new", 0);
+      env.smoke = el("g", {opacity: 0}, hg);
+      txt(x + w - 73, 183, "smoke", "ts ok", env.smoke, {"text-anchor": "end"});
+      mark(env.smoke, x + w - 60, 177, true, 8);
+    }
+    env.stacks = ks.map((k) => {
+      const sx = colX[k] + 8, sw = colW - 16, [verb, who, comp, icon, schema] = STACK[k];
+      const s = {
+        k, env, x: sx, w: sw, gx: colX[k] - 6,
+        dash: dashboard(sx, yDash, sw, hD, L.tile),
+        grant: grant(sx, yGrant, sw, 30, verb, who, L.tile),
+        rack: rack(sx, yRack, sw, hR, comp, icon, L.tile),
+        tab: tables(sx, yCyl, sw, hC, schema, L.tile),
+      };
+      G.stacks[k] = s;
+      return s;
+    });
+    return env;
+  });
+
+  // ----- the developer -----
+  // his zone grows with the stage, so the thought has room above his head
+  const dy = Math.min(64, (H - HMIN) * 0.46);
+  const dz = el("g", {class: "zone z-devs"}, L.zone);
+  el("rect", {x: 14, y: 10, width: 272, height: 188 + dy, rx: 16, class: "zr"}, dz);
+  txt(26, 33, "DEVELOPER", "zl", dz);
+  const dg = el("g", {}, L.ppl);
+  G.dev = {...vignette(dg, 20, 74 + dy, 0.78, false, "victor", "code", FAM.dev), head: [100, 84 + dy]};
+  txt(214, 128 + dy, "Victor", "pn", dg);
+
+  // ----- GitHub, a cloud of its own -----
+  const gz = el("g", {class: "zone z-gh"}, L.zone);
+  const cy0 = 226 + dy;
+  const cloud = [["rect", {x: 14, y: cy0, width: 272, height: H - 10 - cy0, rx: 24}], ["circle", {cx: 66, cy: cy0 + 6, r: 24}], ["circle", {cx: 122, cy: cy0 + 2, r: 30}], ["circle", {cx: 186, cy: cy0 + 4, r: 27}], ["circle", {cx: 240, cy: cy0 + 10, r: 22}]];
+  cloud.forEach(([t, a]) => el(t, {...a, class: "gh-out"}, gz));
+  cloud.forEach(([t, a]) => el(t, {...a, class: "gh-in"}, gz));
+  use("mk-github", 28, cy0 + 6, 22, gz);
+  txt(57, cy0 + 25, "GitHub", "zl", gz).setAttribute("style", "letter-spacing:0;font-size:19px");
+  txt(126, cy0 + 25, "its own cloud", "zs", gz);
+  const top0 = cy0 + 38, room = H - 20 - top0;
+  const gh = (G.gh = {});
+  if (n === 1) {
+    const sp = Math.min(34, (room - 248) / 2);
+    const y1 = top0, y2 = y1 + 74 + sp, y3 = y2 + 90 + sp;
+    // the repository: one branch, and it is production
+    gh.repo = tile(24, y1, 252, 74, {icon: "mk-github", is: 20, top: 6, title: "main"});
+    gh.repo.title.setAttribute("class", "tt mono");
+    txt(266, y1 + 26, "→ production", "ts", gh.repo.g, {"text-anchor": "end"});
+    el("line", {x1: 40, y1: y1 + 54, x2: 262, y2: y1 + 54, class: "g-main"}, gh.repo.g);
+    [64, 112, 160].forEach((x) => el("circle", {cx: x, cy: y1 + 54, r: 6, fill: "#3d4350", class: "g-dot"}, gh.repo.g));
+    const nd = el("g", {transform: `translate(216,${y1 + 54})`}, gh.repo.g);
+    gh.commit = el("g", {}, nd);
+    el("circle", {r: 8, fill: FAM.dev, class: "g-dot"}, gh.commit);
+    gh.commitRing = el("circle", {cx: 216, cy: y1 + 54, r: 8, fill: "none", stroke: FAM.dev, "stroke-width": 3, opacity: 0}, gh.repo.g);
+    gh.repoIn = [262, y1];
+    // what a push to main skips here
+    gh.skips = ["no pull request", "no checks", "no approval"].map((label, i) => {
+      const y = y2 + i * 32, g = el("g", {}, L.tile);
+      const r = el("rect", {x: 24, y, width: 252, height: 26, rx: 13, class: "skip"}, g);
+      const x0 = el("path", {d: `M${38} ${y + 8}l10 10M${48} ${y + 8}l-10 10`, class: "skip-x"}, g);
+      const t = txt(58, y + 19, label, "ts", g);
+      return {g, r, x: x0, t};
+    });
+    gh.act = tile(24, y3, 252, 84, {icon: "mk-githubactions", is: 20, top: 6, title: "Actions deploy"});
+    gh.idle = txt(36, y3 + 54, "waiting for a push", "ts", gh.act.g);
+    gh.busy = el("g", {opacity: 0}, gh.act.g);
+    gh.spin = spinner(gh.busy, 45, y3 + 48, 8, FAM.dev);
+    txt(62, y3 + 54, "Deploying…", "tt dev", gh.busy);
+    el("rect", {x: 36, y: y3 + 66, width: 228, height: 8, rx: 4, fill: "#ece9e4"}, gh.busy);
+    gh.bar = el("rect", {x: 36, y: y3 + 66, width: 0, height: 8, rx: 4, fill: FAM.dev}, gh.busy);
+    gh.out = [276, y3 + 22];
+  } else {
+    const sp = Math.min(34, (room - 264) / 2);
+    const y1 = top0, y2 = y1 + 60 + sp, y3 = y2 + 106 + sp;
+    gh.pr = tile(24, y1, 252, 60, {glyph: glyphPr, is: 26, top: 5, title: "Pull request"});
+    gh.pr.title.setAttribute("y", y1 + 24);
+    const state = (label, cls, o = 0) => txt(gh.pr.tx, y1 + 47, label, "ts " + cls, gh.pr.g, {opacity: o});
+    gh.st = {none: state("not opened yet", "", 1), open: state("open", "dev b"), red: state("checks failed", "no b"), green: state("checks passed", "ok b"), ok: state("approved", "ok b"), merged: state("merged", "user b")};
+    gh.repoIn = [262, y1];
+    gh.rev = avatar(gh.pr.g, 250, y1 + 30, 17, "bo");
+    gh.revOk = mark(gh.pr.g, 263, y1 + 44, true, 8);
+    // CI: three checks
+    gh.ci = tile(24, y2, 252, 106, {icon: "mk-githubactions", is: 20, top: 6, title: "Actions CI"});
+    gh.checks = ["pre-commit", "unit tests", "dry-run plan"].map((label, i) => {
+      const by = y2 + 52 + i * 22, cx = 45, cy = by - 6;
+      txt(62, by, label, "ts ink", gh.ci.g);
+      const idle = el("circle", {cx, cy, r: 7, fill: "none", stroke: "#c9c3b8", "stroke-width": 2.5}, gh.ci.g);
+      const run = el("g", {opacity: 0}, gh.ci.g), spin = spinner(run, cx, cy, 7, FAM.token);
+      return {idle, run, spin, ok: mark(gh.ci.g, cx, cy, true), no: mark(gh.ci.g, cx, cy, false), y: cy};
+    });
+    gh.ciOut = [276, y2 + 22];
+    // CD: dev, acc, the approval, prd
+    gh.cd = tile(24, y3, 252, 98, {icon: "mk-githubactions", is: 20, top: 6, title: "Actions CD"});
+    gh.chips = {};
+    [["dev", 34], ["acc", 102], ["prd", 214]].forEach(([k, x]) => {
+      const g = el("g", {}, gh.cd.g);
+      const r = el("rect", {x, y: y3 + 38, width: 52, height: 28, rx: 14, class: "chip"}, g);
+      const t = txt(x + 26, y3 + 57.5, k, "mono b chip-t", g, {"text-anchor": "middle"});
+      gh.chips[k] = {g, r, t, cx: x + 26, cy: y3 + 52};
+    });
+    [90, 158, 202].forEach((x) => el("path", {d: `M${x} ${y3 + 52}h8m-4-4l4 4l-4 4`, class: "arrow"}, gh.cd.g));
+    const lock = (col, open) => {
+      const g = el("g", {transform: `translate(185,${y3 + 52})`}, gh.cd.g), inner = el("g", {}, g);
+      el("circle", {r: 14, fill: "#fff", stroke: col, "stroke-width": 2}, inner);
+      el("rect", {x: -6, y: -2, width: 12, height: 9, rx: 2, fill: col}, inner);
+      el("path", {d: open ? "M-3.5-2v-3a3.5 3.5 0 0 1 7-1" : "M-3.5-2v-3a3.5 3.5 0 0 1 7 0v3", fill: "none", stroke: col, "stroke-width": 2.2, "stroke-linecap": "round"}, inner);
+      return inner;
+    };
+    gh.gate = lock("#b98a1e", false);
+    gh.gateOpen = lock(FAM.ok, true);
+    gh.gateRing = el("circle", {cx: 185, cy: y3 + 52, r: 14, fill: "none", stroke: FAM.token, "stroke-width": 3, opacity: 0}, gh.cd.g);
+    gh.note = txt(36, y3 + 88, "prd waits for an approval", "ts", gh.cd.g);
+    gh.rev2 = avatar(L.top, 185, y3 + 12, 17, "bo");
+    gh.rev2Ok = mark(L.top, 198, y3 + 26, true, 8);
+    gh.out = [276, y3 + 22];
+  }
+
+  // ----- the platform users -----
+  const uz = el("g", {class: "zone z-devs z-users"}, L.zone);
+  el("rect", {x: 994, y: 10, width: 272, height: H - 20, rx: 16, class: "zr"}, uz);
+  txt(1006, 33, "PLATFORM USERS", "zl", uz);
+  const hb = (H - 54) / 3;
+  G.users = [["dana", "Dana", "notebook", "nb"], ["fay", "Fay", "dashboard", "chart"], ["gus", "Gus", "agent app", "chat"]].map(([id, name, tool, kind], i) => {
+    const y0 = 44 + i * hb, vy = y0 + hb - 118, g = el("g", {}, L.ppl);
+    const v = vignette(g, 1085, vy, 0.72, true, id, kind, FAM.user);
+    txt(1004, vy + 38, name, "pn", g);
+    txt(1004, vy + 59, tool, "ts", g);
+    return {...v, id, name, lead: [v.px, v.py], head: [1204, vy + 6], top: y0 + 2};
+  });
+
+  // ----- the rails: one way in from each side, then door, auth, authorizers, bus, lanes -----
+  const RY = G.RAIL_Y, BUS = G.BUS;
+  const rail = (pts, cls = "r-lane") => { el("path", {d: polyD(pts), class: "rail " + cls}, L.rail); if (cls === "r-lane") el("path", {d: polyD(pts), class: "rail r-lane-c"}, L.rail); };
+  G.pIn = [[293, RY], [515, RY]];                               // from GitHub to the front door
+  G.pTrunk = (from) => [from, [293, from[1]], [293, RY], [515, RY]];
+  rail(G.pTrunk(gh.out));
+  if (gh.ciOut) rail([gh.ciOut, [293, gh.ciOut[1]]], "r-stub");
+  const lastLead = G.users[2].lead[1];
+  rail([[987, lastLead], [987, RY], [765, RY]]);
+  G.users.forEach((u) => rail([[u.lead[0], u.lead[1]], [987, u.lead[1]]], "r-stub"));
+  G.pUser = (u) => [u.lead, [987, u.lead[1]], [987, RY], [765, RY]];
+  rail([[640, 86], [640, 98]], "r-stub");
+  rail([[colX[1], 118], [colX[0] + colW, 118]], "r-stub");
+  rail([[colX[1] + colW, 118], [colX[2], 118]], "r-stub");
+  const ucx = G.uc.cx, aclx = G.acl.cx;
+  rail([[ucx, 138], [ucx, BUS]], "r-stub");
+  rail([[aclx, 138], [aclx, BUS]], "r-stub");
+  rail([[312, BUS], [aclx, BUS]], "r-stub");
+  G.stacks.forEach((s) => {
+    [[BUS, cbB - 6], [pT + 26, pB - 6], [sT + 26, s.tab.cy]].forEach(([a, b]) => rail([[s.gx, a], [s.gx, b]], "r-stub"));
+    [s.dash, s.grant, s.rack, s.tab].forEach((o) => rail([[s.gx, o.cy], [s.x, o.cy]], "r-stub"));
+  });
+  rail([[196, G.dev.py], [262, G.dev.py], gh.repoIn], "r-stub");
+  G.pPush = [[G.dev.px, G.dev.py], [262, G.dev.py], gh.repoIn];
+  // the ways inside: door -> auth -> an authorizer -> down a lane's gutter to an object
+  G.pDoorAuth = (side) => [[side === "L" ? 515 : 765, RY], [640, RY], [640, 118]];
+  G.pAuthTo = (z) => [[640, 118], [z === "uc" ? ucx : aclx, 118]];
+  G.pDown = (z, s, o) => [[z === "uc" ? ucx : aclx, 118], [z === "uc" ? ucx : aclx, BUS], [s.gx, BUS], [s.gx, o.cy], [s.x + 4, o.cy]];
+  G.cross = {L: [300, RY], R: [980, RY]};
+  G.mid = [640, (pT + sB) / 2];
+  G.planTop = yDash - 2;
+  return G;
+}
+
+// ---------- the engine: the scene clock and what is placed on it ----------
+// tl is the scene clock, a paused GSAP timeline. Every helper below takes the second at which its
+// motion starts and adds tweens at that second; it returns the second at which it ends. Nothing
+// here runs a callback that changes the drawing, so the clock can be sought to any second.
+
+let tl = null, G = null, beats = [];
+const SPEED = 540;                       // units per second of a packet at 1×
+let seed = 1;
+const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };   // the same flicker on every build
+
+const beat = (t, title, text) => { beats.push({t, title, text}); return t; };
+
+// the seconds at which a packet at `speed` passes each point of a polyline
+const times = (t, pts, speed = SPEED) => { let d = 0; return pts.map((p, i) => (i ? (d += Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1])) : 0, t + d / speed)); };
+const dedupe = (pts) => pts.filter((p, i) => !i || p[0] !== pts[i - 1][0] || p[1] !== pts[i - 1][1]);
+
+// a packet: a disc with a halo, flown along a polyline at a steady speed
+const fly = (t, pts, o = {}) => {
+  pts = dedupe(pts);
+  const col = o.col || FAM.user, r = o.r || 6.5;
+  const g = el("g", {opacity: 0}, L.pk);
+  el("circle", {r: r + 4.5, fill: col, opacity: 0.22}, g);
+  el("circle", {r, fill: col, class: "pk-disc"}, g);
+  gsap.set(g, {x: pts[0][0], y: pts[0][1]});
+  const dur = pathLen(pts) / (o.speed || SPEED);
+  tl.set(g, {opacity: 1}, t);
+  if (pts.length === 2) tl.to(g, {x: pts[1][0], y: pts[1][1], duration: dur, ease: "none"}, t);
+  else tl.to(g, {motionPath: {path: pts.slice(1).map(([x, y]) => ({x, y})), curviness: 0}, duration: dur, ease: "none"}, t);
+  tl.to(g, {opacity: 0, duration: 0.12}, t + dur);
+  return t + dur;
+};
+
+// a ring that opens where something happens
+const ring = (t, x, y, col, r0 = 8, r1 = 26) => {
+  const c = el("circle", {cx: x, cy: y, r: r0, fill: "none", stroke: col, "stroke-width": 3, opacity: 0}, L.fx);
+  tl.set(c, {opacity: 0.9}, t);
+  tl.to(c, {attr: {r: r1}, opacity: 0, duration: 0.6, ease: "power2.out"}, t);
+};
+
+// a tile's border lights for a moment
+const pulse = (t, o, col = FAM.plat, d = 0.5) => {
+  tl.to(o.face, {stroke: col, strokeWidth: 3, duration: 0.1}, t);
+  tl.to(o.face, {stroke: "#d9d6d1", strokeWidth: 1.5, duration: 0.3}, t + d);
+};
+const shake = (t, target, amp = 4) => {
+  tl.to(target, {x: amp, duration: 0.05, ease: "none"}, t);
+  tl.to(target, {x: -amp, duration: 0.07, yoyo: true, repeat: 4, ease: "none"}, t + 0.05);
+  tl.to(target, {x: 0, duration: 0.05, ease: "none"}, t + 0.4);
+};
+
+// a verdict: the visible moment of a check. A disc with a tick or a cross, a ring, a tag.
+// The disc sits on the tile's top edge, near its right corner; the tag stands above the tile, its
+// right edge on the disc's (dy moves it: the tags of identity and auth and of the two authorizers
+// hang under their tiles, clear of the front door and of the plane's label). hold: seconds before
+// it fades (Infinity: it stays)
+const verdict = (t, x, y, ok, text, o = {}) => {
+  const col = ok ? FAM.ok : FAM.no, r = o.r || 11.5;
+  const g = el("g", {transform: `translate(${x},${y})`}, L.top);
+  const rg = el("circle", {r, fill: "none", stroke: col, "stroke-width": 3, opacity: 0}, g);
+  let tag = null;
+  if (text) {
+    const w = textW(text, F.bold) + 24, dy = o.dy == null ? -27 : o.dy;
+    tag = el("g", {opacity: 0}, g);
+    el("rect", {x: r - w, y: dy - 14, width: w, height: 28, rx: 14, class: "vd-tag", stroke: col}, tag);
+    txt(r - w / 2, dy + 6, text, "vd-t", tag, {"text-anchor": "middle", fill: ok ? INK_OK : INK_NO});
+  }
+  const inner = el("g", {}, g);
+  el("circle", {r, fill: col, class: "vd-disc"}, inner);
+  el("path", {d: ok ? "M-5 0l3.5 4.2l6.8-8.4" : "M-4.5-4.5l9 9M4.5-4.5l-9 9", class: "vd-mark"}, inner);
+  gsap.set(inner, {scale: 0, svgOrigin: "0 0"});
+  tl.to(inner, {scale: 1, duration: 0.32, ease: "back.out(2.6)"}, t);
+  tl.set(rg, {opacity: 0.9}, t + 0.05);
+  tl.to(rg, {attr: {r: r * 2.7}, opacity: 0, duration: 0.7, ease: "power2.out"}, t + 0.05);
+  if (tag) tl.to(tag, {opacity: 1, duration: 0.22}, t + 0.08);
+  const hold = o.hold == null ? 1.25 : o.hold;
+  if (hold !== Infinity) tl.to(g, {opacity: 0, duration: 0.28}, t + hold);
+  return t + (o.wait == null ? 0.3 : o.wait);
+};
+const corner = (o) => [o.x + o.w - 22, o.y];
+
+// a state disc or any small thing that pops in, and out
+const hidden = (...nodes) => nodes.forEach((n) => gsap.set(n, {scale: 0, svgOrigin: "0 0"}));
+const pop = (t, node) => tl.to(node, {scale: 1, duration: 0.3, ease: "back.out(2.4)"}, t);
+const unpop = (t, node) => tl.to(node, {scale: 0, duration: 0.16, ease: "power1.in"}, t);
+const fade = (t, node, to, d = 0.22) => tl.to(node, {opacity: to, duration: d}, t);
+const swap = (t, from, to) => { fade(t, from, 0, 0.15); fade(t + 0.12, to, 1, 0.2); };
+const turn = (t, node, secs) => tl.to(node, {rotation: "+=" + 360 * Math.max(1, Math.round(secs / 0.9)), duration: secs, ease: "none", svgOrigin: "0 0"}, t);
+
+// ----- bubbles: what a person says, or thinks -----
+// at: the bubble's top corner on the side it is aligned to (with o.bottom, at[1] is the highest it
+// may start and the bubble stands on o.bottom); to: the head it belongs to
+const bubble = (at, lines, o = {}) => {
+  const w = Math.max(...lines.map((l) => textW(l, F.bold))) + 28, h = lines.length * 21 + 15;
+  const x = o.align === "L" ? at[0] : at[0] - w, y = o.bottom == null ? at[1] : Math.max(at[1], o.bottom - h);
+  const g = el("g", {}, L.top), inner = el("g", {}, g), [hx, hy] = o.to;
+  const cls = "bub " + (o.cls || "");
+  const ax = Math.min(x + w - 18, Math.max(x + 18, hx));
+  el("rect", {x: x + 1, y: y + 3, width: w - 2, height: h, rx: 15, class: "sh1"}, inner);
+  if (o.think) {
+    const bx = hx < x ? x + 14 : ax, by = y + h;
+    [[0.4, 5.5], [0.8, 3.6]].forEach(([f, r]) => el("circle", {cx: bx + (hx - bx) * f, cy: by + 3 + (hy - by - 3) * f, r, class: cls}, inner));
+  } else {
+    const tip = Math.min(y + h + 11, Math.max(y + h + 5, hy - 2));
+    el("path", {d: `M${ax - 8} ${y + h - 2}L${ax + (hx - ax) * 0.3} ${tip}L${ax + 8} ${y + h - 2}Z`, class: cls + " tail"}, inner);
+  }
+  el("rect", {x, y, width: w, height: h, rx: 14, class: cls}, inner);
+  if (!o.think) el("path", {d: `M${ax - 7} ${y + h - 0.6}h14`, class: "bub-seam " + (o.cls || "")}, inner);
+  lines.forEach((l, i) => txt(x + w / 2, y + 27 + i * 21, l, "bub-t " + (o.cls || ""), inner, {"text-anchor": "middle"}));
+  gsap.set(inner, {opacity: 0, scale: 0.7, svgOrigin: `${ax} ${y + h}`});
+  return {g: inner, x, y, w, h};
+};
+const bshow = (t, b) => tl.to(b.g, {opacity: 1, scale: 1, duration: 0.28, ease: "back.out(1.8)"}, t);
+const bhide = (t, b) => tl.to(b.g, {opacity: 0, scale: 0.85, duration: 0.18}, t);
+const say = (t, b, hold) => { bshow(t, b); bhide(t + hold, b); };
+// a bubble of one of the users, above their head
+const ubub = (u, lines, cls) => bubble([1258, u.top], lines, {to: u.head, bottom: u.head[1] - 13, cls});
+// the developer's thought: above his head where the stage is tall enough, else to the right of it
+const think = (lines, cls) => bubble(G.dev.head[1] >= 124 ? [282, 42] : [298, 14], lines, {to: G.dev.head, think: true, cls});
+
+// ----- what a laptop shows -----
+const flash = (t, p) => { tl.to(p.flash, {opacity: 0.85, duration: 0.08}, t); tl.to(p.flash, {opacity: 0, duration: 0.35}, t + 0.1); };
+const nod = (t, p) => tl.to(p.bust, {y: -3.5, duration: 0.14, yoyo: true, repeat: 1, ease: "power1.out"}, t);
+const typing = (t, p, secs) => { for (let i = 0; i < secs / 0.45; i++) flash(t + i * 0.45, p); };
+
+// ----- what happens to the things of an environment -----
+const lightRack = (t, r, d = 0.9) => r.blades.forEach((b, i) => { fade(t + i * 0.07, b.lit, 1, 0.1); fade(t + d + i * 0.05, b.lit, 0, 0.25); });
+const hitTables = (t, tb) => tb.cyls.forEach((c, i) => { fade(t + i * 0.06, c.hit, 1, 0.1); fade(t + 0.5 + i * 0.06, c.hit, 0, 0.3); });
+const star = (t, x, y, s = 1, col = FAM.token) => {
+  const g = el("g", {transform: `translate(${x},${y})`}, L.fx), inner = el("g", {}, g);
+  el("path", {d: "M0-12l3 8.5l8.5 3.5l-8.5 3.5l-3 8.5l-3-8.5l-8.5-3.5l8.5-3.5z", fill: col, transform: `scale(${s})`}, inner);
+  hidden(inner);
+  tl.to(inner, {scale: 1, rotation: 40, duration: 0.3, ease: "back.out(2)"}, t);
+  tl.to(inner, {scale: 0, rotation: 90, duration: 0.3, ease: "power1.in"}, t + 0.45);
+};
+// storage is deleted: the tables shake, then are gone; their outlines stay
+const dropTables = (t, tb) => {
+  tb.cyls.forEach((c, i) => {
+    const t0 = t + i * 0.16;
+    shake(t0, c.inner, 3);
+    tl.to(c.inner, {scale: 0, opacity: 0, duration: 0.3, ease: "back.in(2)", svgOrigin: `${c.cx} ${c.cy}`}, t0 + 0.42);
+    fade(t0 + 0.5, c.ghost, 1, 0.2);
+    c.puffs.forEach((p, j) => {
+      tl.set(p, {opacity: 0.75}, t0 + 0.62);
+      tl.to(p, {x: (j % 2 ? 1 : -1) * (8 + j * 3), y: -6 - j * 3, attr: {r: 9}, opacity: 0, duration: 0.6, ease: "power2.out"}, t0 + 0.62);
+    });
+  });
+  swap(t + 0.9, tb.name, tb.gone);
+  return t + 1.3;
+};
+// a permission is revoked
+const revoke = (t, gr) => { shake(t, gr.g, 3); swap(t + 0.3, gr.ok, gr.no); return t + 0.6; };
+// compute goes up in flames, and burns until `until`
+const burn = (t, r, until) => {
+  fade(t, r.fire, 1, 0.3);
+  fade(t + 0.1, r.char, 0.5, 0.8);
+  shake(t, r.g, 3);
+  r.flames.forEach((f, i) => {
+    gsap.set(f, {scaleY: 0.2, scaleX: 0.8, svgOrigin: "0 0"});
+    const d = 0.15 + rnd() * 0.12, t0 = t + i * 0.08;
+    tl.to(f, {scaleY: 1, scaleX: 1, duration: 0.3, ease: "back.out(2)"}, t0);
+    tl.to(f, {scaleY: 0.78 + rnd() * 0.1, scaleX: 1.1, duration: d, yoyo: true, repeat: Math.max(1, Math.floor((until - t0 - 0.3) / d) - 1), ease: "sine.inOut"}, t0 + 0.3);
+  });
+  r.smoke.forEach((s, i) => {
+    const t0 = t + 0.4 + i * 0.5, d = 1.5, n = Math.max(0, Math.floor((until - t0) / d) - 1);
+    tl.fromTo(s, {y: 0, opacity: 0.55}, {y: -30 - i * 6, opacity: 0, duration: d, repeat: n, ease: "power1.out", immediateRender: false}, t0);
+  });
+  return t + 0.6;
+};
+// a dashboard breaks: its bars fall, its face cracks
+const breakDash = (t, d) => {
+  shake(t, d.g, 4);
+  d.bars.forEach((b, i) => tl.to(b, {scaleY: 0.1, duration: 0.3, ease: "bounce.out", svgOrigin: `0 ${d.by}`}, t + 0.1 + i * 0.05));
+  fade(t + 0.35, d.broken, 1, 0.25);
+  return t + 0.7;
+};
+// the change lands well: a green border for a moment and a star
+const update = (t, o) => { pulse(t, o, FAM.ok, 0.7); star(t, o.x + o.w - 4, o.y + 2, 0.8); };
+const improve = (t, d) => {
+  update(t, d);
+  tl.to(d.trend, {attr: {"stroke-dashoffset": 0}, duration: 0.6, ease: "power2.out"}, t + 0.1);
+  fade(t + 0.6, d.star, 1, 0.2);
+};
+
+// ----- the ways through the platform -----
+// A user's request, in the order every request takes: the front door, identity and auth, one
+// authorizer (workspace ACLs for a dashboard, Unity Catalog for data), then the grant, the compute
+// and the storage of the environment. o.fail names where it is refused or breaks.
+const request = (t, u, s, o = {}) => {
+  const via = o.via || "uc", zt = via === "uc" ? G.uc : G.acl, col = FAM.user;
+  const zx = zt.cx, B = G.BUS;
+  let e = fly(t, G.pUser(u), {col});
+  ring(e - 0.42, ...G.cross.R, col);
+  pulse(e, G.door, col, 0.4);
+  e = fly(e, G.pDoorAuth("R"), {col});
+  pulse(e, G.auth, FAM.ok);
+  e = verdict(e, ...corner(G.auth), true);
+  e = fly(e, G.pAuthTo(via), {col});
+  let fwd = [...G.pUser(u), ...G.pDoorAuth("R"), ...G.pAuthTo(via)];
+  const back = (at, ok) => fly(at, rev(dedupe(fwd)), {col: ok ? FAM.ok : FAM.no, speed: 1000});
+  if (o.fail === "authz") {
+    pulse(e, zt, FAM.no, 0.9);
+    shake(e, zt.g, 3);
+    verdict(e, ...corner(zt), false, o.tag, {dy: 54, hold: 2.4});
+    return back(e + 0.55, false);
+  }
+  pulse(e, zt, FAM.ok);
+  e = verdict(e, ...corner(zt), true);
+  // down the lane: past the dashboard (asked through workspace ACLs), the grant, the compute, to the tables
+  const stops = [s.dash, s.grant, s.rack, s.tab], last = o.fail === "dash" ? 0 : o.fail === "rack" ? 2 : 3;
+  const first = via === "acl" ? 0 : 1;
+  const down = [[zx, 118], [zx, B], [s.gx, B], ...stops.slice(0, last + 1).map((p) => [s.gx, p.cy]), [s.x + 4, stops[last].cy]];
+  const at = times(e, down);
+  fwd = fwd.concat(down);
+  stops.slice(0, last + 1).forEach((p, i) => {
+    if (i < first) return;
+    const ti = i === last ? at[at.length - 1] : at[3 + i];
+    if (i === last && o.fail) { verdict(ti, ...corner(p), false, o.tag, {hold: 2.4}); return; }
+    if (p === s.dash) pulse(ti, p, col);
+    else if (p === s.grant) pulse(ti, p, FAM.token, 0.4);
+    else if (p === s.rack) lightRack(ti, p);
+    else hitTables(ti, p);
+  });
+  e = fly(e, down, {col});
+  return back(e + (o.fail ? 0.5 : 0.35), !o.fail);
+};
+// a happy user: a request, the answer on the laptop, a bubble
+const happy = (t, u, s, via, b) => {
+  const e = request(t, u, s, {via});
+  flash(e, u); nod(e, u);
+  if (b) say(e + 0.05, b, 1.7);
+  return e;
+};
+
+// A call of the deployment: from GitHub Actions through the same front door, authenticated, then
+// authorized, then down to the object it changes. Returns the second it arrives.
+const deployTo = (t, from, via, s, obj, o = {}) => {
+  const zt = via === "uc" ? G.uc : G.acl, zx = zt.cx, col = o.col || FAM.dev, speed = o.speed || 760;
+  const pts = dedupe([...G.pTrunk(from), [640, G.RAIL_Y], [640, 118], [zx, 118], [zx, G.BUS], [s.gx, G.BUS], [s.gx, obj.cy], [s.x + 4, obj.cy]]);
+  const at = times(t, pts, speed);
+  ring(at[2] + 7 / speed, ...G.cross.L, col);
+  pulse(at[3], G.door, col, 0.3);
+  pulse(at[5], G.auth, FAM.ok, 0.3);
+  pulse(at[6], zt, FAM.ok, 0.3);
+  return fly(t, pts, {col, speed, r: o.r});
+};
+// the first call of a deployment, shown slowly: the token, the two verdicts
+const signIn = (t, from, o = {}) => {
+  let e = fly(t, G.pTrunk(from), {col: FAM.token, speed: 620});
+  ring(e - 0.35, ...G.cross.L, FAM.token);
+  pulse(e, G.door, FAM.token, 0.4);
+  e = fly(e, G.pDoorAuth("L"), {col: FAM.token, speed: 620});
+  pulse(e, G.auth, FAM.ok, 1.2);
+  e = verdict(e, ...corner(G.auth), true, o.who || "authenticated", {dy: 54, hold: o.hold || 2.6, wait: 0.5});
+  fly(e, G.pAuthTo("uc"), {col: FAM.dev, speed: 620});
+  const e2 = fly(e, G.pAuthTo("acl"), {col: FAM.dev, speed: 620});
+  pulse(e2, G.uc, FAM.ok, 1); pulse(e2, G.acl, FAM.ok, 1);
+  verdict(e2, ...corner(G.uc), true, o.quiet ? "" : "authorized", {dy: 54, hold: (o.hold || 2.6) - 0.9});
+  return verdict(e2, ...corner(G.acl), true, o.quiet ? "" : "authorized", {dy: 54, hold: (o.hold || 2.6) - 0.9, wait: 0.6});
+};
+
+// the stamp that closes a scene
+const stamp = (t, lines, col) => {
+  const [cx, cy] = G.mid, w = Math.max(...lines.map((l) => textW(l, '600 30px "Nunito", system-ui, sans-serif') * 1.09)) + 56, h = lines.length * 38 + 26;
+  const g = el("g", {transform: `translate(${cx},${cy})`}, L.top), inner = el("g", {}, g);
+  el("rect", {x: -w / 2, y: -h / 2, width: w, height: h, rx: 14, fill: "#fff", opacity: 0.94}, inner);
+  el("rect", {x: -w / 2, y: -h / 2, width: w, height: h, rx: 14, fill: "none", stroke: col, "stroke-width": 4}, inner);
+  el("rect", {x: -w / 2 + 7, y: -h / 2 + 7, width: w - 14, height: h - 14, rx: 9, fill: "none", stroke: col, "stroke-width": 1.5}, inner);
+  lines.forEach((l, i) => txt(0, -h / 2 + 49 + i * 38, l, "stamp-t", inner, {"text-anchor": "middle", fill: col}));
+  gsap.set(inner, {opacity: 0, scale: 2.2, rotation: -4, svgOrigin: "0 0"});
+  tl.to(inner, {opacity: 1, scale: 1, duration: 0.3, ease: "power3.in"}, t);
+  shake(t + 0.3, L.top, 3);
+  return t + 0.8;
+};
+
+// ---------- scene 1: one environment, a change straight to main ----------
+// Eight beats. The users' requests take the full path every time (door, identity and auth, an
+// authorizer, compute, storage); the deployment takes the same door and passes the same checks,
+// which is the point: the deploy principal may make the change, so only a process in front of it
+// can stop it.
+function scene1() {
+  const [dana, fay, gus] = G.users, [s0, s1, s2] = G.stacks, gh = G.gh;
+  hidden(gh.commit);
+
+  // 1. happy users
+  beat(0, "Happy users", "Requests fly in and answers come back. Each one is authenticated at identity and auth, then authorized by Unity Catalog or the workspace ACLs, before compute touches storage.");
+  happy(0.3, fay, s1, "acl", ubub(fay, ["👍"], "good"));
+  happy(1.2, dana, s0, "uc", ubub(dana, ["works!"], "good"));
+  happy(2.2, gus, s2, "uc", ubub(gus, ["🙂"], "good"));
+  happy(6.9, fay, s1, "acl");
+  happy(7.6, dana, s0, "uc", ubub(dana, ["👍"], "good"));
+  happy(9.2, gus, s2, "uc");
+  happy(13.2, fay, s1, "acl", ubub(fay, ["🙂"], "good"));
+  happy(13.6, dana, s0, "uc");
+  happy(15.6, gus, s2, "uc", ubub(gus, ["👍"], "good"));
+
+  // 2. one small thing: straight to main
+  let t = beat(6.4, "One small thing", "Victor commits straight to main. No pull request, no check and no approval stand between his laptop and production.");
+  say(t + 0.3, think(["let me change", "one small", "thing…"]), 3.6);
+  typing(t + 0.8, G.dev, 2.4);
+  nod(t + 3.3, G.dev);
+  let e = fly(t + 3.5, G.pPush, {col: FAM.dev, speed: 300});
+  pop(e, gh.commit);
+  ring(e, 216, gh.repo.y + 54, FAM.dev, 8, 24);
+  pulse(e, gh.repo, FAM.dev, 0.8);
+  gh.skips.forEach((s, i) => {
+    const ts = e + 0.5 + i * 0.42;
+    shake(ts, s.g, 3);
+    tl.to(s.x, {stroke: FAM.no, duration: 0.15}, ts);
+    tl.to(s.r, {stroke: FAM.no, duration: 0.15}, ts);
+    tl.to(s.t, {fill: INK_NO, duration: 0.15}, ts);
+  });
+  const tDeploy = e + 1.9, END = 44;
+  swap(tDeploy, gh.idle, gh.busy);
+  pulse(tDeploy, gh.act, FAM.dev, 1);
+  turn(tDeploy, gh.spin, END - tDeploy);
+  tl.to(gh.bar, {attr: {width: 214}, duration: END - tDeploy, ease: "none"}, tDeploy);
+
+  // 3. Deploying…: the pipeline signs in, and is allowed
+  t = beat(12.8, "Deploying…", "The pipeline signs in. It is authenticated, then authorized: the deploy principal may change all of this, so the platform does what it is told.");
+  signIn(t + 0.3, gh.out, {hold: 3});
+
+  // 4. storage is deleted, tables vanish
+  t = beat(17.8, "Storage is deleted", "The change drops the schemas, and the tables vanish with them. The next query finds nothing.");
+  [s0, s1, s2].forEach((s, i) => dropTables(deployTo(t + 0.1 + i * 0.4, gh.out, "uc", s, s.tab), s.tab));
+  e = request(t + 1.9, dana, s0, {fail: "authz", tag: "table not found"});
+  fade(e, dana.alarm, 1); shake(e, dana.bust, 3);
+  const b1 = ubub(dana, ["?!"], "bad");
+  bshow(e + 0.05, b1);
+
+  // 5. permissions are revoked
+  t = beat(23.6, "Permissions are revoked", "The grants are revoked too. Unity Catalog now refuses the same people it allowed a minute ago.");
+  [s0, s1, s2].forEach((s, i) => revoke(deployTo(t + 0.1 + i * 0.4, gh.out, "uc", s, s.grant), s.grant));
+  e = request(t + 1.1, gus, s2, {fail: "authz", tag: "access denied"});
+  fade(e, gus.alarm, 1); shake(e, gus.bust, 3);
+  bshow(e + 0.05, ubub(gus, ["access denied"], "bad"));
+
+  // 6. compute goes up in flames
+  t = beat(29.6, "Compute goes up in flames", "The compute is torn down and replaced while queries are running on it.");
+  let lit = 0;
+  [s2, s1, s0].forEach((s, i) => { lit = deployTo(t + 0.1 + i * 0.3, gh.out, "acl", s, s.rack); burn(lit, s.rack, END); });
+  bhide(lit + 0.3, b1);
+  bshow(lit + 0.5, ubub(dana, ["🔥"], "bad"));
+  shake(lit + 0.5, dana.bust, 3);
+
+  // 7. dashboards break
+  t = beat(34.4, "Dashboards break", "A dashboard is only as alive as its warehouse, its grants and its tables.");
+  [s1, s2, s0].forEach((s, i) => breakDash(deployTo(t + 0.1 + i * 0.3, gh.out, "acl", s, s.dash), s.dash));
+  e = request(t - 0.4, fay, s1, {via: "acl", fail: "dash", tag: "query failed"});
+  fade(e, fay.alarm, 1); shake(e, fay.bust, 3);
+  bshow(e + 0.05, ubub(fay, ["my dashboard!"], "bad"));
+
+  // 8. the frozen frame
+  t = beat(Math.max(40, e + 0.9), "One environment, no checks", "Nothing stood between one small change and production: no review, no dry run, no environment to break first.");
+  bshow(t + 0.3, think(["…oops"], "bad"));
+  shake(t + 0.3, G.dev.bust, 3);
+  stamp(t + 1.1, ["ONE ENVIRONMENT,", "NO CHECKS"], FAM.no);
+  return END;
+}
+
+// ---------- scene 2: the same change, done properly ----------
+// Eight beats: a pull request, CI with a dry run, the plan that catches the error, the fix and the
+// review, then dev, acc and, after an approval, prd. The users work in prd from the first second
+// to the last and never see a failure.
+
+// the plan of a dry run, as a card beside the CI tile
+const planCard = (rows, foot, ok) => {
+  const x = 302, w = 372, h = 50 + rows.length * 23 + 40, py = G.gh.checks[2].y;
+  const y = Math.max(G.planTop, py - h + 36);                 // the pointer leaves the card near its foot
+  const g = el("g", {}, L.top), inner = el("g", {}, g);
+  el("rect", {x: x + 2, y: y + 5, width: w - 4, height: h, rx: 14, class: "sh1"}, inner);
+  el("path", {d: `M${x + 1} ${py - 9}L${x - 12} ${py}L${x + 1} ${py + 9}Z`, class: "plan"}, inner);
+  el("rect", {x, y, width: w, height: h, rx: 13, class: "plan"}, inner);
+  el("path", {d: `M${x} ${py - 8}v16`, class: "plan-seam"}, inner);
+  txt(x + 18, y + 30, "Dry run: the plan", "tt big", inner);
+  const lines = rows.map(([sign, verb, what, bad], i) => {
+    const ly = y + 60 + i * 23, lg = el("g", {opacity: 0}, inner);
+    if (bad) el("rect", {x: x + 10, y: ly - 17, width: w - 20, height: 23, rx: 5, class: "plan-bad"}, lg);
+    txt(x + 18, ly, sign, "mono b " + (bad ? "no" : "ink"), lg);
+    txt(x + 38, ly, verb, "mono b " + (bad ? "no" : "ink"), lg);
+    txt(x + 118, ly, what, "mono " + (bad ? "no" : "ink"), lg);
+    return lg;
+  });
+  const fy = y + h - 16, fg = el("g", {opacity: 0}, inner);
+  el("line", {x1: x + 14, y1: fy - 24, x2: x + w - 14, y2: fy - 24, stroke: "#e6e3de"}, fg);
+  mark(fg, x + 27, fy - 6, ok, 9);
+  txt(x + 44, fy, foot, "tt " + (ok ? "ok" : "no"), fg);
+  gsap.set(inner, {opacity: 0, scale: 0.6, svgOrigin: `${x - 12} ${py}`});
+  return {g: inner, lines, foot: fg, x, y, w, h};
+};
+// a dashed red outline: "this would be gone"
+const wouldGo = (o, pad = 4) => el("rect", {x: o.x - pad, y: o.y - pad, width: o.w + 2 * pad, height: o.h + 2 * pad + (o.cyls ? 22 : 0), rx: 10, class: "would", opacity: 0}, L.fx);
+const blink = (t, node) => { fade(t, node, 1, 0.12); tl.to(node, {opacity: 0.25, duration: 0.3, yoyo: true, repeat: 5, ease: "sine.inOut"}, t + 0.15); fade(t + 2.1, node, 0, 0.3); };
+
+function scene2() {
+  const [dana, fay, gus] = G.users, [dev, acc, prd] = G.stacks, gh = G.gh, st = gh.st, END = 54.5;
+  gh.checks.forEach((c) => hidden(c.ok, c.no));
+  hidden(gh.revOk, gh.rev2Ok, gh.gateOpen);
+  [gh.rev, gh.rev2].forEach((a) => gsap.set(a.inner, {scale: 0, svgOrigin: `${a.cx} ${a.cy}`}));
+
+  // the users, at work in prd the whole time
+  const good = (u, l) => ubub(u, [l], "good");
+  [[0.4, 1], [7.4, 0], [14.4, 1], [21.4, 0], [28.4, 1], [35.2, 0], [41.8, 1]].forEach(([t, b]) => happy(t, dana, prd, "uc", b ? good(dana, t > 20 ? "👍" : "works!") : null));
+  [[2.6, 1], [9.8, 0], [17, 1], [24.2, 0], [31.4, 1], [38.4, 0], [44, 0]].forEach(([t, b]) => happy(t, fay, prd, "acl", b ? good(fay, t > 20 ? "🙂" : "👍") : null));
+  [[4.8, 1], [12.2, 0], [19.6, 1], [27, 0], [34.2, 1], [40.8, 0]].forEach(([t, b]) => happy(t, gus, prd, "uc", b ? good(gus, t > 20 ? "👍" : "🙂") : null));
+
+  // 1. a pull request
+  let t = beat(0, "The same change, as a pull request", "Victor pushes a branch and opens a pull request. Nothing reaches the platform yet, and the users keep working.");
+  say(t + 0.5, think(["same change,", "this time a", "pull request"]), 3.4);
+  typing(t + 0.9, G.dev, 2.4);
+  nod(t + 3.4, G.dev);
+  let e = fly(t + 3.7, G.pPush, {col: FAM.dev, speed: 300});
+  swap(e, st.none, st.open);
+  pulse(e, gh.pr, FAM.dev, 0.9);
+  ring(e, ...gh.repoIn, FAM.dev, 6, 22);
+
+  // 2. CI: pre-commit, unit tests, a dry run
+  t = beat(6.4, "CI runs", "pre-commit, the unit tests, then a dry run: the plan of what the change would do, read from the real environment and applied to nothing.");
+  const runCheck = (at, c, secs, ok) => {
+    fade(at, c.idle, 0, 0.1); fade(at, c.run, 1, 0.15);
+    tl.to(c.spin, {rotation: "+=" + 360 * Math.max(1, Math.round(secs / 0.9)), duration: secs, ease: "none", svgOrigin: "0 0"}, at);
+    if (ok == null) return at + secs;
+    fade(at + secs, c.run, 0, 0.1); pop(at + secs, ok ? c.ok : c.no);
+    return at + secs;
+  };
+  const [c0, c1, c2] = gh.checks;
+  pulse(t + 0.2, gh.ci, FAM.token, 0.8);
+  e = runCheck(t + 0.3, c0, 1.2, true);
+  e = runCheck(e + 0.15, c1, 1.6, true);
+  const tPlan = e + 0.15;
+  // the dry run reads prd through the same door: authenticated, authorized, and it changes nothing
+  e = deployTo(tPlan + 0.2, gh.ciOut, "uc", prd, prd.tab, {col: FAM.plat, speed: 900});
+  hitTables(e, prd.tab);
+  fly(e + 0.3, rev(dedupe([...G.pTrunk(gh.ciOut), [640, G.RAIL_Y], [640, 118], [G.uc.cx, 118], [G.uc.cx, G.BUS], [prd.gx, G.BUS], [prd.gx, prd.tab.cy], [prd.x + 4, prd.tab.cy]])), {col: FAM.plat, speed: 1100});
+
+  // 3. the plan catches a critical error
+  t = beat(13.4, "The plan catches it", "The small change would drop a schema, revoke a grant and replace a warehouse. The check fails, the pull request turns red, and production never noticed.");
+  runCheck(tPlan, c2, t + 3.1 - tPlan, false);
+  const bad = planCard([["~", "update", "job schedule"], ["-", "drop", "schema + 3 tables", 1], ["-", "revoke", "SELECT from analysts", 1], ["-", "replace", "SQL warehouse", 1]], "3 destructive changes", false);
+  tl.to(bad.g, {opacity: 1, scale: 1, duration: 0.35, ease: "back.out(1.6)"}, t + 0.1);
+  const ghosts = [null, wouldGo(prd.tab), wouldGo(prd.grant), wouldGo(prd.rack)];
+  bad.lines.forEach((l, i) => {
+    const tt = t + 0.6 + i * 0.62;
+    fade(tt, l, 1, 0.18);
+    if (i) { shake(tt, l, 3); blink(tt + 0.1, ghosts[i]); }
+  });
+  fade(t + 3.1, bad.foot, 1);
+  shake(t + 3.1, gh.ci.g, 3);
+  swap(t + 3.3, st.open, st.red);
+  tl.to(gh.pr.face, {stroke: FAM.no, strokeWidth: 3, duration: 0.15}, t + 3.3);
+  shake(t + 3.3, gh.pr.g, 3);
+  say(t + 4.1, think(["Oh! This is so", "nice I took the", "LLMOps course!"], "good"), 4.2);
+  nod(t + 4.2, G.dev); nod(t + 5.2, G.dev);
+
+  // 4. the fix, green CI, a review
+  t = beat(22.2, "Fixed, green, approved", "The fix goes in. The new plan destroys nothing, CI is green and a reviewer approves: the pull request merges.");
+  tl.to(bad.g, {opacity: 0, scale: 0.8, duration: 0.25}, t);
+  say(t + 0.2, think(["fix: rename,", "don't recreate"]), 2.3);
+  typing(t + 0.5, G.dev, 1.6);
+  e = fly(t + 2.3, G.pPush, {col: FAM.dev, speed: 300});
+  swap(e, st.red, st.open);
+  tl.to(gh.pr.face, {stroke: "#d9d6d1", strokeWidth: 1.5, duration: 0.2}, e);
+  unpop(e, c0.ok); unpop(e, c1.ok); unpop(e, c2.no);
+  [c0, c1, c2].forEach((c) => fade(e + 0.1, c.idle, 1, 0.12));
+  e = runCheck(e + 0.4, c0, 0.7, true);
+  e = runCheck(e + 0.1, c1, 0.9, true);
+  e = runCheck(e + 0.1, c2, 1.1, true);
+  const okCard = planCard([["~", "update", "job schedule"], ["~", "rename", "schema, in place"]], "0 destroyed", true);
+  tl.to(okCard.g, {opacity: 1, scale: 1, duration: 0.3, ease: "back.out(1.6)"}, e - 0.3);
+  okCard.lines.forEach((l, i) => fade(e + i * 0.2, l, 1, 0.15));
+  fade(e + 0.45, okCard.foot, 1);
+  tl.to(okCard.g, {opacity: 0, scale: 0.8, duration: 0.25}, e + 2.6);
+  swap(e + 0.3, st.open, st.green);
+  pulse(e + 0.3, gh.pr, FAM.ok, 1);
+  tl.to(gh.rev.inner, {scale: 1, duration: 0.35, ease: "back.out(2.2)"}, e + 1);
+  pop(e + 1.6, gh.revOk);
+  swap(e + 1.7, st.green, st.ok);
+  swap(e + 2.6, st.ok, st.merged);
+  pulse(e + 2.6, gh.pr, FAM.user, 0.9);
+
+  // 5, 6, 7. dev, then acc, then prd after an approval
+  const chip = (at, c, done) => {
+    tl.to(c.r, {fill: done ? "#e3f3ea" : "#fdf3d9", stroke: done ? FAM.ok : FAM.token, strokeWidth: 2.5, duration: 0.2}, at);
+    tl.to(c.t, {fill: done ? INK_OK : "#7a5a12", duration: 0.2}, at);
+    if (!done) ring(at, c.cx, c.cy, FAM.token, 14, 30);
+  };
+  const deploy = (at, s, first) => {
+    const env = s.env, c = gh.chips[env.name];
+    chip(at, c, false);
+    tl.to(env.pill, {stroke: FAM.dev, strokeWidth: 2.5, duration: 0.2}, at);
+    env.cells.forEach((cl) => tl.to(cl, {stroke: FAM.dev, strokeWidth: 2.5, duration: 0.2}, at));
+    let go = at + 0.2;
+    if (first) go = signIn(at + 0.2, gh.out, {hold: 2.3}) - 0.5;
+    const a1 = deployTo(go, gh.out, "acl", s, s.dash);
+    const a2 = deployTo(go + 0.3, gh.out, "acl", s, s.rack);
+    const a3 = deployTo(go + 0.6, gh.out, "uc", s, s.tab);
+    improve(a1, s.dash);
+    update(a2, s.rack); lightRack(a2, s.rack, 0.7);
+    hitTables(a3, s.tab);
+    const done = Math.max(a1, a2, a3);
+    swap(done, env.v1, env.v2);
+    // the smoke check: one real request through the new version
+    const pts = dedupe([...G.pTrunk(gh.out), [640, G.RAIL_Y], [640, 118], [G.uc.cx, 118], [G.uc.cx, G.BUS], [s.gx, G.BUS], [s.gx, s.tab.cy], [s.x + 4, s.tab.cy]]);
+    const ps = Math.max(go + 0.95, done + 0.15 - pathLen(pts) / 900), at2 = times(ps, pts, 900);
+    fly(ps, pts, {col: FAM.data, speed: 900});
+    pulse(at2[5], G.auth, FAM.ok, 0.3); pulse(at2[6], G.uc, FAM.ok, 0.3);
+    const land = at2[at2.length - 1];
+    pulse(land - 0.3, s.grant, FAM.token, 0.3); lightRack(land - 0.2, s.rack, 0.5); hitTables(land, s.tab);
+    fade(land + 0.15, env.smoke, 1);
+    ring(land + 0.15, env.x + env.w - 60, 177, FAM.ok, 8, 22);
+    chip(land + 0.4, c, true);
+    tl.to(env.pill, {stroke: FAM.ok, duration: 0.3}, land + 0.4);
+    env.cells.forEach((cl) => tl.to(cl, {stroke: "rgba(80,111,160,.3)", strokeWidth: 1.2, duration: 0.4}, land + 0.6));
+    return land + 0.6;
+  };
+  t = beat(Math.max(31, e + 3.4), "Deploy to dev", "The pipeline signs in as dev's own deploy principal: authenticated, authorized, deployed. A smoke check passes.");
+  e = deploy(t + 0.2, dev, true);
+  t = beat(e + 0.5, "Then acc", "The same change, the next environment, its own deploy principal. The smoke check passes again.");
+  e = deploy(t + 0.2, acc);
+  t = beat(e + 0.5, "prd, after an approval", "The prd job waits for a person. Approved, it deploys, and the smoke check passes while the users keep working.");
+  tl.fromTo(gh.gateRing, {attr: {r: 14}, opacity: 0.9}, {attr: {r: 27}, opacity: 0, duration: 0.8, repeat: 2, ease: "power2.out", immediateRender: false}, t + 0.1);
+  tl.to(gh.note, {fill: "#7a5a12", duration: 0.2}, t + 0.1);
+  tl.to(gh.rev2.inner, {scale: 1, duration: 0.35, ease: "back.out(2.2)"}, t + 1.3);
+  pop(t + 2, gh.rev2Ok);
+  unpop(t + 2.2, gh.gate); pop(t + 2.3, gh.gateOpen);
+  tl.to(gh.note, {fill: INK_OK, duration: 0.2}, t + 2.3);
+  e = deploy(t + 2.6, prd);
+  tl.to(gh.rev2.inner, {scale: 0, duration: 0.2}, e); unpop(e, gh.rev2Ok);
+
+  // 8. the users only see the result
+  t = beat(e + 0.6, "So much better", "The users only see the result. The change was wrong once, in a pull request, where it cost nothing.");
+  [fay, dana, gus].forEach((u, i) => { bshow(t + 0.3 + i * 0.55, ubub(u, ["Oh! The system became", "so much better!"], "good")); nod(t + 0.4 + i * 0.55, u); flash(t + 0.3 + i * 0.55, u); });
+  stamp(t + 2.6, ["PULL REQUEST · CHECKS", "DEV → ACC → PRD"], FAM.ok);
+  return Math.max(END, t + 5.6);
+}
+
+// ---------- the page: build, controls, keys, the postMessage protocol ----------
+// The deck embeds this page in an iframe and drives it with messages (README.md has the protocol):
+//   in:  {type: "part4", cmd: "scene", n: 1|2}, {cmd: "play"}, {cmd: "pause"}, {cmd: "step"}
+//   out: {type: "part4", event: "ready"}, {type: "part4", event: "scene-end", scene: 1|2}
+const SCENES = {1: scene1, 2: scene2};
+let cur = 1, H = 0, stopAt = null, ended = false, curBeat = -1, speed = 1, quiet = false, started = false;
+const EPS = 0.02;      // a step stops this long before the next beat, so the caption still names the beat just played
+
+const stageH = () => {
+  const r = stage.getBoundingClientRect();
+  if (!r.width || !r.height) return 640;                       // built while hidden: a middle height, rebuilt when shown
+  return Math.max(HMIN, Math.min(HMAX, Math.round((W * r.height) / r.width)));
+};
+
+function build(n, at = 0) {
+  if (tl) tl.kill();
+  quiet = true;
+  cur = n; H = stageH(); beats = []; seed = 7; avatarN = 0;
+  G = buildWorld(n, H);
+  tl = gsap.timeline({paused: true, onUpdate: tick, onComplete: done});
+  const end = SCENES[n]();
+  tl.to({}, {duration: 0.01}, end);
+  tl.timeScale(speed);
+  ended = false; stopAt = null; curBeat = -1;
+  $("dots").replaceChildren(...beats.map((b, i) => {
+    const d = document.createElement("button");
+    d.textContent = i + 1;
+    d.title = b.title;
+    d.setAttribute("aria-label", `Beat ${i + 1}: ${b.title}`);
+    d.onclick = () => { seek(i); step(); };
+    return d;
+  }));
+  [1, 2].forEach((k) => $("s" + k).setAttribute("aria-selected", String(k === n)));
+  svg.setAttribute("aria-label", n === 1
+    ? "Scene 1. A developer on the left pushes a change straight to main on GitHub; it deploys into the only environment, inside your Databricks account, while the platform users on the right are at work."
+    : "Scene 2. The same change goes through a pull request, CI with a dry run, a review, then dev, acc and prd side by side inside your Databricks account, while the platform users on the right keep working.");
+  if (at > 0) tl.time(Math.min(at, tl.duration()));
+  quiet = false;
+  tick();
+}
+
+function tick() {
+  if (!tl) return;
+  let t = tl.time();
+  if (stopAt != null && t >= stopAt && !tl.paused()) { t = stopAt; stopAt = null; tl.pause(); tl.time(t); }
+  let b = 0;
+  beats.forEach((x, i) => { if (t >= x.t - 1e-3) b = i; });
+  if (b !== curBeat) {
+    curBeat = b;
+    $("capN").textContent = `${b + 1} / ${beats.length}`;
+    $("capP").replaceChildren(Object.assign(document.createElement("b"), {textContent: beats[b].title + (/[….!?]$/.test(beats[b].title) ? "" : ".")}), " " + beats[b].text);
+    [...$("dots").children].forEach((d, i) => { d.classList.toggle("now", i === b); d.classList.toggle("past", i < b); });
+    if (!quiet) post({event: "beat", scene: cur, beat: b + 1, of: beats.length, title: beats[b].title});
+  }
+  const playing = !tl.paused() && !ended;
+  $("bPlay").textContent = ended ? "↻ Replay" : playing ? "❚❚ Pause" : "▶ Play";
+  $("bPlay").setAttribute("aria-pressed", String(playing));
+  $("big").hidden = started || t > 0;
+}
+function done() {
+  if (quiet || ended) return;
+  ended = true; stopAt = null;
+  tick();
+  post({event: "scene-end", scene: cur});
+}
+
+function show(n, at = 0) {
+  n = Number(n) === 2 ? 2 : 1;
+  const changed = n !== cur;
+  started = false;
+  build(n, at);
+  if (changed) post({event: "scene", scene: n});
+}
+function play() {
+  started = true;
+  if (ended) { ended = false; tl.time(0); }
+  stopAt = null;
+  tl.play();
+  tick();
+}
+function pause() { tl.pause(); stopAt = null; tick(); }
+function toggle() { (tl.paused() || ended ? play : pause)(); }
+// one beat: play to the end of the beat the clock is in, and stop there
+function step() {
+  if (ended) return false;
+  started = true;
+  const t = tl.time(), next = beats.find((b) => b.t - EPS > t + 0.05);
+  stopAt = next ? next.t - EPS : null;
+  tl.play();
+  tick();
+  return true;
+}
+// to the start of a beat, paused
+function seek(i) {
+  i = Math.max(0, Math.min(beats.length - 1, i));
+  ended = false; stopAt = null; started = true;
+  tl.pause();
+  tl.time(i ? beats[i].t - EPS : 0);
+  tick();
+}
+function back() {
+  const t = tl.time();
+  let i = 0;
+  beats.forEach((b, k) => { if (b.t - EPS < t - 0.4) i = k; });
+  seek(i);
+}
+function setSpeed(v) {
+  speed = Math.max(0.5, Math.min(3, Math.round(Number(v) * 4) / 4 || 1));
+  $("speed").value = speed;
+  $("speedOut").textContent = speed + "×";
+  if (tl) tl.timeScale(speed);
+}
+
+// ----- controls -----
+$("s1").onclick = () => show(1);
+$("s2").onclick = () => show(2);
+$("bPlay").onclick = toggle;
+$("big").onclick = play;
+$("bStep").onclick = () => { if (!step() && cur === 1) { show(2); step(); } };
+$("bBack").onclick = back;
+$("bReplay").onclick = () => { show(cur); play(); };
+$("speed").oninput = (e) => setSpeed(e.target.value);
+
+// Keys, when this page has the focus. What it does not use goes to the deck as a "key" event, so
+// Esc, F and N keep working while the iframe is focused.
+document.addEventListener("keydown", (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const tag = e.target.tagName, onInput = tag === "INPUT", onButton = tag === "BUTTON";
+  const k = e.key;
+  let used = true;
+  if (k === "ArrowRight" || k === "PageDown") {
+    if (onInput) return;
+    if (!step()) {
+      if (cur === 1) { show(2); step(); }
+      else { used = false; }
+    }
+  } else if (k === "ArrowLeft" || k === "PageUp") { if (onInput) return; back(); }
+  else if (k === " " || k === "k") { if (onButton && k === " ") return; toggle(); }
+  else if (k === "r") { show(cur); play(); }
+  else if (k === "1" || k === "2") show(Number(k));
+  else if (k === "[") setSpeed(speed - 0.25);
+  else if (k === "]") setSpeed(speed + 0.25);
+  else used = false;
+  if (used) e.preventDefault();
+  else if (k.length > 1 || /^[a-z0-9]$/i.test(k)) post({event: "key", key: k, shiftKey: e.shiftKey, scene: cur, ended});
+});
+
+// ----- the protocol -----
+window.addEventListener("message", (e) => {
+  const m = e.data;
+  if (!m || m.type !== "part4" || typeof m.cmd !== "string" || !tl) return;
+  if (m.cmd === "scene") { show(m.n, 0); if (m.play) play(); }
+  else if (m.cmd === "play") play();
+  else if (m.cmd === "pause") pause();
+  else if (m.cmd === "step") step();
+  else if (m.cmd === "back") back();
+  else if (m.cmd === "beat") seek(Number(m.n) - 1);
+  else if (m.cmd === "replay") { show(cur); play(); }
+  else if (m.cmd === "speed") setSpeed(m.value);
+});
+document.addEventListener("visibilitychange", () => { if (document.hidden && tl && !tl.paused()) pause(); });
+
+// the stage changed shape (the deck went full screen, the window was resized): draw the world for
+// the new height and put the clock back where it was
+let rz = 0;
+new ResizeObserver(() => {
+  clearTimeout(rz);
+  rz = setTimeout(() => {
+    if (!tl || Math.abs(stageH() - H) < 4) return;
+    const t = tl.time(), playing = !tl.paused(), sa = stopAt, was = ended, st = started;
+    build(cur, t);
+    started = st; stopAt = sa; ended = was;
+    if (playing && !was) tl.play();
+    tick();
+  }, 120);
+}).observe(stage);
+
+// ----- start -----
+const q = new URLSearchParams(location.search);
+if (q.get("speed")) setSpeed(q.get("speed"));
+const fonts = document.fonts ? Promise.all([document.fonts.load('600 17px "Nunito"'), document.fonts.load('500 17px "Nunito"'), document.fonts.load('500 16px "Fira Code"')]) : Promise.resolve();
+Promise.race([fonts, new Promise((r) => setTimeout(r, 2500))]).catch(() => {}).then(() => {
+  build(q.get("scene") === "2" ? 2 : 1);
+  window.__part4 = {show, play, pause, step, back, seek, setSpeed, at: (t) => { ended = false; stopAt = null; started = true; tl.pause(); tl.time(t); tick(); }, state: () => ({scene: cur, time: tl.time(), duration: tl.duration(), paused: tl.paused(), ended, beat: curBeat + 1, beats: beats.map((b) => ({t: b.t, title: b.title})), H})};
+  post({event: "ready", ok: true, scene: cur, scenes: 2, beats: beats.length});
+  if (q.get("autoplay") === "1") play();
+});
+
+})();
+</script>
+</body>
+</html>

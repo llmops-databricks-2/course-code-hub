@@ -1,0 +1,178 @@
+{
+  "_comment": "The content of github.html. Every statement comes from the course-assistant fact sheet read on 2026-11-23 (the map's sections 3 and 4 and its five findings). A link is a path and a line range in llmops-databricks-2/course-assistant on main; build.py refuses one that is not in facts/course-assistant-links.json, and refuses to build while a part 4 link of that file is unused. Backticks mark code.",
+  "read_on": "2026-11-23",
+  "docs": {
+    "protected": {"label": "About protected branches", "short": "protected branches", "url": "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches"},
+    "rulesets": {"label": "About rulesets", "short": "rulesets", "url": "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets"},
+    "environments": {"label": "Managing environments for deployment", "short": "environments", "url": "https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments"}
+  },
+  "student": {
+    "n": 1,
+    "repo": "llmops-<name>",
+    "title": "The student template",
+    "badge": "dev, acc, prd: real environments",
+    "lede": "Rendered from `template/` by the onboarding. The three environments are real; the workflow that deploys through them comes in a later lecture.",
+    "flow": [
+      {"t": "pull request"},
+      {"t": "main", "n": "one approving review", "state": "auto"},
+      {"t": "dev", "state": "auto", "arrow": false, "br": true},
+      {"t": "acc", "state": "auto", "arrow": false},
+      {"t": "prd", "n": "the student approves", "state": "auto", "lock": true, "arrow": false}
+    ],
+    "heading": "What makes it real",
+    "rows": [
+      {
+        "id": "catalogs", "state": "auto", "title": "Three catalogs",
+        "short": "`llmops_dev`, `llmops_acc`, `llmops_prd`: every student has a schema in each.",
+        "text": "One workspace, three catalogs: `llmops_dev`, `llmops_acc` and `llmops_prd`. Every student has a schema in each, created by the `catalog` step of the onboarding with the grants of that environment.",
+        "links": ["docs/TECHNICAL-DESIGN.md#L427", "docs/TECHNICAL-DESIGN.md#L89", "src/course_assistant/onboarding/catalogs.py#L78", "src/course_assistant/onboarding/run.py#L348"]
+      },
+      {
+        "id": "principals", "state": "auto", "title": "Three deploy principals per student",
+        "short": "`sp-deploy-<name>-<env>`, each with its own federation policy. No secret.",
+        "text": "`sp-deploy-<name>-dev`, `-acc` and `-prd`. They are not admins, and each writes only its environment's schema. Each has its own federation policy on the repository's GitHub environment (OIDC subject `…:environment:<env>`). There is no secret: the repository holds `DATABRICKS_CLIENT_ID_<ENV>`.",
+        "links": ["src/course_assistant/onboarding/principals.py#L184-L238", "docs/TECHNICAL-DESIGN.md#L459", "src/course_assistant/onboarding/principals.py#L350-L364", "src/course_assistant/onboarding/principals.py#L119-L130", "src/course_assistant/onboarding/run.py#L370-L390"]
+      },
+      {
+        "id": "environments", "state": "auto", "title": "Three GitHub environments",
+        "short": "`dev`, `acc`, `prd`. `prd` needs the student's approval and takes `main` only.",
+        "text": "The `repo` step of the onboarding gives each student repository the environments `dev`, `acc` and `prd`. `prd` has the student as required reviewer and `main` as its only branch.",
+        "links": ["src/course_assistant/adapters/github.py#L688", "src/course_assistant/onboarding/repos.py#L336-L360", "src/course_assistant/onboarding/repos.py#L282", "src/course_assistant/onboarding/run.py#L360"]
+      },
+      {
+        "id": "main", "state": "auto", "title": "A protected `main`",
+        "short": "One approving review; admins are exempt.",
+        "text": "The same step protects the student's `main` with one approving review. A new push dismisses a stale approval. The repository's admins, the student among them, are not held to the rule.",
+        "links": ["src/course_assistant/adapters/github.py#L729-L738", "src/course_assistant/onboarding/repos.py#L336-L360"]
+      },
+      {
+        "id": "first", "state": "gap", "title": "The deployment workflow",
+        "short": "Not in the template yet: a later lecture.",
+        "text": "Read on `main` on 2026-11-23: the template ships `ci.yml` only, and the cohort's plan leaves the steps `first_deploy` and `first_deploy_acc` out, with the note that deployment is introduced in a later lecture. The code for it is there: the step dispatches a student's `deploy.yml` for `dev`, then for `acc`, and `prd` waits for the student's approval. So the environments, their principals and the approval rule are real today, and no workflow of the template deploys through them yet.",
+        "links": ["src/course_assistant/onboarding/repos.py#L569", "src/course_assistant/onboarding/run.py#L400-L414"]
+      },
+      {
+        "id": "check", "state": "auto", "title": "The template is checked when it changes",
+        "short": "`publish-template.yml` renders it and, on `main`, validates all three targets.",
+        "text": "In `course-assistant`, `publish-template.yml` runs on a pull request or a push to `main` that touches the template or its contract. It renders the template for the sample student, checks it against the CLI's bundle JSON schema and runs the starter's own CI. On `main` it also runs `databricks bundle validate` for `dev`, `acc` and `prd`.",
+        "links": [".github/workflows/publish-template.yml#L87-L94", ".github/workflows/publish-template.yml#L1-L94", ".github/workflows/publish-template.yml#L1-L12", ".github/workflows/publish-template.yml#L63-L94", ".github/workflows/publish-template.yml#L14-L22", "docs/TECHNICAL-DESIGN.md#L1802-L1816", "tests/contract/test_template.py#L1-L40", "template/cookiecutter.json#L1-L5"]
+      }
+    ]
+  },
+  "platform": {
+    "n": 2,
+    "repo": "course-assistant",
+    "title": "The platform's own repository",
+    "badge": "one environment, no branch protection",
+    "lede": "One workspace and one bundle target, `dev`, run in production mode: a merge to `main` deploys straight into the cohort workspace.",
+    "flow": [
+      {"t": "pull request", "n": "by convention", "state": "hand"},
+      {"t": "main", "n": "no protection", "state": "gap"},
+      {"t": "bundle deploy -t dev", "code": true, "state": "auto"},
+      {"t": "production"}
+    ],
+    "heading": "The safety net as it is",
+    "rows": [
+      {
+        "id": "workflows", "state": "auto", "title": "Workflows",
+        "short": "five, on GitHub's runners",
+        "text": "Five workflows, all on GitHub-hosted `ubuntu-latest`. `ci.yml` runs on every pull request and on pushes to `main`. `deploy.yml` runs on a push to `main` that touches the bundle or its sources: `bundle validate -t dev`, then `bundle deploy -t dev`. `onboarding.yml` runs daily at 06:00 UTC while its schedule is unpaused, and by dispatch. `evals.yml` runs on pull requests that touch the assessment. `publish-template.yml` checks the template. The jobs that reach Databricks sign in with GitHub OIDC, with no stored Databricks secret. Actions are pinned by commit SHA, jobs have timeouts, onboarding and deploy run one at a time, and secrets are set only on the step that needs them.",
+        "links": [".github/workflows/ci.yml#L1-L80", ".github/workflows/deploy.yml#L1-L88", ".github/workflows/onboarding.yml#L1-L100", ".github/workflows/evals.yml#L1-L63", ".github/workflows/publish-template.yml#L1-L94", ".github/workflows/deploy.yml#L67-L71", "docs/TECHNICAL-DESIGN.md#L458", ".github/workflows/onboarding.yml#L49-L62"]
+      },
+      {
+        "id": "unit", "state": "auto", "title": "Unit tests",
+        "short": "2,360, on every pull request",
+        "text": "2,360 test functions in 102 files marked `unit`, counted on `main` on 2026-11-23. Pure Python: JSON fixtures, fake clients, no SQL engine. The `test` job of `ci.yml` runs pre-commit and `pytest -m unit` on every pull request. A red check does not block a merge.",
+        "links": [".github/workflows/ci.yml#L20-L55", "pyproject.toml#L49-L59", "tests/conftest.py#L1-L60", "docs/TECHNICAL-DESIGN.md#L607-L627", ".github/workflows/ci.yml#L41-L55"]
+      },
+      {
+        "id": "integration", "state": "hand", "title": "Integration tests",
+        "short": "53, run by hand",
+        "text": "53 test functions in 32 files marked `integration`. They touch the cohort workspace, GitHub, PyPI or the sheet; the ones that need tables use scratch catalogs `course_ops_verify_<key>` on the warehouse `wh-tests-llmops`. They are run by hand: CI runs none of them except the template's two. A test skips when its environment variables are unset.",
+        "links": ["tests/conftest.py#L858-L880", "tests/conftest.py#L790-L800", "docs/TECHNICAL-DESIGN.md#L621"]
+      },
+      {
+        "id": "precommit", "state": "hand", "title": "Pre-commit hooks",
+        "short": "before every push",
+        "text": "`no-commit-to-branch` on `main`, private-key and credential-file checks, a 1 MB file cap, Conventional Commits, ruff and mypy. The rule is to run `uvx pre-commit run --all-files` and `uv run pytest` on the laptop before every push. CI runs the hooks again on the pull request.",
+        "links": [".pre-commit-config.yaml#L12-L101", ".pre-commit-config.yaml#L14-L17", "CLAUDE.md#L86-L92"]
+      },
+      {
+        "id": "evals", "state": "auto", "title": "Evals check",
+        "short": "on assessment changes",
+        "text": "`evals.yml` runs the assessment agent over the labelled set when a pull request touches it. It fails on a guarded topic judged otherwise or on a measure under its floor, and is capped at 3 USD a run.",
+        "links": [".github/workflows/evals.yml#L59-L63", ".github/workflows/evals.yml#L1-L14", ".github/workflows/evals.yml#L17-L32"]
+      },
+      {
+        "id": "dry", "state": "hand", "title": "Dry runs",
+        "short": "the default mode",
+        "text": "`setup_cohort.py` changes nothing without `--apply`, and every write goes through one gate. `onboarding.yml` started by hand has `dry_run` true by default: it reports each student's open steps and writes only its own run row. A scheduled run is never a dry run.",
+        "links": [".github/workflows/onboarding.yml#L36-L39", "scripts/setup_cohort.py#L3378", "scripts/setup_cohort.py#L3460", "scripts/setup_cohort.py#L445-L452", ".github/workflows/onboarding.yml#L66", "src/course_assistant/onboarding/run.py#L1219-L1256", "src/course_assistant/onboarding/run.py#L908-L916"]
+      },
+      {
+        "id": "filtered", "state": "hand", "title": "Filtered runs",
+        "short": "`only`, `projects_only`",
+        "text": "`only` takes the named students alone, reconciles nothing and takes no teachers' projects. `projects_only` takes only the teachers' projects. Both are for a run started by hand: `--only` on a scheduled run is refused.",
+        "links": [".github/workflows/onboarding.yml#L40-L47", ".github/workflows/onboarding.yml#L20-L23", "src/course_assistant/onboarding/run.py#L749-L790", "src/course_assistant/onboarding/run.py#L1236-L1246", "src/course_assistant/onboarding/reconcile.py#L495", "src/tasks/onboard.py#L10-L16"]
+      },
+      {
+        "id": "reconcile", "state": "auto", "title": "Reconcile, report mode",
+        "short": "removes nothing",
+        "text": "Removals are planned after the steps and printed. Nothing is removed unless the cohort file says `onboarding.reconcile: apply`. Today it says `report`.",
+        "links": ["cohorts/llmops-2/cohort.yml#L86-L88", "docs/TECHNICAL-DESIGN.md#L497", "src/course_assistant/onboarding/reconcile.py#L199", "src/course_assistant/onboarding/reconcile.py#L412", "src/course_assistant/onboarding/reconcile.py#L467"]
+      },
+      {
+        "id": "verify", "state": "hand", "title": "Verify objects",
+        "short": "`verify-*` names",
+        "text": "An integration test that needs a catalog creates a scratch one, `course_ops_verify_<key>` or `verify_<key>_{dev,acc,prd}`, and `scripts/probe_workspace.py` creates only `verify-<thing>` objects. Each is deleted in a `finally`. `workspace_client` refuses a client whose host differs from the cohort file's.",
+        "links": ["tests/conftest.py#L806-L880", "scripts/probe_workspace.py#L1-L40", "scripts/setup_cohort.py#L3379-L3381", "src/course_assistant/adapters/databricks.py#L124-L136"]
+      },
+      {
+        "id": "guard", "state": "auto", "title": "Paid-resource guard",
+        "short": "a bundle job",
+        "text": "A bundle job deletes a paid resource that a student creates outside the registry and stops a running student app, then emails and posts to Teams. A change of `system.access.audit` triggers it, at least 10 minutes apart. The app stop runs hourly.",
+        "links": ["resources/guard.job.yml#L1-L74", "resources/apps_stop.job.yml#L1-L20", "src/course_assistant/monitoring/guard.py#L404-L490", "docs/TECHNICAL-DESIGN.md#L548"]
+      },
+      {
+        "id": "review", "state": "hand", "title": "Pull request and review",
+        "short": "by convention",
+        "text": "A pull request is the only way to `main`, by convention: nothing on GitHub refuses a push to it, or a merge with a red check. The `test` and `evals` checks are read before the merge, and the `story-reviewer` agent reviews each story branch, read-only. `CODEOWNERS` names the teachers team, and this plan does not enforce it.",
+        "links": ["CLAUDE.md#L94-L106", "CLAUDE.md#L86-L92", ".claude/agents/story-reviewer.md#L1-L15", "memory-bank/ACTIVE-CONTEXT.md#L31", "docs/stories/TEMPLATE.md#L1-L30", ".github/CODEOWNERS#L1-L9", ".github/CODEOWNERS#L1-L5"]
+      },
+      {
+        "id": "bots", "state": "hand", "title": "Student bots",
+        "short": "four simulated students",
+        "text": "Four simulated students, `victor-bot-1` to `-4`, are onboarded like real ones. Each takes a lecture in its own repository as its own deploy principal and leaves a run log: a test of the template, of the course code against the workspace, and of the teacher surface.",
+        "links": ["scripts/student_bot.py#L1-L60", "docs/STUDENT-BOT.md#L1-L30", "docs/TECHNICAL-DESIGN.md#L623", ".claude/agents/student.md#L1-L20"]
+      }
+    ],
+    "gaps_heading": "The gaps, next to what a full setup adds",
+    "gaps": [
+      {
+        "id": "protection", "title": "Branch protection or rulesets",
+        "today": "None on `main`: GitHub refuses both on a private repository of a Free organisation. A red check does not block a merge.",
+        "full": "Required reviews and required status checks on `main`, on a paid plan.",
+        "text": "Read on 2026-11-23: branch protection and rulesets both answer HTTP 403, \"Upgrade to GitHub Pro or make this repository public\", and `main` shows `protected: false`. The repository moved from CauchyIO into the cohort organisation on 2026-10-10, and CauchyIO's ruleset (one approving review, the `test` check) stopped guarding `main` at the move. Upgrading the organisation to Team would bring protection back.",
+        "links": ["docs/TECHNICAL-DESIGN.md#L392", "docs/RUNBOOK.md#L728", "CLAUDE.md#L86-L92", ".github/CODEOWNERS#L1-L9"],
+        "docs": ["protected", "rulesets"]
+      },
+      {
+        "id": "acc", "title": "An acc environment for the platform",
+        "today": "One workspace and one bundle target. No GitHub environments, so no approval before a deploy.",
+        "full": "An acc workspace or target, and an approval before prd.",
+        "text": "`databricks.yml` declares `targets: dev` only, with `mode: production` and one workspace host. `ci.yml` and `deploy.yml` validate and deploy `-t dev`, and the repository has no GitHub environments. The second workspace of 2026-11-02 replaced the first one, which had been banned: it is not a staging environment.",
+        "links": ["databricks.yml#L69-L80", "docs/TECHNICAL-DESIGN.md#L499", ".github/workflows/deploy.yml#L67-L71"],
+        "docs": ["environments"]
+      },
+      {
+        "id": "validate", "title": "Bundle validation on pull requests",
+        "today": "`bundle validate` runs on a push to `main` only, after the merge.",
+        "full": "`bundle validate` on every pull request, before the merge.",
+        "text": "The `bundle` job of `ci.yml` runs on a push to `main` only: the monitoring principal's federation policy accepts `main`, and a second policy for pull requests was never approved.",
+        "links": [".github/workflows/ci.yml#L57-L63", ".github/workflows/ci.yml#L64-L80"],
+        "docs": []
+      }
+    ],
+    "foot": "No automatic rollback either: the way back is a revert merge and a re-run."
+  }
+}
