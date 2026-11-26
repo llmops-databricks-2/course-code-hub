@@ -1,0 +1,8 @@
+resources:
+  dashboards:
+    monitoring-dashboard:
+      display_name: "[${bundle.target}] ArXiv Agent Monitoring"
+      file_path: dashboards/agent_monitoring_dashboard.lvdash.json
+      warehouse_id: "${var.warehouse_id}"
+      dataset_catalog: "${var.catalog}"
+      dataset_schema: "${var.schema}"

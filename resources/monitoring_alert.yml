@@ -1,0 +1,56 @@
+resources:
+  alerts:
+    agent_error_rate:
+      display_name: "[${bundle.target}] ArXiv agent high error rate"
+      warehouse_id: "${var.warehouse_id}"
+      query_text: |
+        SELECT CASE WHEN COUNT(*) >= 10
+          THEN 100.0 * SUM(has_error) / COUNT(*) ELSE 0.0 END AS error_rate_pct,
+          COUNT(*) AS trace_count,
+          COALESCE(SUM(has_error), 0) AS error_count
+        FROM ${var.catalog}.${var.schema}.arxiv_agent_monitoring_live
+        WHERE request_time >= current_timestamp() - INTERVAL 1 HOUR
+      evaluation:
+        comparison_operator: GREATER_THAN
+        source:
+          name: error_rate_pct
+        threshold:
+          value:
+            double_value: 10
+        notification:
+          subscriptions:
+            - user_email: "maria@cauchy.io"
+          retrigger_seconds: 3600
+      schedule:
+        quartz_cron_schedule: "0 0/15 * * * ?"
+        timezone_id: Europe/Amsterdam
+        pause_status: "${var.monitoring_alert_pause_status}"
+    app_http_error_rate:
+      display_name: "[${bundle.target}] ArXiv App HTTP 5xx rate"
+      warehouse_id: "${var.warehouse_id}"
+      query_text: |
+        SELECT CASE WHEN COALESCE(SUM(histogram.count), 0) >= 10
+          THEN 100.0 * SUM(CASE
+            WHEN try_cast(histogram.attributes:['http.response.status_code'] AS INT) >= 500
+            THEN histogram.count ELSE 0 END) / SUM(histogram.count)
+          ELSE 0.0 END AS error_rate_pct
+        FROM ${var.catalog}.${var.schema}.app_otel_metrics
+        WHERE service_name = 'agent-arxiv-curator-${bundle.target}'
+          AND name = 'app.http.request.duration'
+          AND try_cast(histogram.attributes:['http.route'] AS STRING) = '/responses'
+          AND time >= current_timestamp() - INTERVAL 1 HOUR
+      evaluation:
+        comparison_operator: GREATER_THAN
+        source:
+          name: error_rate_pct
+        threshold:
+          value:
+            double_value: 10
+        notification:
+          subscriptions:
+            - user_email: "maria@cauchy.io"
+          retrigger_seconds: 3600
+      schedule:
+        quartz_cron_schedule: "0 0/15 * * * ?"
+        timezone_id: Europe/Amsterdam
+        pause_status: "${var.monitoring_alert_pause_status}"

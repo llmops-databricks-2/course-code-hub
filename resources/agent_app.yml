@@ -5,6 +5,11 @@ resources:
       description: Arxiv research agent with Lakebase pgvector retrieval
       source_code_path: ../
       usage_policy_id: ${var.usage_policy_id}
+      telemetry_export_destinations:
+        - unity_catalog:
+            logs_table: ${var.catalog}.${var.schema}.app_otel_logs
+            metrics_table: ${var.catalog}.${var.schema}.app_otel_metrics
+            traces_table: ${var.catalog}.${var.schema}.app_otel_spans
       permissions:
         - service_principal_name: ${var.agent_service_principal_id}
           level: CAN_USE
@@ -15,3 +20,11 @@ resources:
             value: ${bundle.target}
           - name: GENIE_SPACE_ID
             value: ${resources.genie_spaces.arxiv-curator-space.id}
+          - name: MLFLOW_TRACKING_URI
+            value: databricks
+          - name: ENABLE_MLFLOW_TRACING
+            value: "true"
+          - name: GIT_SHA
+            value: ${var.git_sha}
+          - name: GIT_BRANCH
+            value: ${var.branch}

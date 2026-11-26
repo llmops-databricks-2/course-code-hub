@@ -19,12 +19,15 @@ variables:
     default: 180dc237-d53d-4e39-bf7f-86ad2533ed88
   git_sha:
     description: git_sha
-    default: abcd
+    default: unknown
   branch:
     description: branch
     default: main
   schedule_pause_status:
     description: schedule pause status
+    default: PAUSED
+  monitoring_alert_pause_status:
+    description: schedule pause status for the monitoring alert
     default: PAUSED
   usage_policy_id:
     description: usage policy id for serverless jobs and Apps (usage_policy_id in project_config.yml)
@@ -47,6 +50,10 @@ include:
   - resources/genie_space.yml
   - resources/agent_app.yml
   - resources/evaluate_deploy_app.yml
+  - resources/monitoring_view.yml
+  - resources/monitoring_dashboard.yml
+  - resources/monitoring_alert.yml
+  - resources/monitoring_probe.yml
 
 sync:
   include:
@@ -57,6 +64,8 @@ sync:
 targets:
   dev:
     mode: development
+    variables:
+      monitoring_alert_pause_status: PAUSED
     default: true
     workspace:
       host: https://dbc-e81ca4d2-f6bd.cloud.databricks.com
@@ -67,6 +76,7 @@ targets:
     workspace:
       host: https://dbc-e81ca4d2-f6bd.cloud.databricks.com
       root_path: /Shared/.bundle/${bundle.target}/${bundle.name}
+      file_path: ${workspace.root_path}/versions/${var.git_sha}/files
     variables:
       catalog: llmops_acc
       schema: arxiv
@@ -77,7 +87,9 @@ targets:
     workspace:
       host: https://dbc-e81ca4d2-f6bd.cloud.databricks.com
       root_path: /Shared/.bundle/${bundle.target}/${bundle.name}
+      file_path: ${workspace.root_path}/versions/${var.git_sha}/files
     variables:
+      monitoring_alert_pause_status: UNPAUSED
       catalog: llmops_prd
       schema: arxiv
       schedule_pause_status: UNPAUSED

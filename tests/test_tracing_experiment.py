@@ -1,7 +1,5 @@
-"""Test the tracing notebook's experiment setup without running its LLM examples."""
+"""Verify multi-environment experiment setup without accessing Databricks."""
 
-import os
-from contextlib import ExitStack
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -11,96 +9,101 @@ from databricks.sdk.service.catalog import TableType
 from mlflow.entities.trace_location import UnityCatalog
 
 NOTEBOOK = Path(__file__).resolve().parents[1] / "notebooks/4.0.uc_traces_setup.py"
-SETUP = NOTEBOOK.read_text()
 
 
 @pytest.fixture
 def tracing():
-    with ExitStack() as stack:
-        tracing = SimpleNamespace()
-        stack.enter_context(patch.dict(os.environ, {}, clear=False))
-        tracing.cfg = SimpleNamespace(
-            experiment_name="/Shared/llmops-course",
-            catalog="catalog",
-            schema="schema",
+    configs = {
+        env: SimpleNamespace(
+            experiment_name=f"/Shared/agent-{env}-uc",
+            catalog=f"catalog_{env}",
+            schema="arxiv",
             warehouse_id="warehouse",
         )
-        stack.enter_context(patch("arxiv_curator.config.load_config", return_value=tracing.cfg))
-        stack.enter_context(patch("arxiv_curator.config.get_env", return_value="dev"))
-        session = stack.enter_context(patch("pyspark.sql.SparkSession"))
-        tracing.spark = session.builder.getOrCreate.return_value
-        tracing.tracking = stack.enter_context(patch("mlflow.set_tracking_uri"))
-        tracing.workspace = stack.enter_context(
-            patch("databricks.sdk.WorkspaceClient")
-        ).return_value
-        tracing.table_names = [
-            "llmops_otel_" + name for name in ("annotations", "logs", "metrics", "spans")
+        for env in ("dev", "acc", "prd")
+    }
+    with (
+        patch("arxiv_curator.config.load_config", side_effect=lambda path, env: configs[env]),
+        patch("pyspark.sql.SparkSession") as session,
+        patch("databricks.sdk.WorkspaceClient") as workspace,
+        patch("mlflow.get_experiment_by_name") as get_experiment,
+        patch("mlflow.set_experiment") as set_experiment,
+    ):
+        workspace.return_value.tables.list.return_value = [
+            SimpleNamespace(name="llmops_otel_spans", table_type=TableType.MANAGED),
+            SimpleNamespace(name="llmops_otel_metadata", table_type=TableType.VIEW),
+            SimpleNamespace(name="arxiv_papers", table_type=TableType.MANAGED),
         ]
-        tracing.view_names = ["llmops_trace_metadata", "llmops_trace_unified"]
-        tracing.workspace.tables.list.return_value = (
-            [
-                SimpleNamespace(name=name, table_type=TableType.MANAGED)
-                for name in tracing.table_names
-            ]
-            + [SimpleNamespace(name=name, table_type=TableType.VIEW) for name in tracing.view_names]
-            + [SimpleNamespace(name="arxiv_papers", table_type=TableType.MANAGED)]
+        dbutils = MagicMock()
+        dbutils.secrets.get.side_effect = lambda **kwargs: f"sp-{kwargs['catalog']}"
+        set_experiment.side_effect = lambda **kwargs: SimpleNamespace(
+            name=kwargs.get("experiment_name", "existing"), experiment_id="123"
         )
-        tracing.dbutils = MagicMock()
-        tracing.dbutils.secrets.get.return_value = "sp-id"
-        tracing.get_experiment = stack.enter_context(patch("mlflow.get_experiment_by_name"))
-        tracing.set_experiment = stack.enter_context(patch("mlflow.set_experiment"))
-        tracing.location = UnityCatalog("catalog", "schema", "llmops")
-        tracing.experiment = SimpleNamespace(
-            experiment_id="123", name=tracing.cfg.experiment_name, trace_location=tracing.location
+        yield SimpleNamespace(
+            configs=configs,
+            spark=session.builder.getOrCreate.return_value,
+            workspace=workspace.return_value,
+            get=get_experiment,
+            set=set_experiment,
+            dbutils=dbutils,
         )
-        tracing.set_experiment.return_value = tracing.experiment
-        yield tracing
 
 
-def test_missing_experiment_is_created_with_uc_storage(tracing):
-    tracing.get_experiment.return_value = None
-    exec(compile(SETUP, str(NOTEBOOK), "exec"), {"dbutils": tracing.dbutils})
-    tracing.get_experiment.assert_called_once_with(tracing.cfg.experiment_name)
-    assert_grants(tracing)
-    kwargs = tracing.set_experiment.call_args.kwargs
-    assert kwargs["experiment_name"] == tracing.cfg.experiment_name
-    assert kwargs["trace_location"].table_prefix == "llmops"
-    assert kwargs["trace_location"].catalog_name == "catalog"
-    assert kwargs["trace_location"].schema_name == "schema"
-    assert os.environ["MLFLOW_TRACING_SQL_WAREHOUSE_ID"] == "warehouse"
+def run_notebook(tracing):
+    exec(compile(NOTEBOOK.read_text(), str(NOTEBOOK), "exec"), {"dbutils": tracing.dbutils})
 
 
-def test_existing_experiment_is_selected_without_creation(tracing):
-    tracing.get_experiment.return_value = tracing.experiment
-    exec(compile(SETUP, str(NOTEBOOK), "exec"), {"dbutils": tracing.dbutils})
-    tracing.set_experiment.assert_called_once_with(experiment_id="123")
-    assert_grants(tracing)
-
-
-@pytest.mark.parametrize("location", (None, UnityCatalog("different", "schema", "llmops")))
-def test_incompatible_existing_trace_storage_is_not_changed(tracing, location):
-    tracing.experiment.trace_location = location
-    tracing.get_experiment.return_value = tracing.experiment
-    with pytest.raises(ValueError, match="different trace location"):
-        exec(compile(SETUP, str(NOTEBOOK), "exec"), {"dbutils": tracing.dbutils})
-    tracing.set_experiment.assert_not_called()
-
-
-def assert_grants(tracing):
+def test_creates_each_environment_and_grants_its_principal(tracing):
+    tracing.get.return_value = None
+    run_notebook(tracing)
+    assert tracing.set.call_count == 3
     statements = [call.args[0] for call in tracing.spark.sql.call_args_list]
-    assert len(statements) == 6
-    for name in tracing.table_names:
-        assert f"GRANT SELECT, MODIFY ON TABLE catalog.schema.`{name}` TO `sp-id`" in statements
-    for name in tracing.view_names:
-        assert f"GRANT SELECT ON TABLE catalog.schema.`{name}` TO `sp-id`" in statements
-    tracing.tracking.assert_not_called()
-    tracing.dbutils.secrets.get.assert_called_once_with(
-        catalog="catalog", schema="schema", key="databricks_client_id"
+    for env, cfg in tracing.configs.items():
+        call = next(
+            c
+            for c in tracing.set.call_args_list
+            if c.kwargs["experiment_name"] == cfg.experiment_name
+        )
+        location = call.kwargs["trace_location"]
+        assert (location.catalog_name, location.schema_name, location.table_prefix) == (
+            cfg.catalog,
+            "arxiv",
+            "llmops",
+        )
+        principal = f"sp-{cfg.catalog}"
+        assert f"GRANT USE CATALOG ON CATALOG `{cfg.catalog}` TO `{principal}`" in statements
+        assert f"GRANT USE SCHEMA ON SCHEMA `{cfg.catalog}`.`arxiv` TO `{principal}`" in statements
+        assert (
+            f"GRANT SELECT, MODIFY ON TABLE `{cfg.catalog}`.`arxiv`.`llmops_otel_spans` TO `{principal}`"
+            in statements
+        )
+        assert (
+            f"GRANT SELECT ON TABLE `{cfg.catalog}`.`arxiv`.`llmops_otel_metadata` TO `{principal}`"
+            in statements
+        )
+    assert len(statements) == 12
+
+
+def test_existing_uc_experiments_are_reused(tracing):
+    def existing(name):
+        cfg = next(c for c in tracing.configs.values() if c.experiment_name == name)
+        return SimpleNamespace(
+            experiment_id="123", trace_location=UnityCatalog(cfg.catalog, cfg.schema, "llmops")
+        )
+
+    tracing.get.side_effect = existing
+    run_notebook(tracing)
+    assert tracing.set.call_count == 3
+    assert all(call.kwargs == {"experiment_id": "123"} for call in tracing.set.call_args_list)
+
+
+def test_incompatible_experiment_is_reported_without_blocking_other_environments(tracing):
+    tracing.get.side_effect = lambda name: (
+        SimpleNamespace(trace_location=None) if name.endswith("dev-uc") else None
     )
-
-
-def test_experiment_is_set_before_grants(tracing):
-    tracing.get_experiment.return_value = tracing.experiment
-    tracing.spark.sql.side_effect = lambda statement: tracing.set_experiment.assert_called_once()
-    exec(compile(SETUP, str(NOTEBOOK), "exec"), {"dbutils": tracing.dbutils})
-    assert_grants(tracing)
+    with pytest.raises(RuntimeError, match="dev:.*different trace location"):
+        run_notebook(tracing)
+    assert [c.kwargs["experiment_name"] for c in tracing.set.call_args_list] == [
+        tracing.configs["acc"].experiment_name,
+        tracing.configs["prd"].experiment_name,
+    ]
