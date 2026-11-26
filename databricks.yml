@@ -10,7 +10,7 @@ bundle:
 artifacts:
   default:
     type: whl
-    build: uv build --native-tls && python3 scripts/prepare_app_deployment.py
+    build: uv build --native-tls
     path: .
 
 variables:
@@ -60,13 +60,12 @@ sync:
     - eval_inputs.txt
     - project_config.yml
     - prompts/*.txt
-    - app_deployment/**
 
 targets:
   dev:
     mode: development
     variables:
-      monitoring_alert_pause_status: UNPAUSED
+      monitoring_alert_pause_status: PAUSED
     default: true
     workspace:
       host: https://dbc-e81ca4d2-f6bd.cloud.databricks.com
